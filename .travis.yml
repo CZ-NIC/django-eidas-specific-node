@@ -1,0 +1,20 @@
+language: python
+sudo: false
+dist: xenial
+python:
+    - "3.5"
+    - "3.6"
+    - "3.7"
+
+addons:
+    apt:
+        update: true
+
+before_install:
+    - pip install virtualenv -U
+
+install:
+    - pip install tox-travis
+
+script:
+    - tox
