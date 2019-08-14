@@ -2,12 +2,17 @@
 import hashlib
 import hmac
 from base64 import b64decode, b64encode
+from collections import OrderedDict
 from datetime import datetime
+from typing import Dict, List, Optional
 
+from lxml import etree
+from lxml.etree import Element
+
+from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType
+from eidas_node.datamodels import DataModel, XMLDataModel
 from eidas_node.errors import ParseError, SecurityError, ValidationError
-
-from .datamodels import DataModel
-from .utils import create_eidas_timestamp, parse_eidas_timestamp
+from eidas_node.utils import create_eidas_timestamp, get_element_path, parse_eidas_timestamp
 
 
 class LightToken(DataModel):
@@ -91,3 +96,96 @@ class LightToken(DataModel):
         if not hmac.compare_digest(valid_digest, provided_digest):
             raise SecurityError('Light token has invalid digest.')
         return token
+
+
+class LightRequest(XMLDataModel):
+    """A request sent to/received from the generic part of eIDAS-Node."""
+
+    FIELDS = ['citizen_country_code', 'id', 'issuer', 'level_of_assurance', 'name_id_format', 'provider_name',
+              'sp_type', 'relay_state', 'origin_country_code', 'requested_attributes']
+    ROOT_ELEMENT = 'lightRequest'
+    citizen_country_code = None  # type: str
+    """Country code of the requesting citizen. ISO ALPHA-2 format."""
+    id = None  # type: str
+    """Internal unique ID that will be used to correlate the response."""
+    issuer = None  # type: Optional[str]
+    """Issuer of the LightRequest or originating SP - not used in version 2.0."""
+    level_of_assurance = None  # type: LevelOfAssurance
+    """Level of assurance required to fulfil the request"""
+    name_id_format = None  # type: Optional[NameIdFormat]
+    """Optional instruction to the IdP that identifier format is requested (if supported)."""
+    provider_name = None  # type: Optional[str]
+    """Free format text identifier of service provider initiating the request."""
+    sp_type = None  # type: Optional[ServiceProviderType]
+    """Optional element specifying the sector of the SP or the Connector."""
+    relay_state = None  # type: Optional[str]
+    """Optional state information expected to be returned with the LightResponse pair."""
+    origin_country_code = None  # type: Optional[str]
+    """The code of requesting country."""
+    requested_attributes = None  # type: Dict[str, List[str]]
+    """The list of requested attributes."""
+
+    def validate(self) -> None:
+        """Validate this data model."""
+        self.validate_fields(str, 'citizen_country_code', 'id', required=True)
+        self.validate_fields(str, 'issuer', 'provider_name', 'relay_state', 'origin_country_code', required=False)
+        self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=True)
+        self.validate_fields(NameIdFormat, 'name_id_format', required=False)
+        self.validate_fields(ServiceProviderType, 'sp_type', required=False)
+        validate_attributes(self, 'requested_attributes')
+
+    def deserialize_level_of_assurance(self, elm: Element) -> Optional[LevelOfAssurance]:
+        """Deserialize field 'level_of_assurance'."""
+        return LevelOfAssurance(elm.text) if elm.text else None
+
+    def deserialize_name_id_format(self, elm: Element) -> Optional[NameIdFormat]:
+        """Deserialize field 'name_id_format'."""
+        return NameIdFormat(elm.text) if elm.text else None
+
+    def deserialize_sp_type(self, elm: Element) -> Optional[ServiceProviderType]:
+        """Deserialize field 'sp_type'."""
+        return ServiceProviderType(elm.text) if elm.text else None
+
+    def deserialize_requested_attributes(self, elm: Element) -> Dict[str, List[str]]:
+        """Deserialize field 'requested_attributes'."""
+        attributes = OrderedDict()  # type: Dict[str, List[str]]
+        for attribute in elm:
+            if attribute.tag != 'attribute':
+                raise ValidationError({get_element_path(attribute): 'Unexpected element {!r}'.format(attribute.tag)})
+            if not len(attribute):
+                raise ValidationError({get_element_path(attribute): 'Missing attribute.definition element.'})
+            definition = attribute[0]
+            if definition.tag != 'definition':
+                raise ValidationError({get_element_path(definition): 'Unexpected element {!r}'.format(definition.tag)})
+
+            values = attributes[definition.text] = []
+            for value in attribute[1:]:
+                if value.tag != 'value':
+                    raise ValidationError({get_element_path(value): 'Unexpected element {!r}'.format(value.tag)})
+                values.append(value.text)
+        return attributes
+
+    def serialize_requested_attributes(self, root: Element, tag: str, attributes: Dict[str, List[str]]) -> None:
+        """Serialize field 'requested_attributes'."""
+        serialize_attributes(root, tag, attributes)
+
+
+def validate_attributes(model: DataModel, field_name: str) -> None:
+    """Validate eIDAS attributes."""
+    model.validate_fields(dict, field_name, required=True)
+    attributes = getattr(model, field_name)  # type: Dict[str, List[str]]
+    for key, values in attributes.items():
+        if not isinstance(key, str) or not key.strip():
+            raise ValidationError({field_name: 'All keys must be strings.'})
+        if not isinstance(values, list) or any(not isinstance(value, str) for value in values):
+            raise ValidationError({field_name: 'All values must be lists of strings.'})
+
+
+def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Dict[str, List[str]]) -> None:
+    """Serialize eIDAS attributes."""
+    elm = etree.SubElement(parent_element, tag)
+    for name, values in attributes.items():
+        attribute = etree.SubElement(elm, 'attribute')
+        etree.SubElement(attribute, 'definition').text = name
+        for value in values:
+            etree.SubElement(attribute, 'value').text = value

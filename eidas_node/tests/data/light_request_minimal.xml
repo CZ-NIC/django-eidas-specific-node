@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<lightRequest>
+  <citizenCountryCode>CA</citizenCountryCode>
+  <id>test-light-request-id</id>
+  <levelOfAssurance>http://eidas.europa.eu/LoA/low</levelOfAssurance>
+  <requestedAttributes/>
+</lightRequest>
