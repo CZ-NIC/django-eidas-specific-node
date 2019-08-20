@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 from lxml import etree
 from lxml.etree import Element
 
-from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType
+from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.datamodels import DataModel, XMLDataModel
 from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.utils import create_eidas_timestamp, get_element_path, parse_eidas_timestamp
@@ -148,26 +148,103 @@ class LightRequest(XMLDataModel):
 
     def deserialize_requested_attributes(self, elm: Element) -> Dict[str, List[str]]:
         """Deserialize field 'requested_attributes'."""
-        attributes = OrderedDict()  # type: Dict[str, List[str]]
-        for attribute in elm:
-            if attribute.tag != 'attribute':
-                raise ValidationError({get_element_path(attribute): 'Unexpected element {!r}'.format(attribute.tag)})
-            if not len(attribute):
-                raise ValidationError({get_element_path(attribute): 'Missing attribute.definition element.'})
-            definition = attribute[0]
-            if definition.tag != 'definition':
-                raise ValidationError({get_element_path(definition): 'Unexpected element {!r}'.format(definition.tag)})
-
-            values = attributes[definition.text] = []
-            for value in attribute[1:]:
-                if value.tag != 'value':
-                    raise ValidationError({get_element_path(value): 'Unexpected element {!r}'.format(value.tag)})
-                values.append(value.text)
-        return attributes
+        return deserialize_attributes(elm)
 
     def serialize_requested_attributes(self, root: Element, tag: str, attributes: Dict[str, List[str]]) -> None:
         """Serialize field 'requested_attributes'."""
         serialize_attributes(root, tag, attributes)
+
+
+class Status(XMLDataModel):
+    """Complex element to provide status information from IdP."""
+
+    FIELDS = ['failure', 'status_code', 'sub_status_code', 'status_message']
+    ROOT_ELEMENT = 'status'
+    failure = None  # type: bool
+    """Whether the authentication request has failed."""
+    status_code = None  # type: Optional[StatusCode]
+    """SAML2 defined status code."""
+    sub_status_code = None  # type: Optional[SubStatusCode]
+    """SAML2 defined sub status code used in case of failure."""
+    status_message = None  # type: Optional[str]
+    """An optional status message."""
+
+    def validate(self) -> None:
+        """Validate this data model."""
+        self.validate_fields(bool, 'failure', required=True)
+        self.validate_fields(StatusCode, 'status_code', required=False)
+        self.validate_fields(SubStatusCode, 'sub_status_code', required=False)
+        self.validate_fields(str, 'status_message', required=False)
+
+    def deserialize_failure(self, elm: Element) -> Optional[bool]:
+        """Deserialize field 'failure'."""
+        return elm.text.lower() == 'true' if elm.text else None
+
+    def deserialize_status_code(self, elm: Element) -> Optional[StatusCode]:
+        """Deserialize field 'status_code'."""
+        return StatusCode(elm.text) if elm.text else None
+
+    def deserialize_sub_status_code(self, elm: Element) -> Optional[SubStatusCode]:
+        """Deserialize field 'sub_status_code'."""
+        return SubStatusCode(elm.text) if elm.text else None
+
+
+class LightResponse(XMLDataModel):
+    """A response sent to/received from the generic part of eIDAS-Node."""
+
+    FIELDS = ['id', 'in_response_to_id', 'issuer', 'ip_address', 'relay_state', 'subject',
+              'subject_name_id_format', 'level_of_assurance', 'status', 'attributes']
+    ROOT_ELEMENT = 'lightResponse'
+    id = None  # type: str
+    """Internal unique ID."""
+    in_response_to_id = None  # type: str
+    """The original unique ID of the Request this Response is issued for."""
+    issuer = None  # type: Optional[str]
+    """Issuer of the LightRequest or originating SP - not used in version 2.0."""
+    ip_address = None  # type: Optional[str]
+    """Optional IP address of the user agent as seen on IdP"""
+    relay_state = None  # type: Optional[str]
+    """Optional state information to return to the Consumer."""
+    subject = None  # type: str
+    """Subject of the Assertion for the eIDAS SAML Response."""
+    subject_name_id_format = None  # type: NameIdFormat
+    """Format of the identifier attribute."""
+    level_of_assurance = None  # type: LevelOfAssurance
+    """Level of assurance required to fulfil the request"""
+    status = None  # type: Status
+    """Complex element to provide status information from IdP."""
+    attributes = None  # type: Dict[str, List[str]]
+    """The list of attributes and their values."""
+
+    def validate(self) -> None:
+        """Validate this data model."""
+        self.validate_fields(Status, 'status', required=True)
+        self.status.validate()
+        self.validate_fields(str, 'id', 'in_response_to_id', 'subject', required=True)
+        self.validate_fields(str, 'issuer', 'ip_address', 'relay_state', required=False)
+        self.validate_fields(NameIdFormat, 'subject_name_id_format', required=True)
+        self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=True)
+        validate_attributes(self, 'attributes')
+
+    def deserialize_subject_name_id_format(self, elm: Element) -> Optional[NameIdFormat]:
+        """Deserialize field 'subject_name_name_id_format'."""
+        return NameIdFormat(elm.text) if elm.text else None
+
+    def deserialize_level_of_assurance(self, elm: Element) -> Optional[LevelOfAssurance]:
+        """Deserialize field 'level_of_assurance'."""
+        return LevelOfAssurance(elm.text) if elm.text else None
+
+    def deserialize_status(self, elm: Element) -> Status:
+        """Deserialize field 'status'."""
+        return Status.load_xml(elm)
+
+    def deserialize_attributes(self, elm: Element) -> Dict[str, List[str]]:
+        """Deserialize field 'attributes'."""
+        return deserialize_attributes(elm)
+
+    def serialize_attributes(self, root: etree.Element, tag: str, attributes: Dict[str, List[str]]) -> None:
+        """Serialize field 'attributes'."""
+        return serialize_attributes(root, tag, attributes)
 
 
 def validate_attributes(model: DataModel, field_name: str) -> None:
@@ -181,11 +258,32 @@ def validate_attributes(model: DataModel, field_name: str) -> None:
             raise ValidationError({field_name: 'All values must be lists of strings.'})
 
 
-def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Dict[str, List[str]]) -> None:
+def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Optional[Dict[str, List[str]]]) -> None:
     """Serialize eIDAS attributes."""
-    elm = etree.SubElement(parent_element, tag)
-    for name, values in attributes.items():
-        attribute = etree.SubElement(elm, 'attribute')
-        etree.SubElement(attribute, 'definition').text = name
-        for value in values:
-            etree.SubElement(attribute, 'value').text = value
+    if attributes is not None:
+        elm = etree.SubElement(parent_element, tag)
+        for name, values in attributes.items():
+            attribute = etree.SubElement(elm, 'attribute')
+            etree.SubElement(attribute, 'definition').text = name
+            for value in values:
+                etree.SubElement(attribute, 'value').text = value
+
+
+def deserialize_attributes(attributes_elm: Element) -> Dict[str, List[str]]:
+    """Deserialize eIDAS attributes."""
+    attributes = OrderedDict()  # type: Dict[str, List[str]]
+    for attribute in attributes_elm:
+        if attribute.tag != 'attribute':
+            raise ValidationError({get_element_path(attribute): 'Unexpected element {!r}'.format(attribute.tag)})
+        if not len(attribute):
+            raise ValidationError({get_element_path(attribute): 'Missing attribute.definition element.'})
+        definition = attribute[0]
+        if definition.tag != 'definition':
+            raise ValidationError({get_element_path(definition): 'Unexpected element {!r}'.format(definition.tag)})
+
+        values = attributes[definition.text] = []
+        for value in attribute[1:]:
+            if value.tag != 'value':
+                raise ValidationError({get_element_path(value): 'Unexpected element {!r}'.format(value.tag)})
+            values.append(value.text)
+    return attributes

@@ -8,6 +8,7 @@
   <providerName>DEMO-SP-CA</providerName>
   <spType>public</spType>
   <relayState>relay123</relayState>
+  <originCountryCode>CA</originCountryCode>
   <requestedAttributes>
     <attribute>
       <definition>http://eidas.europa.eu/attributes/legalperson/D-2012-17-EUIdentifier</definition>
