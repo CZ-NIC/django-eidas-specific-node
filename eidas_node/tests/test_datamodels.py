@@ -1,9 +1,14 @@
 from collections import OrderedDict
+from enum import Enum
+from typing import Optional
 
 from django.test import SimpleTestCase
+from lxml.etree import Element, ElementTree, SubElement
 
-from eidas_node.datamodels import DataModel
+from eidas_node.datamodels import (DataModel, XMLDataModel, convert_field_name_to_tag_name,
+                                   convert_tag_name_to_field_name)
 from eidas_node.errors import ValidationError
+from eidas_node.utils import dump_xml, parse_xml
 
 
 class MyName(DataModel):  # pragma: no cover
@@ -146,3 +151,102 @@ class TestDataModel(SimpleTestCase):
 
         # All fields valid
         get_user().name.validate_fields(str, 'first_name', 'last_name', required=False)
+
+
+class MyXMLModel(XMLDataModel):  # pragma: no cover
+    FIELDS = ['name']
+    name = None
+
+    def validate(self) -> None:
+        pass
+
+
+class Department(Enum):
+    TECH_DEP = 'TechDep'
+    ADMINS = 'Admins'
+
+
+class XMLName(XMLDataModel):  # pragma: no cover
+    ROOT_ELEMENT = 'name'
+    FIELDS = ['first_name', 'last_name']
+    first_name = None  # type: str
+    last_name = None  # type: str
+
+    def validate(self) -> None:
+        pass
+
+    def serialize_last_name(self, parent_element: Element, tag: str, value: str) -> None:
+        SubElement(parent_element, tag).text = value.capitalize()
+
+    def deserialize_last_name(self, elm: Element) -> str:
+        return elm.text.upper()
+
+
+class XMLUser(XMLDataModel):  # pragma: no cover
+    ROOT_ELEMENT = 'xmlUser'
+    FIELDS = ['name', 'superuser', 'department', 'nickname']
+    name = None  # type: MyName
+    superuser = None  # type: bool
+    department = None  # type: Department
+    nickname = None  # type: Optional[str]
+
+    def validate(self) -> None:
+        pass
+
+    def deserialize_name(self, elm: Element) -> XMLName:
+        return XMLName.load_xml(elm)
+
+    def deserialize_department(self, elm: Element) -> Optional[Department]:
+        return Department(elm.text) if elm.text else None
+
+    def deserialize_superuser(self, elm: Element) -> Optional[bool]:
+        return elm.text == 'true' if elm.text else None
+
+
+XML_USER_DATA = '''<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<xmlUser>
+  <name>
+    <firstName>John</firstName>
+    <lastName>Doe</lastName>
+  </name>
+  <superuser>true</superuser>
+  <department>TechDep</department>
+</xmlUser>
+'''
+
+
+class TestXMLDataModel(SimpleTestCase):
+    def test_load_xml_without_root_element_name(self):
+        self.assertRaisesMessage(TypeError, 'must define ROOT_ELEMENT',
+                                 MyXMLModel.load_xml, ElementTree(Element('root')))
+
+    def test_load_xml_ok(self):
+        user = XMLUser(name=XMLName(first_name='John', last_name='DOE'),
+                       superuser=True, department=Department.TECH_DEP)
+        self.assertEqual(XMLUser.load_xml(parse_xml(XML_USER_DATA)), user)
+
+    def test_load_xml_wrong_root_element(self):
+        with self.assertRaisesMessage(ValidationError, '\'<user>\': "Invalid root element \'user\'."'):
+            XMLUser.load_xml(parse_xml(XML_USER_DATA.replace('xmlUser', 'user')))
+
+    def test_load_xml_wrong_field_element(self):
+        with self.assertRaisesMessage(ValidationError,
+                                      '\'<xmlUser><name><familyName>\': "Unknown element \'familyName\'."'):
+            XMLUser.load_xml(parse_xml(XML_USER_DATA.replace('lastName', 'familyName')))
+
+    def test_export_xml_without_root_element_name(self):
+        self.assertRaisesMessage(TypeError, 'must define ROOT_ELEMENT', MyXMLModel().export_xml)
+
+    def test_export_xml_ok(self):
+        self.maxDiff = None
+        user = XMLUser(name=XMLName(first_name='John', last_name='Doe'),
+                       superuser=True, department=Department.TECH_DEP)
+        self.assertEqual(dump_xml(user.export_xml()).decode('utf8'), XML_USER_DATA)
+
+
+class TestNameConversion(SimpleTestCase):
+    def test_convert_tag_name_to_field_name(self):
+        self.assertEqual(convert_tag_name_to_field_name('nameIdFormat'), 'name_id_format')
+
+    def test_convert_field_name_to_tag_name(self):
+        self.assertEqual(convert_field_name_to_tag_name('name_id_format'), 'nameIdFormat')

@@ -13,11 +13,16 @@ The declaration of a data model is as simple as:
         def validate(self) -> None:
             ...
 """
+import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Any, Dict, Iterator, List, Tuple, Type
+from enum import Enum
+from typing import Any, Dict, Iterator, List, Tuple, Type, TypeVar, Union
+
+from lxml.etree import Element, ElementTree, SubElement
 
 from eidas_node.errors import ValidationError
+from eidas_node.utils import get_element_path
 
 
 class DataModel(ABC):
@@ -102,3 +107,96 @@ class DataModel(ABC):
         if not isinstance(other, DataModel):
             return NotImplemented
         return type(self) is type(other) and self.get_data_as_tuple() == other.get_data_as_tuple()
+
+
+T = TypeVar('T', bound='XMLDataModel')
+
+
+class XMLDataModel(DataModel, ABC):
+    """Data model with XML serialization and deserialization."""
+
+    ROOT_ELEMENT = None  # type: str
+    """The name of the root element."""
+
+    def export_xml(self) -> Element:
+        """
+        Export LightRequest as a XML document.
+
+        :return: A XML document.
+        :raise ValidationError: If the model validation fails.
+        """
+        self.validate()
+        if not self.ROOT_ELEMENT:
+            raise TypeError('XMLDataModel subclasses must define ROOT_ELEMENT class attribute.')
+        root = Element(self.ROOT_ELEMENT)
+        self.serialize_fields(root)
+        return root
+
+    def serialize_fields(self, parent_element: Element) -> None:
+        """Serialize model fields."""
+        for field_name in self.FIELDS:
+            value = getattr(self, field_name)
+            tag = convert_field_name_to_tag_name(field_name)
+            serialize_func = getattr(self, 'serialize_' + field_name, None)
+            if serialize_func:
+                serialize_func(parent_element, tag, value)
+            elif value is not None:
+                if isinstance(value, XMLDataModel):
+                    value.serialize_fields(SubElement(parent_element, tag))
+                else:
+                    if isinstance(value, Enum):
+                        value = value.value
+                    elif isinstance(value, bool):
+                        value = str(value).lower()
+                    else:
+                        value = str(value)
+                    SubElement(parent_element, tag).text = value
+
+    @classmethod
+    def load_xml(cls: Type[T], root: Union[Element, ElementTree]) -> T:
+        """
+        Load Light Request from a XML document.
+
+        :param root: The XML document to load.
+        :raise ValidationError: If the XML document does not have a valid schema.
+        :raise TypeError: If ROOT_ELEMENT class attribute is not defined.
+        """
+        if not cls.ROOT_ELEMENT:
+            raise TypeError('XMLDataModel subclasses must define ROOT_ELEMENT class attribute.')
+
+        if hasattr(root, 'getroot'):
+            root = root.getroot()
+
+        if root.tag != cls.ROOT_ELEMENT:
+            raise ValidationError({get_element_path(root): 'Invalid root element {!r}.'.format(root.tag)})
+
+        model = cls()
+        for elm in root:
+            field_name = convert_tag_name_to_field_name(elm.tag)
+            if field_name not in cls.FIELDS:
+                raise ValidationError({get_element_path(elm): 'Unknown element {!r}.'.format(elm.tag)})
+
+            deserialize_func = getattr(model, 'deserialize_' + field_name, None)
+            setattr(model, field_name, deserialize_func(elm) if deserialize_func else elm.text)
+        return model
+
+
+def convert_tag_name_to_field_name(tag_name: str) -> str:
+    """
+    Convert a XML tag name to a field name.
+
+    :param tag_name: A tag name ('nameIdFormat').
+    :return: A field name ('name_id_format').
+    """
+    return re.sub('([A-Z]+)', r'_\1', tag_name).lower()
+
+
+def convert_field_name_to_tag_name(field_name: str) -> str:
+    """
+    Convert a field name to a XML tag name.
+
+    :param field_name: A field name ('name_id_format').
+    :return: A XML tag name ('nameIdFormat').
+    """
+    tag_name = field_name.title().replace('_', '')
+    return tag_name[0].lower() + tag_name[1:]
