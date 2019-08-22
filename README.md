@@ -1,7 +1,7 @@
-eIDAS Proxy Service for Django
-==============================
+eIDAS Specific Node
+===================
 
-An implementation of eIDAS-Node 2.3.x Specific Proxy Service.
+An implementation of **eIDAS-Node 2.3.x** Specific **Connector** and **Proxy Service** for Django.
 
 Requirements
 ------------
