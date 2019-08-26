@@ -1,14 +1,13 @@
 """Django settings for unitests."""
+from typing import List
 
 SECRET_KEY = 'SECRET'
 
-INSTALLED_APPS = [
-    'eidas_proxy_service.apps.EidasProxyServiceConfig',
-]
+INSTALLED_APPS = []  # type: List[str]
 MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
 ]
-ROOT_URLCONF = 'eidas_proxy_service.urls'
+ROOT_URLCONF = 'eidas_node.tests.urls'
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
