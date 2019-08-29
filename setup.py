@@ -16,4 +16,5 @@ setup(name='eidas_node',
       packages=find_packages(),
       install_requires=open('requirements.txt').read().splitlines(),
       extras_require={'ignite': 'pyignite',
-                      'quality': ['isort', 'flake8', 'pydocstyle', 'mypy']})
+                      'quality': ['isort', 'flake8', 'pydocstyle', 'mypy'],
+                      'tests': ['freezegun']})

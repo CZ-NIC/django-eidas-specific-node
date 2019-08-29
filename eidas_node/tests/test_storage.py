@@ -1,4 +1,4 @@
-from typing import BinaryIO, TextIO, cast
+from typing import BinaryIO, Callable, TextIO, cast
 from unittest.mock import MagicMock, call, patch
 
 from django.test import SimpleTestCase
@@ -9,19 +9,29 @@ from eidas_node.tests.test_models import DATA_DIR
 from eidas_node.utils import parse_xml
 
 
-class TestIgniteStorage(SimpleTestCase):
+class IgniteMockMixin:
+    cache_mock = None  # type:  MagicMock
+    client_mock = None  # type:  MagicMock
+    client_class_mock = None  # type:  MagicMock
+
+    def mock_ignite_cache(self) -> Callable[[], None]:
+        """Mock Apache Ignite cache and return a callback to stop the patcher."""
+        self.cache_mock = MagicMock(spec_set=['get', 'put'])
+        self.client_mock = MagicMock(spec_set=['connect', 'get_cache'])
+        self.client_mock.get_cache.return_value = self.cache_mock
+        client_class_patcher = patch('eidas_node.storage.ignite.Client', return_value=self.client_mock)
+        self.client_class_mock = client_class_patcher.start()
+        return client_class_patcher.stop
+
+
+class TestIgniteStorage(IgniteMockMixin, SimpleTestCase):
     HOST = 'localhost.example.net'
     PORT = 12345
     REQUEST_CACHE_NAME = 'RequestCacheTest'
     RESPONSE_CACHE_NAME = 'ResponseCacheTest'
 
     def setUp(self):
-        self.cache_mock = MagicMock(spec_set=['get', 'put'])
-        self.client_mock = MagicMock(spec_set=['connect', 'get_cache'])
-        self.client_mock.get_cache.return_value = self.cache_mock
-        client_class_patcher = patch('eidas_node.storage.ignite.Client', return_value=self.client_mock)
-        self.client_class_mock = client_class_patcher.start()
-        self.addCleanup(client_class_patcher.stop)
+        self.addCleanup(self.mock_ignite_cache())
         self.storage = IgniteStorage(self.HOST, self.PORT, self.REQUEST_CACHE_NAME, self.RESPONSE_CACHE_NAME, 33)
 
     def test_get_cache_single_client_created(self):

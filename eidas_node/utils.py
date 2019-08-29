@@ -1,7 +1,8 @@
 """Various utility functions."""
 from datetime import datetime
+from importlib import import_module
 from io import BytesIO
-from typing import BinaryIO, List, Union
+from typing import Any, BinaryIO, List, Union
 
 from lxml import etree
 
@@ -53,3 +54,24 @@ def get_element_path(elm: etree.Element) -> str:
         elm = elm.getparent()
     path.reverse()
     return ''.join(path)
+
+
+def import_from_module(name: str) -> Any:
+    """
+    Import a module member specified by a fully qualified name.
+
+    :param name: A fully qualified name (`package.module.ClassName`).
+    :return: The requested module member.
+    :raise ImportError: If the requested member cannot be imported.
+    :raise ValueError: If the `name` is not a fully qualified name.
+    """
+    try:
+        module_name, class_name = name.rsplit('.', 1)
+    except ValueError:
+        raise ValueError('Invalid fully qualified name: {!r}.'.format(name)) from None
+
+    module = import_module(module_name)
+    try:
+        return getattr(module, class_name)
+    except AttributeError:
+        raise ImportError('{} not found in {}.'.format(class_name, module_name)) from None
