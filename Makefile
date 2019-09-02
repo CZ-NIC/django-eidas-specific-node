@@ -5,7 +5,7 @@ APP = eidas_node
 TESTS ?=
 
 test:
-	tox --parallel all $(if "$(TESTS)",-- $(TESTS),)
+	tox --parallel all $(if $(TESTS),-- $(TESTS),)
 
 isort:
 	isort --recursive $(APP)

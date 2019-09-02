@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<lightResponse>
+  <id>test-light-response-id</id>
+  <inResponseToId>test-light-request-id</inResponseToId>
+  <issuer>test-light-response-issuer</issuer>
+  <ipAddress>127.0.0.1</ipAddress>
+  <relayState>relay123</relayState>
+  <subject>CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</subject>
+  <subjectNameIdFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</subjectNameIdFormat>
+  <levelOfAssurance>http://eidas.europa.eu/LoA/low</levelOfAssurance>
+  <status>
+    <failure>false</failure>
+    <statusCode>urn:oasis:names:tc:SAML:2.0:status:Success</statusCode>
+  </status>
+  <attributes>
+    <attribute>
+      <definition>http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName</definition>
+      <value>ČERNÝCH</value>
+    </attribute>
+    <attribute>
+      <definition>http://eidas.europa.eu/attributes/naturalperson/CurrentGivenName</definition>
+      <value>PAVEL</value>
+    </attribute>
+    <attribute>
+      <definition>http://eidas.europa.eu/attributes/naturalperson/DateOfBirth</definition>
+      <value>1956-07-15</value>
+    </attribute>
+    <attribute>
+      <definition>http://eidas.europa.eu/attributes/naturalperson/PlaceOfBirth</definition>
+      <value>Praha 2</value>
+    </attribute>
+    <attribute>
+      <definition>http://eidas.europa.eu/attributes/naturalperson/CurrentAddress</definition>
+      <value>PGVpZGFzOkxvY2F0b3JEZXNpZ25hdG9yPjEwPC9laWRhczpMb2NhdG9yRGVzaWduYXRvcj4NCjxlaWRhczpUaG9yb3VnaGZhcmU+WmEgcGlsb3U8L2VpZGFzOlRob3JvdWdoZmFyZT4NCjxlaWRhczpQb3N0TmFtZT7EjGVza8OhIEthbWVuaWNlPC9laWRhczpQb3N0TmFtZT4NCjxlaWRhczpQb3N0Q29kZT40MDcyMTwvZWlkYXM6UG9zdENvZGU+DQo8ZWlkYXM6Q3ZhZGRyZXNzQXJlYT7EjGVza8OhIEthbWVuaWNlLCBEb2xuw60gS2FtZW5pY2U8L2VpZGFzOkN2YWRkcmVzc0FyZWE+DQo=</value>
+    </attribute>
+    <attribute>
+      <definition>http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier</definition>
+      <value>CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</value>
+    </attribute>
+  </attributes>
+</lightResponse>
