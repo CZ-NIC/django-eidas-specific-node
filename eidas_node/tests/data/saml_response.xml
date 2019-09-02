@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="test-saml-response-id" Version="2.0" IssueInstant="2019-08-21T13:41:42Z" Destination="http://testserver/IdentityProviderResponse" InResponseTo="test-saml-request-id">
+  <saml:Issuer>test-saml-response-issuer</saml:Issuer>
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      <SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+      <Reference URI="#_751e557772344aa59e9e3f35d2c9f6d6">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+          <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+        <DigestValue>m9/XhUkp0pfCafv2A2TD78jWnmGj3Mjt3sgexkN93Uc=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>PvIO+GEMgYUL0fxq/wDqvjmidyqf8yFdPXeMvnKw4s+DrG7z/Sg6CR1zT9L3z8BA4/r3p8wuEmxYKspZJM4TweurkHvpR1OjNIlT3RihXmxjMSyyce2HaM+nhrgaTpTZaE0aMeSfTym2KqvI7Bq1CnwAKlDEiiJ3wVadM4KJ9sThj+l85ICT71jUvwUFeLMhKKxOivjRRKguGqdZ8N2ky2fPhh8REjOXRgofH11OcWZ2oNy3/T4qMprLjWmVFuHBOOqLVaeIRlgaowNRlVYl+8yGVMzZPZJX4geKS9vX7/vo7Wxh8LfkaFL2PPFE4uMhARyTqim6odwo/yYVxewivg==</SignatureValue>
+    <KeyInfo>
+      <X509Data>
+        <X509Certificate>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</X509Certificate>
+      </X509Data>
+    </KeyInfo>
+  </Signature>
+  <samlp:Status>
+    <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+  </samlp:Status>
+  <Assertion xmlns="urn:oasis:names:tc:SAML:2.0:assertion" ID="_f3bd5627-cd7d-44d1-9cf0-d4e66fb5c5c8" IssueInstant="2019-08-21T13:41:42.551Z" Version="2.0">
+    <Issuer>urn:microsoft:cgg2010:fpsts</Issuer>
+    <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <SignedInfo>
+        <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        <SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+        <Reference URI="#_f3bd5627-cd7d-44d1-9cf0-d4e66fb5c5c8">
+          <Transforms>
+            <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+            <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+          </Transforms>
+          <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+          <DigestValue>Xxd6unU8afm257YV7/ecX68OtNVjomIcYFWOcayIqZQ=</DigestValue>
+        </Reference>
+      </SignedInfo>
+      <SignatureValue>XihBvSfh6p+uFhlCgRxvxU8E+hCJvQj5ZNI31pKRpPRFc7mu7tzA3V8+tA6S7LwejMeExZbux9aouxJPO/oOsr3JHhJnc6SVM1A+/PbAQPEKzr1er/07eDT0WPEdta9AD2KB/H5EDin2by443IY/23QvYX+IL6KcsTH4j+LDzP0LjwnEg7MxZMzo5hrVqtiwP9oV/V14856NWL3BtF+ozo/w6THsjoCntPhuCFVCVcqaBrFb+8EQQuYOSVhTmSHESW0t+gcMrRE9M9MO5a23Wy1trbwzXY/CDbni4vu1GijtT3CmfTzfnPf8tlDRRxx+u1OW0yzwbC30x7HWWlm0hw==</SignatureValue>
+      <KeyInfo>
+        <X509Data>
+          <X509Certificate>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</X509Certificate>
+        </X509Data>
+      </KeyInfo>
+    </Signature>
+    <Subject>
+      <NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</NameID>
+      <SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+        <SubjectConfirmationData InResponseTo="e399fb9b-9454-4284-831f-4aa33d83757e" NotOnOrAfter="2019-08-21T14:41:42.551Z" Recipient="http://eidasproxyservice.jjanousek.dev.office.nic.cz/IdentityProviderResponse"/>
+      </SubjectConfirmation>
+    </Subject>
+    <Conditions NotBefore="2019-08-21T13:41:42.551Z" NotOnOrAfter="2019-08-21T14:41:42.551Z">
+      <AudienceRestriction>
+        <Audience>http://eidasproxyservice.jjanousek.dev.office.nic.cz/saml/idp.xml</Audience>
+      </AudienceRestriction>
+    </Conditions>
+    <AttributeStatement>
+      <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="CurrentFamilyName" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+        <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:CurrentFamilyNameType">ČERNÝCH</AttributeValue>
+      </Attribute>
+      <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/CurrentGivenName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="CurrentGivenName" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+        <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:CurrentGivenNameType">PAVEL</AttributeValue>
+      </Attribute>
+      <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/DateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="DateOfBirth" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+        <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:DateOfBirthType">1956-07-15</AttributeValue>
+      </Attribute>
+      <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/PlaceOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="PlaceOfBirth" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+        <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:PlaceOfBirthType">Praha 2</AttributeValue>
+      </Attribute>
+      <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/CurrentAddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="CurrentAddress" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+        <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:CurrentAddressType">PGVpZGFzOkxvY2F0b3JEZXNpZ25hdG9yPjEwPC9laWRhczpMb2NhdG9yRGVzaWduYXRvcj4NCjxlaWRhczpUaG9yb3VnaGZhcmU+WmEgcGlsb3U8L2VpZGFzOlRob3JvdWdoZmFyZT4NCjxlaWRhczpQb3N0TmFtZT7EjGVza8OhIEthbWVuaWNlPC9laWRhczpQb3N0TmFtZT4NCjxlaWRhczpQb3N0Q29kZT40MDcyMTwvZWlkYXM6UG9zdENvZGU+DQo8ZWlkYXM6Q3ZhZGRyZXNzQXJlYT7EjGVza8OhIEthbWVuaWNlLCBEb2xuw60gS2FtZW5pY2U8L2VpZGFzOkN2YWRkcmVzc0FyZWE+DQo=</AttributeValue>
+      </Attribute>
+      <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="PersonIdentifier" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+        <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:PersonIdentifierType">CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</AttributeValue>
+      </Attribute>
+    </AttributeStatement>
+    <AuthnStatement AuthnInstant="2019-08-21T13:41:42.551Z" SessionIndex="_2a9535521ddf44189dc80e88e3c8e840">
+      <SubjectLocality Address="127.0.0.1"/>
+      <AuthnContext>
+        <AuthnContextClassRef>http://eidas.europa.eu/LoA/low</AuthnContextClassRef>
+      </AuthnContext>
+    </AuthnStatement>
+  </Assertion>
+</samlp:Response>
