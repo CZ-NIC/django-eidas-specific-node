@@ -6,7 +6,7 @@ from lxml.etree import Element, SubElement
 
 from eidas_node.saml import NAMESPACES, Q_NAMES
 from eidas_node.utils import (create_eidas_timestamp, datetime_iso_format_milliseconds, get_element_path,
-                              parse_eidas_timestamp, parse_xml)
+                              import_from_module, parse_eidas_timestamp, parse_xml)
 
 
 class TestTimestampUtils(SimpleTestCase):
@@ -56,3 +56,18 @@ class TestXML(SimpleTestCase):
         leaf = SubElement(SubElement(root, Q_NAMES['saml2:EncryptedAssertion']), 'wrong')
         self.assertEqual(get_element_path(root), '<saml2p:Response>')
         self.assertEqual(get_element_path(leaf), '<saml2p:Response><saml2:EncryptedAssertion><wrong>')
+
+
+class TestImport(SimpleTestCase):
+    def test_import_from_module(self):
+        result = import_from_module('http.server.HTTPServer')
+        from http.server import HTTPServer
+        self.assertIs(result, HTTPServer)
+
+    def test_import_from_module_invalid_name(self):
+        with self.assertRaisesMessage(ValueError, "Invalid fully qualified name: 'OnlyClassName'."):
+            import_from_module('OnlyClassName')
+
+    def test_import_from_module_member_not_found(self):
+        with self.assertRaisesMessage(ImportError, 'ThisClassDoesNotExist not found in http.server.'):
+            import_from_module('http.server.ThisClassDoesNotExist')

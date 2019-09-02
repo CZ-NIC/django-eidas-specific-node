@@ -84,7 +84,7 @@ LIGHT_RESPONSE_DICT = OrderedDict(
                'Vza8OhIEthbWVuaWNlLCBEb2xuw60gS2FtZW5pY2U8L2VpZGFzOkN2YWRkcmVzc0FyZWE+DQo=']),
              ('http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier',
               ['CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9'])]))
-         ])
+         ])  # type: Dict[str, Any]
 
 FAILED_LIGHT_RESPONSE_DICT = OrderedDict(
         [('id', 'test-light-response-id'),
