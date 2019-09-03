@@ -8,7 +8,7 @@ from lxml import etree
 from lxml.etree import Element, ElementTree, QName, SubElement
 
 from eidas_node.attributes import ATTRIBUTE_MAP, EIDAS_ATTRIBUTE_NAME_FORMAT
-from eidas_node.constants import StatusCode, SubStatusCode
+from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
 from eidas_node.utils import datetime_iso_format_milliseconds, dump_xml, get_element_path, is_xml_id_valid
@@ -117,6 +117,54 @@ class SAMLRequest:
                    Q_NAMES['saml2:AuthnContextClassRef']).text = light_request.level_of_assurance.value
         # 8: AuthnRequestType <saml2p:Scoping> skipped
         return cls(ElementTree(root), light_request.citizen_country_code, light_request.relay_state)
+
+    def create_light_request(self) -> LightRequest:
+        """
+        Convert SAML Request to Light Request.
+
+        :return: A Light Request.
+        :raise ValidationError: If the SAML Request cannot be parsed correctly.
+        """
+        request = LightRequest(requested_attributes=OrderedDict(),
+                               citizen_country_code=self.citizen_country_code,
+                               relay_state=self.relay_state)
+        root = self.document.getroot()
+        if root.tag != Q_NAMES['saml2p:AuthnRequest']:
+            raise ValidationError({get_element_path(root): 'Wrong root element: {!r}'.format(root.tag)})
+
+        request.id = root.attrib.get('ID')
+        request.provider_name = root.attrib.get('ProviderName')
+
+        for elm in root:
+            if elm.tag == Q_NAMES['saml2:Issuer']:
+                request.issuer = elm.text
+            elif elm.tag == Q_NAMES['saml2p:Extensions']:
+                for elm2 in elm.iter(tag=etree.Element):
+                    if elm2.tag == Q_NAMES['eidas:SPType']:
+                        request.sp_type = ServiceProviderType(elm2.text)
+                    elif elm2.tag == Q_NAMES['eidas:SPCountry']:
+                        request.origin_country_code = elm2.text
+                    elif elm2.tag == Q_NAMES['eidas:RequestedAttributes']:
+                        attributes = request.requested_attributes
+                        for elm3 in elm2:
+                            if elm3.tag == Q_NAMES['eidas:RequestedAttribute']:
+                                name = elm3.attrib.get('Name')
+                                if not name:
+                                    raise ValidationError({
+                                        get_element_path(elm3): "Missing attribute 'Name'"})
+                                values = attributes[name] = []
+                                for value in elm3:
+                                    if value.tag != Q_NAMES['eidas:AttributeValue']:
+                                        raise ValidationError({
+                                            get_element_path(value): 'Unexpected element: {!r}'.format(value.tag)})
+                                    values.append(value.text)
+            elif elm.tag == Q_NAMES['saml2p:NameIDPolicy']:
+                request.name_id_format = NameIdFormat(elm.attrib.get('Format'))
+            elif elm.tag == Q_NAMES['saml2p:RequestedAuthnContext']:
+                for elm2 in elm.iter(tag=etree.Element):
+                    if elm2.tag == Q_NAMES['saml2:AuthnContextClassRef']:
+                        request.level_of_assurance = LevelOfAssurance(elm2.text)
+        return request
 
     def __str__(self) -> str:
         return 'citizen_country_code = {!r}, relay_state = {!r}, document = {}'.format(

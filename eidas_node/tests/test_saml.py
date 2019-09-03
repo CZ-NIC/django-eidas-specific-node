@@ -26,6 +26,9 @@ LIGHT_RESPONSE_DICT.update(OVERRIDES)
 LIGHT_RESPONSE_DICT['level_of_assurance'] = LevelOfAssurance.LOW
 FAILED_LIGHT_RESPONSE_DICT.update(OVERRIDES)
 
+LIGHT_REQUEST_DICT = LIGHT_REQUEST_DICT.copy()
+LIGHT_REQUEST_DICT.update({'id': 'test-saml-request-id', 'issuer':  'test-saml-request-issuer'})
+
 
 class ValidationErrorMixin:
     def assert_validation_error(self, path: str, message: str, *args, **kwargs) -> ContextManager[None]:
@@ -75,13 +78,8 @@ class TestDecrypt(SimpleTestCase):
 class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
     def test_from_light_request(self):
         self.maxDiff = None
-
-        request = LightRequest(**LIGHT_REQUEST_DICT)
-        request.id = 'test-saml-request-id'
-        request.issuer = 'test-saml-request-issuer'
-
         saml_request = SAMLRequest.from_light_request(
-            request, 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
+            LightRequest(**LIGHT_REQUEST_DICT), 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
 
         with cast(TextIO, (DATA_DIR / 'saml_request.xml').open('r')) as f2:
             data = f2.read()
@@ -114,6 +112,60 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
 
         with self.assert_validation_error('id', "Light request id is not a valid XML id: '0day'"):
             SAMLRequest.from_light_request(request, 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+    def test_create_light_request_success(self):
+        self.maxDiff = None
+        with cast(TextIO, (DATA_DIR / 'saml_request.xml').open('r')) as f:
+            data = f.read()
+
+        saml_request = SAMLRequest(parse_xml(data), 'CA', 'relay123')
+        self.assertDictEqual(
+            saml_request.create_light_request().get_data_as_dict(), LIGHT_REQUEST_DICT)
+
+    def test_create_light_request_extra_elements(self):
+        self.maxDiff = None
+        with cast(TextIO, (DATA_DIR / 'saml_request.xml').open('r')) as f:
+            document = parse_xml(f.read())
+
+        SubElement(document.getroot(), 'extra').text = 'extra'
+        SubElement(document.find(".//{}".format(Q_NAMES['eidas:RequestedAttributes'])), 'extra').text = 'extra'
+
+        saml_request = SAMLRequest(document, 'CA', 'relay123')
+        self.assertDictEqual(
+            saml_request.create_light_request().get_data_as_dict(), LIGHT_REQUEST_DICT)
+
+    def test_create_light_request_invalid_root_element(self):
+        root = Element('wrongRoot')
+        saml_request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assert_validation_error(
+            '<wrongRoot>', "Wrong root element: 'wrongRoot'",
+            saml_request.create_light_request)
+
+    def test_create_light_request_missing_attribute_name(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], nsmap=NAMESPACES)
+        extensions = SubElement(root, Q_NAMES['saml2p:Extensions'])
+        attributes = SubElement(extensions, Q_NAMES['eidas:RequestedAttributes'])
+        SubElement(attributes, Q_NAMES['eidas:RequestedAttribute'])
+
+        saml_request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assert_validation_error(
+            '<saml2p:AuthnRequest><saml2p:Extensions><eidas:RequestedAttributes><eidas:RequestedAttribute>',
+            "Missing attribute 'Name'",
+            saml_request.create_light_request)
+
+    def test_create_light_request_attribute_value_unexpected_element(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], nsmap=NAMESPACES)
+        extensions = SubElement(root, Q_NAMES['saml2p:Extensions'])
+        attributes = SubElement(extensions, Q_NAMES['eidas:RequestedAttributes'])
+        attribute = SubElement(attributes, Q_NAMES['eidas:RequestedAttribute'], {'Name': "attribute-name"})
+        SubElement(attribute, 'wrongElement').text = 'value'
+
+        saml_request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assert_validation_error(
+            '<saml2p:AuthnRequest><saml2p:Extensions><eidas:RequestedAttributes>'
+            '<eidas:RequestedAttribute><wrongElement>',
+            "Unexpected element: 'wrongElement'",
+            saml_request.create_light_request)
 
     def test_str(self):
         self.assertEqual(
