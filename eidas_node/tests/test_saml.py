@@ -233,6 +233,12 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         expected.status.sub_status_code = None
         self.assertEqual(response.create_light_response(), expected)
 
+    def test_str(self):
+        self.assertEqual(
+            str(SAMLResponse(ElementTree(Element('root')), 'relay')),
+            "relay_state = 'relay', document = <?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
+        self.assertEqual(str(SAMLResponse(None, None)), 'relay_state = None, document = None')
+
 
 class TestCreateEidasAttribute(SimpleTestCase):
     def test_create_eidas_attribute_known_attribute(self):
@@ -260,9 +266,3 @@ class TestCreateEidasAttribute(SimpleTestCase):
             'isRequired': 'true',
         })
         self.assertXMLEqual(dump_xml(root).decode('utf-8'), dump_xml(expected).decode('utf-8'))
-
-    def test_str(self):
-        self.assertEqual(
-            str(SAMLResponse(ElementTree(Element('root')), 'relay')),
-            "relay_state = 'relay', document = <?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
-        self.assertEqual(str(SAMLRequest(None, None)), 'relay_state = None, document = None')
