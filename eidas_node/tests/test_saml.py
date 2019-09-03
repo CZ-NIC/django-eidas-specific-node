@@ -86,6 +86,8 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         with cast(TextIO, (DATA_DIR / 'saml_request.xml').open('r')) as f2:
             data = f2.read()
         self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), data)
+        self.assertEqual(saml_request.relay_state, 'relay123')
+        self.assertEqual(saml_request.citizen_country_code, 'CA')
 
     def test_from_light_request_minimal(self):
         self.maxDiff = None
@@ -100,6 +102,8 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         with cast(TextIO, (DATA_DIR / 'saml_request_minimal.xml').open('r')) as f2:
             data = f2.read()
         self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), data)
+        self.assertEqual(saml_request.relay_state, None)
+        self.assertEqual(saml_request.citizen_country_code, 'CA')
 
     def test_from_light_request_invalid_id(self):
         self.maxDiff = None
@@ -113,9 +117,11 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
 
     def test_str(self):
         self.assertEqual(
-            str(SAMLRequest(ElementTree(Element('root')), 'relay')),
-            "relay_state = 'relay', document = <?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
-        self.assertEqual(str(SAMLRequest(None, None)), 'relay_state = None, document = None')
+            str(SAMLRequest(ElementTree(Element('root')), 'CZ', 'relay')),
+            "citizen_country_code = 'CZ', relay_state = 'relay', document = "
+            "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
+        self.assertEqual(str(SAMLRequest(None, None, None)),
+                         'citizen_country_code = None, relay_state = None, document = None')
 
 
 class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):

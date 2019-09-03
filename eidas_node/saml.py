@@ -46,11 +46,16 @@ class SAMLRequest:
 
     document = None  # type: ElementTree
     """SAML document as an element tree."""
+    citizen_country_code = None  # type: Optional[str]
+    """Country code of the requesting citizen."""
     relay_state = None  # type: Optional[str]
     """Relay state associated with the request."""
 
-    def __init__(self, document: ElementTree, relay_state: Optional[str] = None):
+    def __init__(self, document: ElementTree,
+                 citizen_country_code: Optional[str] = None,
+                 relay_state: Optional[str] = None):
         self.document = document
+        self.citizen_country_code = citizen_country_code
         self.relay_state = relay_state
 
     @classmethod
@@ -111,11 +116,13 @@ class SAMLRequest:
         SubElement(SubElement(root, Q_NAMES['saml2p:RequestedAuthnContext'], {'Comparison': 'minimum'}),
                    Q_NAMES['saml2:AuthnContextClassRef']).text = light_request.level_of_assurance.value
         # 8: AuthnRequestType <saml2p:Scoping> skipped
-        return cls(ElementTree(root), light_request.relay_state)
+        return cls(ElementTree(root), light_request.citizen_country_code, light_request.relay_state)
 
     def __str__(self) -> str:
-        return 'relay_state = {!r}, document = {}'.format(
-            self.relay_state, dump_xml(self.document).decode('utf-8') if self.document else 'None')
+        return 'citizen_country_code = {!r}, relay_state = {!r}, document = {}'.format(
+            self.citizen_country_code,
+            self.relay_state,
+            dump_xml(self.document).decode('utf-8') if self.document else 'None')
 
 
 class SAMLResponse:
