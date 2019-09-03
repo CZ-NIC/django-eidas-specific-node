@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<saml2p:Response xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:eidas="http://eidas.europa.eu/saml-extensions" xmlns:xmlenc="http://www.w3.org/2001/04/xmlenc#" ID="test-saml-response-id" Version="2.0" IssueInstant="2017-12-11T14:12:05.148Z" InResponseTo="Ttest-saml-request-id">
+  <saml2:Issuer>test-saml-response-issuer</saml2:Issuer>
+  <saml2p:Status>
+    <saml2p:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+  </saml2p:Status>
+  <saml2:Assertion ID="_test-saml-response-id" IssueInstant="2017-12-11T14:12:05.148Z" Version="2.0">
+    <saml2:Issuer>test-saml-response-issuer</saml2:Issuer>
+    <saml2:Subject>
+      <saml2:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</saml2:NameID>
+    </saml2:Subject>
+    <saml2:AttributeStatement/>
+    <saml2:AuthnStatement AuthnInstant="2017-12-11T14:12:05.148Z">
+      <saml2:AuthnContext>
+        <saml2:AuthnContextClassRef>http://eidas.europa.eu/LoA/low</saml2:AuthnContextClassRef>
+      </saml2:AuthnContext>
+    </saml2:AuthnStatement>
+  </saml2:Assertion>
+</saml2p:Response>

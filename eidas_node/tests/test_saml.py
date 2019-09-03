@@ -9,7 +9,7 @@ from lxml.etree import Element, ElementTree, SubElement
 from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LightRequest, LightResponse, Status
-from eidas_node.saml import NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_eidas_attribute, decrypt_xml
+from eidas_node.saml import NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_attribute_elm_attributes, decrypt_xml
 from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.utils import dump_xml, parse_xml
 
@@ -183,6 +183,48 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         data.update(**kwargs)
         return LightResponse(**data)
 
+    def test_from_light_response(self):
+        self.maxDiff = None
+        saml_response = SAMLResponse.from_light_response(
+            self.create_light_response(True), 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
+    def test_from_light_response_minimal(self):
+        self.maxDiff = None
+        status = Status(failure=False)
+        response = self.create_light_response(True, ip_address=None, status=status, attributes={})
+        saml_response = SAMLResponse.from_light_response(
+            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_minimal.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
+    def test_from_light_response_failed(self):
+        self.maxDiff = None
+        status = Status(failure=True, sub_status_code=SubStatusCode.AUTHN_FAILED, status_message='Oops.')
+        response = self.create_light_response(False, issuer=None, ip_address=None, status=status)
+        saml_response = SAMLResponse.from_light_response(
+            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_failed.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
+    def test_from_light_response_version_mismatch(self):
+        self.maxDiff = None
+        status = Status(failure=True, sub_status_code=SubStatusCode.VERSION_MISMATCH, status_message='Oops.')
+        response = self.create_light_response(False, issuer=None, ip_address=None, status=status)
+        saml_response = SAMLResponse.from_light_response(
+            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_version_mismatch.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
     def test_create_light_response_not_encrypted(self):
         self.maxDiff = None
         with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
@@ -298,29 +340,37 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         self.assertEqual(str(SAMLResponse(None, None)), 'relay_state = None, document = None')
 
 
-class TestCreateEidasAttribute(SimpleTestCase):
-    def test_create_eidas_attribute_known_attribute(self):
-        root = Element('whatever')
-        elm = create_eidas_attribute(root, 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName', True)
-        self.assertIs(elm, root[0])
-        expected = Element('whatever')
-        SubElement(expected, Q_NAMES['eidas:RequestedAttribute'], {
+class TestCreateAttributeElmAttributes(SimpleTestCase):
+    def test_create_attribute_elm_attributes_known_attribute(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
+        self.assertEquals(create_attribute_elm_attributes(name, None), {
+            'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
+            'FriendlyName': 'FamilyName',
+            'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
+        })
+
+    def test_create_attribute_elm_attributes_unknown_attribute(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName'
+        self.assertEquals(create_attribute_elm_attributes(name, None), {
+            'Name': 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName',
+            'FriendlyName': 'ConcurrentFamilyName',
+            'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
+        })
+
+    def test_create_attribute_elm_attributes_required(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
+        self.assertEquals(create_attribute_elm_attributes(name, True), {
             'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
             'FriendlyName': 'FamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
             'isRequired': 'true',
         })
-        self.assertXMLEqual(dump_xml(root).decode('utf-8'), dump_xml(expected).decode('utf-8'))
 
-    def test_create_eidas_attribute_unknown_attribute(self):
-        root = Element('whatever')
-        elm = create_eidas_attribute(root, 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName', True)
-        self.assertIs(elm, root[0])
-        expected = Element('whatever')
-        SubElement(expected, Q_NAMES['eidas:RequestedAttribute'], {
-            'Name': 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName',
-            'FriendlyName': 'ConcurrentFamilyName',
+    def test_create_attribute_elm_attributes_optional(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
+        self.assertEquals(create_attribute_elm_attributes(name, False), {
+            'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
+            'FriendlyName': 'FamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
-            'isRequired': 'true',
+            'isRequired': 'false',
         })
-        self.assertXMLEqual(dump_xml(root).decode('utf-8'), dump_xml(expected).decode('utf-8'))
