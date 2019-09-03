@@ -15,4 +15,4 @@ quality:
 
 clean:
 	find . -name __pycache__ -type d -exec rm -r {} +
-	rm -rf build .coverage* dist .mypy_cache .tox *.eggs *.egg-info
+	rm -rf build .coverage* dist htmlcov .mypy_cache .tox *.eggs *.egg-info
