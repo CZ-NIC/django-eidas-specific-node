@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  specific_proxy_service:
+    image: specific_proxy_service:latest
+    ports:
+      - "8000:8000"
+    configs:
+      - source: specific_proxy_service_settings
+        target: /opt/app/specific_proxy_service_cfg.py
+        mode: 0440
+
+configs:
+    specific_proxy_service_settings:
+        file: ./specific_proxy_service_cfg.py
