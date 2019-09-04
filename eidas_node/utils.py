@@ -1,10 +1,14 @@
 """Various utility functions."""
+import re
 from datetime import datetime
 from importlib import import_module
 from io import BytesIO
 from typing import Any, BinaryIO, List, Union
+from uuid import uuid4
 
 from lxml import etree
+
+VALID_XML_ID_RE = re.compile('^[_a-zA-Z][-._a-zA-Z0-9]*$')
 
 
 def parse_eidas_timestamp(timestamp: str) -> datetime:
@@ -75,3 +79,20 @@ def import_from_module(name: str) -> Any:
         return getattr(module, class_name)
     except AttributeError:
         raise ImportError('{} not found in {}.'.format(class_name, module_name)) from None
+
+
+def is_xml_id_valid(xml_id: str) -> bool:
+    """Check whether the provided id is a valid XML id."""
+    return VALID_XML_ID_RE.match(xml_id) is not None
+
+
+def create_xml_uuid(prefix: str = '_') -> str:
+    """
+    Create a UUID which is also a valid XML id.
+
+    :param prefix: UUID prefix. It must start with a letter or underscore.
+    :return: A prefixed UUID.
+    """
+    if not is_xml_id_valid(prefix):
+        raise ValueError('Invalid prefix: {!r}'.format(prefix))
+    return prefix + str(uuid4())

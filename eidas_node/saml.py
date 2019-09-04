@@ -11,7 +11,7 @@ from eidas_node.attributes import ATTRIBUTE_MAP, EIDAS_ATTRIBUTE_NAME_FORMAT
 from eidas_node.constants import StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
-from eidas_node.utils import datetime_iso_format_milliseconds, dump_xml, get_element_path
+from eidas_node.utils import datetime_iso_format_milliseconds, dump_xml, get_element_path, is_xml_id_valid
 
 NAMESPACES = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
@@ -65,6 +65,9 @@ class SAMLRequest:
         :return: A SAML Request.
         """
         light_request.validate()
+        if not is_xml_id_valid(light_request.id):
+            raise ValidationError({'id': 'Light request id is not a valid XML id: {!r}'.format(light_request.id)})
+
         root_attributes = OrderedDict([
             ('Consent', 'urn:oasis:names:tc:SAML:2.0:consent:unspecified'),  # optional, default 'unspecified'
             ('Destination', destination),

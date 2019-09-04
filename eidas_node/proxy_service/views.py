@@ -3,7 +3,6 @@ import logging
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Tuple
-from uuid import uuid4
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.template.loader import select_template
@@ -12,12 +11,13 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from lxml.etree import XMLSyntaxError
 
+from eidas_node.constants import TOKEN_ID_PREFIX
 from eidas_node.errors import EidasNodeError, ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.proxy_service.settings import PROXY_SERVICE_SETTINGS
 from eidas_node.saml import SAMLRequest, SAMLResponse, decrypt_xml
 from eidas_node.storage import LightStorage
-from eidas_node.utils import dump_xml, import_from_module, parse_xml
+from eidas_node.utils import create_xml_uuid, dump_xml, import_from_module, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.proxy_service')
 
@@ -113,8 +113,9 @@ class ProxyServiceRequestView(TemplateView):
         :param issuer: Issuer of the SAML request.
         :return: A SAML request.
         """
-        # Replace the request id with the token id to find the request later during pairing with the response.
-        self.light_request.id = self.light_token.id
+        # Replace the request id with the prefixed token id to find the request later during pairing with the response.
+        # Prefix is added to ensure that the id doesn't start with a digit.
+        self.light_request.id = TOKEN_ID_PREFIX + self.light_token.id
         # Replace the original issuer with our issuer registered at the Identity Provider.
         self.light_request.issuer = issuer
         return SAMLRequest.from_light_request(
@@ -212,9 +213,17 @@ class IdentityProviderResponseView(TemplateView):
         :return: A tuple of light response and request.
         """
         response = self.saml_response.create_light_response()
-        request = self.storage.get_light_request(response.in_response_to_id)
+
+        # The original request id was replaced with a prefixed light token id.
+        token_id = response.in_response_to_id
+        if not token_id.startswith(TOKEN_ID_PREFIX):
+            raise SecurityError('Invalid in-response-to id: {!r}.'.format(token_id))
+        token_id = token_id[len(TOKEN_ID_PREFIX):]
+
+        request = self.storage.get_light_request(token_id)
         if request is None:
             raise SecurityError('Cannot pair light response and request.')
+
         # Use the id of the original light request so that eIDAS can pair it.
         response.in_response_to_id = request.id
         # Use our issuer specified in the generic eIDAS Node configuration.
@@ -230,7 +239,7 @@ class IdentityProviderResponseView(TemplateView):
         :param secret: A secret shared between communication parties.
         :return: A tuple of the token and its encoded form.
         """
-        token = LightToken(id=str(uuid4()), created=datetime.utcnow(), issuer=issuer)
+        token = LightToken(id=create_xml_uuid(TOKEN_ID_PREFIX), created=datetime.utcnow(), issuer=issuer)
         self.light_response.id = token.id
         encoded_token = token.encode(hash_algorithm, secret).decode('ascii')
         return token, encoded_token

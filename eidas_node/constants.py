@@ -1,6 +1,8 @@
 """Constants and enumerations."""
 from enum import Enum, unique
 
+TOKEN_ID_PREFIX = 'T'
+
 
 @unique
 class LevelOfAssurance(str, Enum):
