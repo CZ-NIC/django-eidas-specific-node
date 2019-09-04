@@ -109,7 +109,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
 
         saml_request = view.create_saml_request('https://test.example.net/saml/idp.xml')
         root = saml_request.document.getroot()
-        self.assertEqual(root.get('ID'), token.id)
+        self.assertEqual(root.get('ID'), 'T' + token.id)
         self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
         self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
                          'https://test.example.net/saml/idp.xml')
@@ -196,6 +196,19 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(saml_response.relay_state, 'relay123')
         self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), decrypted_saml_response_xml)
 
+    def test_create_light_response_id_not_prefixed(self):
+        view = IdentityProviderResponseView()
+        view.request = self.factory.post(self.url)
+        view.storage = IgniteStorage('test.example.net', 1234, 'test-proxy-service-request-cache', '')
+        self.cache_mock.get.return_value = None
+
+        with cast(TextIO, (DATA_DIR / 'saml_response.xml').open('r')) as f:
+            data = f.read().replace('Ttest-saml-request-id', 'test-saml-request-id')
+            view.saml_response = SAMLResponse(parse_xml(data), 'relay123')
+
+        with self.assertRaisesMessage(SecurityError, 'Invalid in-response-to id'):
+            view.create_light_response('test-light-response-issuer')
+
     def test_create_light_response_cannot_find_request(self):
         view = IdentityProviderResponseView()
         view.request = self.factory.post(self.url)
@@ -231,7 +244,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
                           call.get_cache().get('test-saml-request-id')])
 
     @freeze_time('2017-12-11 14:12:05')
-    @patch('eidas_node.proxy_service.views.uuid4', return_value='uuid4')
+    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
     def test_create_light_token(self, uuid_mock: MagicMock):
         view = IdentityProviderResponseView()
         view.request = self.factory.post(self.url)
@@ -240,15 +253,15 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         view.light_response = LightResponse(**light_response_data)
 
         token, encoded_token = view.create_light_token('test-token-issuer', 'sha256', 'test-secret')
-        self.assertEqual(token.id, 'uuid4')
+        self.assertEqual(token.id, 'T0uuid4')
         self.assertEqual(token.issuer, 'test-token-issuer')
         self.assertEqual(token.created, datetime(2017, 12, 11, 14, 12, 5))
-        self.assertEqual(view.light_response.id, 'uuid4')
+        self.assertEqual(view.light_response.id, 'T0uuid4')
         self.assertEqual(token.encode('sha256', 'test-secret').decode('ascii'), encoded_token)
         self.assertEqual(uuid_mock.mock_calls, [call()])
 
     @freeze_time('2017-12-11 14:12:05')
-    @patch('eidas_node.proxy_service.views.uuid4', return_value='uuid4')
+    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
     def test_post_success(self, uuid_mock: MagicMock):
         light_request = LightRequest(**LIGHT_REQUEST_DICT)
         light_request.issuer = 'https://example.net/EidasNode/ConnectorMetadata'
@@ -269,7 +282,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         # Token
         encoded_token = response.context['token']
         token = LightToken.decode(encoded_token, 'sha256', 'response-token-secret')
-        self.assertEqual(token.id, 'uuid4')
+        self.assertEqual(token.id, 'T0uuid4')
         self.assertEqual(token.issuer, 'response-token-issuer')
         self.assertEqual(token.created, datetime(2017, 12, 11, 14, 12, 5))
 
@@ -277,7 +290,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         light_response_data = LIGHT_RESPONSE_DICT.copy()
         light_response_data.update({
             'status': Status(**light_response_data['status']),
-            'id': 'uuid4',
+            'id': 'T0uuid4',
             'in_response_to_id': 'test-light-request-id',
             'issuer': 'https://test.example.net/node-proxy-service-response',
         })
@@ -288,7 +301,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
                           call.get_cache('test-proxy-service-request-cache'),
                           call.get_cache().get('test-saml-request-id'),
                           call.get_cache('test-proxy-service-response-cache'),
-                          call.get_cache().put('uuid4', dump_xml(light_response.export_xml()).decode('utf-8'))])
+                          call.get_cache().put('T0uuid4', dump_xml(light_response.export_xml()).decode('utf-8'))])
 
         # Rendering
         self.assertContains(response, 'Redirect to Service Provider is in progress')

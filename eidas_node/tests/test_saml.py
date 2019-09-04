@@ -19,7 +19,7 @@ LIGHT_RESPONSE_DICT = LIGHT_RESPONSE_DICT.copy()
 FAILED_LIGHT_RESPONSE_DICT = FAILED_LIGHT_RESPONSE_DICT.copy()
 OVERRIDES = {
     'id': 'test-saml-response-id',
-    'in_response_to_id': 'test-saml-request-id',
+    'in_response_to_id': 'Ttest-saml-request-id',
     'issuer': 'test-saml-response-issuer',
     'level_of_assurance': LevelOfAssurance.LOW,
 }
@@ -100,6 +100,16 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         with cast(TextIO, (DATA_DIR / 'saml_request_minimal.xml').open('r')) as f2:
             data = f2.read()
         self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), data)
+
+    def test_from_light_request_invalid_id(self):
+        self.maxDiff = None
+
+        with cast(BinaryIO, (DATA_DIR / 'light_request_minimal.xml').open('rb')) as f:
+            request = LightRequest.load_xml(parse_xml(f))
+        request.id = '0day'
+
+        with self.assert_validation_error('id', "Light request id is not a valid XML id: '0day'"):
+            SAMLRequest.from_light_request(request, 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
 
     def test_str(self):
         self.assertEqual(
