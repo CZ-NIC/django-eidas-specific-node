@@ -220,11 +220,17 @@ class LightResponse(XMLDataModel):
         """Validate this data model."""
         self.validate_fields(Status, 'status', required=True)
         self.status.validate()
-        self.validate_fields(str, 'id', 'in_response_to_id', 'subject', required=True)
-        self.validate_fields(str, 'issuer', 'ip_address', 'relay_state', required=False)
-        self.validate_fields(NameIdFormat, 'subject_name_id_format', required=True)
-        self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=True)
         validate_attributes(self, 'attributes')
+        if self.status.failure:
+            self.validate_fields(str, 'id', 'in_response_to_id', required=True)
+            self.validate_fields(str, 'subject', 'issuer', 'ip_address', 'relay_state', required=False)
+            self.validate_fields(NameIdFormat, 'subject_name_id_format', required=False)
+            self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=False)
+        else:
+            self.validate_fields(str, 'id', 'in_response_to_id', 'subject', required=True)
+            self.validate_fields(str, 'issuer', 'ip_address', 'relay_state', required=False)
+            self.validate_fields(NameIdFormat, 'subject_name_id_format', required=True)
+            self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=True)
 
     def deserialize_subject_name_id_format(self, elm: Element) -> Optional[NameIdFormat]:
         """Deserialize field 'subject_name_name_id_format'."""

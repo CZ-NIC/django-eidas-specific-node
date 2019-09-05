@@ -135,7 +135,7 @@ class SAMLResponse:
 
     def create_light_response(self) -> LightResponse:
         """Convert SAML response to light response."""
-        response = LightResponse()
+        response = LightResponse(attributes=OrderedDict())
         root = self.document.getroot()
         if root.tag != Q_NAMES['saml2p:Response']:
             raise ValidationError({
@@ -168,12 +168,6 @@ class SAMLResponse:
             elif elm.tag == Q_NAMES['saml2:Assertion']:
                 self._parse_assertion(response, elm)
         response.relay_state = self.relay_state
-        if response.status and response.status.failure:
-            # Fill in dummy data
-            response.attributes = OrderedDict()
-            response.level_of_assurance = LevelOfAssurance.LOW
-            response.subject_name_id_format = NameIdFormat.UNSPECIFIED
-            response.subject = 'unknown'
         return response
 
     def _parse_assertion(self, response: LightResponse, assertion: Element) -> None:

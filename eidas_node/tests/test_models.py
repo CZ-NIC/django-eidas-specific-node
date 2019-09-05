@@ -92,9 +92,9 @@ FAILED_LIGHT_RESPONSE_DICT = OrderedDict(
          ('issuer', 'test-light-response-issuer'),
          ('ip_address', None),
          ('relay_state', 'relay123'),
-         ('subject', 'unknown'),
-         ('subject_name_id_format', NameIdFormat.UNSPECIFIED),
-         ('level_of_assurance', LevelOfAssurance.LOW),
+         ('subject', None),
+         ('subject_name_id_format', None),
+         ('level_of_assurance', None),
          ('status', OrderedDict(
              [('failure', True),
               ('status_code', StatusCode.REQUESTER),
@@ -355,6 +355,8 @@ class TestStatus(ValidationMixin, SimpleTestCase):
 class TestLightResponse(ValidationMixin, SimpleTestCase):
     MODEL = LightResponse
     OPTIONAL = {'issuer', 'ip_address', 'relay_state'}
+    OPTIONAL_FAILURE = {'issuer', 'ip_address', 'relay_state',
+                        'subject', 'subject_name_id_format', 'level_of_assurance'}
     VALID_DATA = {
         'id': 'uuid',
         'in_response_to_id': 'uuid2',
@@ -385,6 +387,8 @@ class TestLightResponse(ValidationMixin, SimpleTestCase):
     def tearDown(self) -> None:
         if self.VALID_DATA is not self.__class__.VALID_DATA:
             del self.VALID_DATA
+        if self.OPTIONAL is not self.__class__.OPTIONAL:
+            del self.OPTIONAL
 
     def create_response(self, success: bool) -> LightResponse:
         data = (LIGHT_RESPONSE_DICT if success else FAILED_LIGHT_RESPONSE_DICT).copy()
@@ -394,16 +398,19 @@ class TestLightResponse(ValidationMixin, SimpleTestCase):
     def set_failure(self, failure: bool) -> None:
         data = self.__class__.VALID_DATA.copy()
         if failure:
+            self.OPTIONAL = self.__class__.OPTIONAL_FAILURE
             data.update({
                 'status': Status(failure=failure,
                                  status_code=StatusCode.REQUESTER,
                                  sub_status_code=SubStatusCode.REQUEST_DENIED,
                                  status_message='Oops.'),
                 'attributes': OrderedDict(),
-                'subject': 'unknown',
-                'subject_name_id_format': NameIdFormat.UNSPECIFIED,
+                'subject': None,
+                'subject_name_id_format': None,
+                'level_of_assurance': None,
             })
         else:
+            self.OPTIONAL = self.__class__.OPTIONAL
             data['status'] = Status(failure=False)
         self.VALID_DATA = data
 
