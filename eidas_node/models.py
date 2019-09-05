@@ -186,6 +186,8 @@ class Status(XMLDataModel):
 
     def deserialize_sub_status_code(self, elm: Element) -> Optional[SubStatusCode]:
         """Deserialize field 'sub_status_code'."""
+        if elm.text and '##' in elm.text:
+            return None
         return SubStatusCode(elm.text) if elm.text else None
 
 
