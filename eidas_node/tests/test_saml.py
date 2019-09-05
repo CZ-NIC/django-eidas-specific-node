@@ -6,7 +6,7 @@ import xmlsec
 from django.test import SimpleTestCase
 from lxml.etree import Element, ElementTree, SubElement
 
-from eidas_node.constants import LevelOfAssurance
+from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LightRequest, LightResponse, Status
 from eidas_node.saml import NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_eidas_attribute, decrypt_xml
@@ -215,6 +215,23 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         SubElement(response.document.find(".//{}".format(Q_NAMES['saml2:AuthnStatement'])), 'something')
         SubElement(response.document.find(".//{}".format(Q_NAMES['saml2:AuthnContext'])), 'something')
         self.assertEqual(response.create_light_response(), self.create_light_response(True))
+
+    def test_create_light_response_with_status_version_mismatch(self):
+        with cast(BinaryIO, (DATA_DIR / 'saml_response_failed_version_mismatch.xml').open('rb')) as f:
+            response = SAMLResponse(parse_xml(f), 'relay123')
+
+        expected = self.create_light_response(False)
+        expected.status.status_code = StatusCode.REQUESTER
+        expected.status.sub_status_code = SubStatusCode.VERSION_MISMATCH
+        self.assertEqual(response.create_light_response(), expected)
+
+    def test_create_light_response_with_unsupported_sub_status(self):
+        with cast(BinaryIO, (DATA_DIR / 'saml_response_failed_unsupported_sub_status.xml').open('rb')) as f:
+            response = SAMLResponse(parse_xml(f), 'relay123')
+
+        expected = self.create_light_response(False)
+        expected.status.sub_status_code = None
+        self.assertEqual(response.create_light_response(), expected)
 
 
 class TestCreateEidasAttribute(SimpleTestCase):

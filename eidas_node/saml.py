@@ -150,11 +150,26 @@ class SAMLResponse:
                 response.status = status = Status()
                 for elm2 in elm:
                     if elm2.tag == Q_NAMES['saml2p:StatusCode']:
-                        status.status_code = StatusCode(elm2.get('Value'))
-                        status.failure = status.status_code != StatusCode.SUCCESS
+                        status_code = elm2.get('Value')
+                        sub_status_code = None
                         for elm3 in elm2:
                             if elm3.tag == Q_NAMES['saml2p:StatusCode']:
-                                status.sub_status_code = SubStatusCode(elm3.get('Value'))
+                                sub_status_code = elm3.get('Value')
+                                break
+
+                        if status_code == SubStatusCode.VERSION_MISMATCH.value:
+                            # VERSION_MISMATCH is a status code in SAML 2 but a sub status code in Light response!
+                            status.status_code = StatusCode.REQUESTER
+                            status.sub_status_code = SubStatusCode.VERSION_MISMATCH
+                        else:
+                            status.status_code = StatusCode(status_code)
+                            try:
+                                status.sub_status_code = SubStatusCode(sub_status_code)
+                            except ValueError:
+                                # None or a sub status codes not recognized by eIDAS
+                                status.sub_status_code = None
+
+                        status.failure = status.status_code != StatusCode.SUCCESS
                     elif elm2.tag == Q_NAMES['saml2p:StatusMessage']:
                         status.status_message = elm2.text
             elif elm.tag == Q_NAMES['saml2:EncryptedAssertion']:

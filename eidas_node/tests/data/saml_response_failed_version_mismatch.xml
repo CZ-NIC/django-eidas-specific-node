@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="test-saml-response-id" Version="2.0" IssueInstant="2019-08-21T13:41:42Z" Destination="http://testserver/IdentityProviderResponse" InResponseTo="Ttest-saml-request-id">
+  <saml:Issuer>test-saml-response-issuer</saml:Issuer>
+  <samlp:Status>
+    <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:VersionMismatch"/>
+    <samlp:StatusMessage>Something went wrong.</samlp:StatusMessage>
+    <samlp:StatusDetail>Oops.</samlp:StatusDetail>
+  </samlp:Status>
+</samlp:Response>
