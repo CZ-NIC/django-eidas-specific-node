@@ -1,7 +1,7 @@
 """eIDAS attributes."""
 from collections import namedtuple
 from itertools import chain
-from typing import Dict, List
+from typing import Dict, List, Set
 
 Attribute = namedtuple('Attribute', 'name_uri, name_format, friendly_name, required')
 
@@ -42,3 +42,5 @@ EIDAS_LEGAL_PERSON_ATTRIBUTES = [
 ATTRIBUTE_MAP = {
     item.name_uri: item for item in chain(EIDAS_NATURAL_PERSON_ATTRIBUTES, EIDAS_LEGAL_PERSON_ATTRIBUTES)
 }  # type: Dict[str, Attribute]
+
+MANDATORY_ATTRIBUTE_NAMES = {name for name, attribute in ATTRIBUTE_MAP.items() if attribute.required}  # type: Set[str]
