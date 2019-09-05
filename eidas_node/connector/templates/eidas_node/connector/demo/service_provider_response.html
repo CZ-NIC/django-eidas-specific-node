@@ -1,0 +1,11 @@
+{% extends "eidas_node/connector/base.html" %}
+{% load i18n staticfiles %}
+
+{% block title %}{% trans "Demo Service Provider Response" %}{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Demo Service Provider Response" %}</h1>
+    <p>Relay state: <code>{{ relay_state }}</code></p>
+    <p>SAML Response:</p>
+    <pre style="white-space: pre-wrap;">{{ saml_response }}</pre>
+{% endblock %}
