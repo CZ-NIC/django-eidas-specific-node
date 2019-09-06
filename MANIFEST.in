@@ -1,1 +1,2 @@
-include requirements.txt
+graft eidas_node
+include LICENSE requirements.txt
