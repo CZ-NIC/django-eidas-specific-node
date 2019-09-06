@@ -22,6 +22,83 @@ from eidas_node.tests.test_storage import IgniteMockMixin
 from eidas_node.utils import dump_xml, parse_xml
 
 
+class TestCitizenCountrySelectorView(SimpleTestCase):
+    SAML_REQUEST = b64encode(b'<SAMLRequest>...</SAMLRequest>').decode('ascii')
+
+    def setUp(self):
+        self.url = reverse('citizen-country-selector')
+        self.request_endpoint = reverse('service-provider-request')
+
+    def test_get_not_allowed(self):
+        response = self.client.get(self.url)
+        self.assertNotContains(response, self.request_endpoint, status_code=405)
+
+    def test_post_without_saml_request(self):
+        response = self.client.post(self.url)
+
+        # Context
+        self.assertEqual(response.context['error'], 'Bad service provider request.')
+        self.assertEqual(response.context['saml_request'], None)
+        self.assertEqual(response.context['relay_state'], '')
+        self.assertEqual(response.context['request_endpoint'], self.request_endpoint)
+        self.assertEqual(response.context['citizen_country'], None)
+        self.assertEqual(response.context['country_parameter'], 'country_param')
+        self.assertEqual(response.context['countries'], [('CA', 'Test Country'), ('CZ', 'Another Country')])
+
+        # Rendering
+        self.assertNotIn(self.request_endpoint.encode('utf-8'), response.content)
+        self.assertContains(response,
+                            'An error occurred during processing of Service Provider request.',
+                            status_code=400)
+
+    def test_post_without_country(self):
+        response = self.client.post(self.url, {'SAMLRequest': self.SAML_REQUEST, 'RelayState': 'xyz'})
+
+        # Context
+        self.assertEqual(response.context['error'], None)
+        self.assertEqual(response.context['saml_request'], self.SAML_REQUEST)
+        self.assertEqual(response.context['relay_state'], 'xyz')
+        self.assertEqual(response.context['request_endpoint'], self.request_endpoint)
+        self.assertEqual(response.context['citizen_country'], None)
+        self.assertEqual(response.context['country_parameter'], 'country_param')
+        self.assertEqual(response.context['countries'], [('CA', 'Test Country'), ('CZ', 'Another Country')])
+
+        # Rendering
+        self.assertContains(response, self.request_endpoint)
+        self.assertContains(response, 'Choose your country to proceed with authentication')
+        self.assertContains(response, '<form id="country-selector-form" action="{}"'.format(self.request_endpoint))
+        self.assertContains(response, '<button type="submit" name="country_param" value="CA" title="CA">')
+        self.assertContains(response, '<span class="flag flag-ca"></span>Test Country')
+        self.assertContains(response, '<button type="submit" name="country_param" value="CZ" title="CZ">')
+        self.assertContains(response, '<input type="hidden" name="SAMLRequest" value="{}"/>'.format(self.SAML_REQUEST))
+        self.assertContains(response, '<input type="hidden" name="RelayState" value="xyz"/>')
+        self.assertNotContains(response, 'An error occurred')
+
+    def test_post_with_country(self):
+        response = self.client.post(self.url, {
+            'SAMLRequest': self.SAML_REQUEST, 'RelayState': 'xyz', 'country_param': 'CC'})
+
+        # Context
+        self.assertEqual(response.context['error'], None)
+        self.assertEqual(response.context['saml_request'], self.SAML_REQUEST)
+        self.assertEqual(response.context['relay_state'], 'xyz')
+        self.assertEqual(response.context['request_endpoint'], self.request_endpoint)
+        self.assertEqual(response.context['citizen_country'], 'CC')
+        self.assertEqual(response.context['country_parameter'], 'country_param')
+        self.assertEqual(response.context['countries'], [('CA', 'Test Country'), ('CZ', 'Another Country')])
+
+        # Rendering
+        self.assertContains(response, self.request_endpoint)
+        self.assertContains(response, 'Redirect to Identity Provider is in progress')
+        self.assertContains(response, 'eidas_node/connector/formautosubmit.js')
+        self.assertContains(response, '<form class="auto-submit" action="{}"'.format(self.request_endpoint))
+        self.assertContains(response, '<input type="hidden" name="country_param" value="CC"/>')
+        self.assertContains(response, '<input type="submit" value="Continue"/>')
+        self.assertContains(response, '<input type="hidden" name="SAMLRequest" value="{}"/>'.format(self.SAML_REQUEST))
+        self.assertContains(response, '<input type="hidden" name="RelayState" value="xyz"/>')
+        self.assertNotContains(response, 'An error occurred')
+
+
 class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
     def setUp(self):
         self.factory = RequestFactory()
