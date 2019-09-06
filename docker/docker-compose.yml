@@ -2,14 +2,24 @@ version: '3.7'
 
 services:
   specific_proxy_service:
-    image: specific_proxy_service:latest
+    image: eidas_node:latest
     ports:
       - "8000:8000"
     configs:
       - source: specific_proxy_service_settings
-        target: /opt/app/specific_proxy_service_cfg.py
+        target: /opt/app/eidas_node_cfg.py
+        mode: 0440
+  specific_connector:
+    image: eidas_node:latest
+    ports:
+      - "8001:8000"
+    configs:
+      - source: specific_connector_settings
+        target: /opt/app/eidas_node_cfg.py
         mode: 0440
 
 configs:
     specific_proxy_service_settings:
         file: ./specific_proxy_service_cfg.py
+    specific_connector_settings:
+        file: ./specific_connector_cfg.py
