@@ -1,9 +1,11 @@
 """Abstract Storage for Light Requests and Responses."""
-
+import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 
 from eidas_node.models import LightRequest, LightResponse
+
+LOGGER = logging.getLogger('eidas_node.storage')
 
 
 class LightStorage(ABC):
