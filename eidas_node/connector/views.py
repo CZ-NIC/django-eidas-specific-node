@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.template.loader import select_template
+from django.urls import reverse
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
@@ -22,6 +23,41 @@ from eidas_node.storage import LightStorage
 from eidas_node.utils import create_xml_uuid, dump_xml, import_from_module, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.connector')
+
+
+class CountrySelectorView(TemplateView):
+    """A view to select a citizen country if it isn't provided."""
+
+    http_method_names = ['post']
+    template_name = 'eidas_node/connector/country_selector.html'
+    error = None  # type: Optional[str]
+    saml_request = None  # type: Optional[str]
+    relay_state = None  # type: Optional[str]
+    citizen_country = None  # type: Optional[str]
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        """Handle a HTTP POST request."""
+        self.saml_request = self.request.POST.get('SAMLRequest') or None
+        self.relay_state = self.request.POST.get('RelayState')
+        self.citizen_country = self.request.POST.get(CONNECTOR_SETTINGS.service_provider['country_parameter'])
+
+        if self.saml_request is None:
+            self.error = _('Bad service provider request.')
+            return HttpResponseBadRequest(
+                select_template(self.get_template_names()).render(self.get_context_data(), self.request))
+        return super().get(request)
+
+    def get_context_data(self, **kwargs) -> dict:
+        """Adjust template context data."""
+        context = super().get_context_data(**kwargs)
+        context['error'] = self.error
+        context['saml_request'] = self.saml_request
+        context['relay_state'] = self.relay_state or ''
+        context['request_endpoint'] = reverse('service-provider-request')
+        context['citizen_country'] = self.citizen_country
+        context['country_parameter'] = CONNECTOR_SETTINGS.service_provider['country_parameter']
+        context['countries'] = CONNECTOR_SETTINGS.selector_countries
+        return context
 
 
 class ServiceProviderRequestView(TemplateView):

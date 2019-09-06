@@ -1,6 +1,41 @@
 """Settings of eidas_node.connector."""
 
-from appsettings import AppSettings, DictSetting, NestedSetting, PositiveIntegerSetting, StringSetting
+from appsettings import AppSettings, DictSetting, IterableSetting, NestedSetting, PositiveIntegerSetting, StringSetting
+
+DEFAULT_COUNTRIES = [
+    # Country code, name
+    ('AT', 'Austria'),
+    ('BE', 'Belgium'),
+    ('BG', 'Bulgaria'),
+    ('CY', 'Republic of Cyprus'),
+    ('CZ', 'Czech Republic'),
+    ('DE', 'Germany'),
+    ('DK', 'Denmark'),
+    ('EE', 'Estonia'),
+    ('ES', 'Spain'),
+    ('FI', 'Finland'),
+    ('FR', 'France'),
+    ('GB', 'Great Britain'),
+    ('GR', 'Greece'),
+    ('HR', 'Croatia'),
+    ('HU', 'Hungary'),
+    ('IE', 'Republic of Ireland'),
+    ('IS', 'Iceland'),
+    ('IT', 'Italy'),
+    ('LI', 'Liechtenstein'),
+    ('LT', 'Lithuania'),
+    ('LU', 'Luxembourg'),
+    ('LV', 'Latvia'),
+    ('MT', 'Malta'),
+    ('NL', 'Netherlands'),
+    ('NO', 'Norway'),
+    ('PL', 'Poland'),
+    ('PT', 'Portugal'),
+    ('RO', 'Romania'),
+    ('SE', 'Sweden'),
+    ('SI', 'Slovenia'),
+    ('SK', 'Slovakia'),
+]
 
 
 class ConnectorSettings(AppSettings):
@@ -33,6 +68,7 @@ class ConnectorSettings(AppSettings):
         connector_request_url=StringSetting(required=True, min_length=1),
         request_issuer=StringSetting(required=True, min_length=1),
     ), required=True)
+    selector_countries = IterableSetting(default=DEFAULT_COUNTRIES, min_length=1)
 
     class Meta:
         """Metadata."""
