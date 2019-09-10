@@ -21,9 +21,9 @@ OVERRIDES = {
     'id': 'test-saml-response-id',
     'in_response_to_id': 'Ttest-saml-request-id',
     'issuer': 'test-saml-response-issuer',
-    'level_of_assurance': LevelOfAssurance.LOW,
 }
 LIGHT_RESPONSE_DICT.update(OVERRIDES)
+LIGHT_RESPONSE_DICT['level_of_assurance'] = LevelOfAssurance.LOW
 FAILED_LIGHT_RESPONSE_DICT.update(OVERRIDES)
 
 
