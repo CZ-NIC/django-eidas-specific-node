@@ -66,24 +66,24 @@ class TestCzNiaResponseView(SimpleTestCase):
         data = self.get_light_response_data('CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9')
         response = LightResponse(**deepcopy(data))
 
-        with patch.object(IdentityProviderResponseView, 'create_light_response', return_value=(response, None)):
+        with patch.object(IdentityProviderResponseView, 'create_light_response', return_value=response):
             view = CzNiaResponseView()
-            self.assertEqual(view.create_light_response()[0], LightResponse(**data))
+            self.assertEqual(view.create_light_response(), LightResponse(**data))
 
     @override_settings(PROXY_SERVICE_STRIP_PREFIX=True)
     def test_create_light_response_strip_prefix_not_needed(self):
         data = self.get_light_response_data('CA/CA/ff70c9dd-6a05-4068-aaa2-b57be4f328e9')
         response = LightResponse(**deepcopy(data))
         self.maxDiff = None
-        with patch.object(IdentityProviderResponseView, 'create_light_response', return_value=(response, None)):
+        with patch.object(IdentityProviderResponseView, 'create_light_response', return_value=response):
             view = CzNiaResponseView()
-            self.assertEqual(view.create_light_response()[0], LightResponse(**data))
+            self.assertEqual(view.create_light_response(), LightResponse(**data))
 
     @override_settings(PROXY_SERVICE_STRIP_PREFIX=True)
     def test_create_light_response_strip_prefix_needed(self):
         response = LightResponse(**self.get_light_response_data('CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9'))
         self.maxDiff = None
-        with patch.object(IdentityProviderResponseView, 'create_light_response', return_value=(response, None)):
+        with patch.object(IdentityProviderResponseView, 'create_light_response', return_value=response):
             view = CzNiaResponseView()
-            self.assertEqual(view.create_light_response()[0],
+            self.assertEqual(view.create_light_response(),
                              LightResponse(**self.get_light_response_data('ff70c9dd-6a05-4068-aaa2-b57be4f328e9')))

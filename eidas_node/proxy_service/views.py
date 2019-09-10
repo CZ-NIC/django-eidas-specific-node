@@ -113,9 +113,6 @@ class ProxyServiceRequestView(TemplateView):
         :param issuer: Issuer of the SAML request.
         :return: A SAML request.
         """
-        # Replace the request id with the prefixed token id to find the request later during pairing with the response.
-        # Prefix is added to ensure that the id doesn't start with a digit.
-        self.light_request.id = TOKEN_ID_PREFIX + self.light_token.id
         # Replace the original issuer with our issuer registered at the Identity Provider.
         self.light_request.issuer = issuer
         return SAMLRequest.from_light_request(
@@ -148,7 +145,6 @@ class IdentityProviderResponseView(TemplateView):
     storage = None  # type: LightStorage
     saml_response = None  # type: SAMLResponse
     light_response = None  # type: LightResponse
-    light_request = None  # type: LightRequest
     light_token = None  # type: LightToken
     encoded_token = None  # type: str
 
@@ -160,10 +156,9 @@ class IdentityProviderResponseView(TemplateView):
             self.storage = self.get_light_storage(PROXY_SERVICE_SETTINGS.light_storage['backend'],
                                                   PROXY_SERVICE_SETTINGS.light_storage['options'])
             token_settings = PROXY_SERVICE_SETTINGS.response_token
-            self.light_response, self.light_request = self.create_light_response(
+            self.light_response = self.create_light_response(
                 PROXY_SERVICE_SETTINGS.eidas_node['response_issuer'])
             LOGGER.debug('Light Response: %s', self.light_response)
-            LOGGER.debug('Light Request: %s', self.light_request)
             self.light_token, self.encoded_token = self.create_light_token(
                 token_settings['issuer'],
                 token_settings['hash_algorithm'],
@@ -205,30 +200,17 @@ class IdentityProviderResponseView(TemplateView):
         """
         return import_from_module(backend)(**options)
 
-    def create_light_response(self, issuer: str) -> Tuple[LightResponse, LightRequest]:
+    def create_light_response(self, issuer: str) -> LightResponse:
         """
-        Create a light response and pair it with the corresponding light request.
+        Create a light response from SAML response.
 
         :param issuer: The issuer of the light response.
-        :return: A tuple of light response and request.
+        :return: A light response.
         """
         response = self.saml_response.create_light_response()
-
-        # The original request id was replaced with a prefixed light token id.
-        token_id = response.in_response_to_id
-        if not token_id.startswith(TOKEN_ID_PREFIX):
-            raise SecurityError('Invalid in-response-to id: {!r}.'.format(token_id))
-        token_id = token_id[len(TOKEN_ID_PREFIX):]
-
-        request = self.storage.get_light_request(token_id)
-        if request is None:
-            raise SecurityError('Cannot pair light response and request.')
-
-        # Use the id of the original light request so that eIDAS can pair it.
-        response.in_response_to_id = request.id
         # Use our issuer specified in the generic eIDAS Node configuration.
         response.issuer = issuer
-        return response, request
+        return response
 
     def create_light_token(self, issuer: str, hash_algorithm: str, secret: str) -> Tuple[LightToken, str]:
         """
@@ -240,7 +222,6 @@ class IdentityProviderResponseView(TemplateView):
         :return: A tuple of the token and its encoded form.
         """
         token = LightToken(id=create_xml_uuid(TOKEN_ID_PREFIX), created=datetime.utcnow(), issuer=issuer)
-        self.light_response.id = token.id
         encoded_token = token.encode(hash_algorithm, secret).decode('ascii')
         return token, encoded_token
 

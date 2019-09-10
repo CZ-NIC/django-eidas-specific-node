@@ -20,7 +20,7 @@ LIGHT_RESPONSE_DICT = LIGHT_RESPONSE_DICT.copy()
 FAILED_LIGHT_RESPONSE_DICT = FAILED_LIGHT_RESPONSE_DICT.copy()
 OVERRIDES = {
     'id': 'test-saml-response-id',
-    'in_response_to_id': 'Ttest-saml-request-id',
+    'in_response_to_id': 'test-saml-request-id',
     'issuer': 'test-saml-response-issuer',
 }
 LIGHT_RESPONSE_DICT.update(OVERRIDES)
