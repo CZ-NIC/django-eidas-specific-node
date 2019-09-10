@@ -193,7 +193,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         saml_request_xml, saml_request_encoded = self.load_saml_request()
         light_request = LightRequest(**LIGHT_REQUEST_DICT)
         light_request.issuer = 'https://example.net/EidasNode/ConnectorMetadata'
-        self.cache_mock.get.return_value = dump_xml(light_request.export_xml()).decode('utf-8')
+        self.cache_mock.get_and_remove.return_value = dump_xml(light_request.export_xml()).decode('utf-8')
 
         response = self.client.post(self.url, {'SAMLRequest': saml_request_encoded,
                                                'RelayState': 'relay123',
@@ -300,7 +300,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
             view.get_light_token('test_token', 'response-token-issuer', 'sha256', 'response-token-secret')
 
     def test_get_light_response_not_found(self):
-        self.cache_mock.get.return_value = None
+        self.cache_mock.get_and_remove.return_value = None
         token, encoded = self.get_token()
 
         view = ConnectorResponseView()
@@ -313,7 +313,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
 
     def test_get_light_response_success(self):
         orig_light_response = self.get_light_response()
-        self.cache_mock.get.return_value = dump_xml(orig_light_response.export_xml()).decode('utf-8')
+        self.cache_mock.get_and_remove.return_value = dump_xml(orig_light_response.export_xml()).decode('utf-8')
         token, encoded = self.get_token()
 
         view = ConnectorResponseView()
@@ -327,7 +327,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect('test.example.net', 1234),
                           call.get_cache('test-connector-response-cache'),
-                          call.get_cache().get('response-token-id')])
+                          call.get_cache().get_and_remove('response-token-id')])
 
     @freeze_time('2017-12-11 14:12:05')
     def test_create_saml_response(self):
@@ -352,7 +352,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
     def test_post_success(self):
         self.maxDiff = None
         light_response = self.get_light_response()
-        self.cache_mock.get.return_value = dump_xml(light_response.export_xml()).decode('utf-8')
+        self.cache_mock.get_and_remove.return_value = dump_xml(light_response.export_xml()).decode('utf-8')
 
         token, encoded = self.get_token()
         response = self.client.post(self.url, {'test_response_token': encoded})

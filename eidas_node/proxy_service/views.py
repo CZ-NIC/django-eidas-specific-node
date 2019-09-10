@@ -99,9 +99,9 @@ class ProxyServiceRequestView(TemplateView):
         Get a light request.
 
         :return: A light request.
-        :raise SecurityError: If the request is not found..
+        :raise SecurityError: If the request is not found.
         """
-        request = self.storage.get_light_request(self.light_token.id)
+        request = self.storage.pop_light_request(self.light_token.id)
         if request is None:
             raise SecurityError('Request not found in light storage.')
         return request

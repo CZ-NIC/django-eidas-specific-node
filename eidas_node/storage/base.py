@@ -17,12 +17,12 @@ class LightStorage(ABC):
     """
 
     @abstractmethod
-    def get_light_request(self, uid: str) -> Optional[LightRequest]:
-        """Look up a LightRequest by a unique id."""
+    def pop_light_request(self, uid: str) -> Optional[LightRequest]:
+        """Look up a LightRequest by a unique id and then remove it."""
 
     @abstractmethod
-    def get_light_response(self, uid: str) -> Optional[LightResponse]:
-        """Look up a LightResponse by a unique id."""
+    def pop_light_response(self, uid: str) -> Optional[LightResponse]:
+        """Look up a LightResponse by a unique id and then remove it."""
 
     @abstractmethod
     def put_light_request(self, uid: str, request: LightRequest) -> None:

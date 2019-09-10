@@ -36,15 +36,15 @@ class IgniteStorage(LightStorage):
             self._client.connect(self.host, self.port)
         return self._client.get_cache(cache_name)
 
-    def get_light_request(self, uid: str) -> Optional[LightRequest]:
-        """Look up a LightRequest by a unique id."""
-        data = self.get_cache(self.request_cache_name).get(uid)
+    def pop_light_request(self, uid: str) -> Optional[LightRequest]:
+        """Look up a LightRequest by a unique id and then remove it."""
+        data = self.get_cache(self.request_cache_name).get_and_remove(uid)
         LOGGER.debug('Got Light Request from cache: id=%r, data=%s', uid, data)
         return LightRequest().load_xml(parse_xml(data)) if data is not None else None
 
-    def get_light_response(self, uid: str) -> Optional[LightResponse]:
-        """Look up a LightResponse by a unique id."""
-        data = self.get_cache(self.response_cache_name).get(uid)
+    def pop_light_response(self, uid: str) -> Optional[LightResponse]:
+        """Look up a LightResponse by a unique id and then remove it."""
+        data = self.get_cache(self.response_cache_name).get_and_remove(uid)
         LOGGER.debug('Got Light Response from cache: id=%r, data=%s', uid, data)
         return LightResponse().load_xml(parse_xml(data)) if data is not None else None
 

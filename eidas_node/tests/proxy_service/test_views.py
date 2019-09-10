@@ -68,7 +68,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
             view.get_light_token('test_token', 'request-token-issuer', 'sha256', 'request-token-secret')
 
     def test_get_light_request_not_found(self):
-        self.cache_mock.get.return_value = None
+        self.cache_mock.get_and_remove.return_value = None
         token, encoded = self.get_token()
 
         view = ProxyServiceRequestView()
@@ -81,7 +81,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
 
     def test_get_light_request_success(self):
         orig_light_request = LightRequest(**LIGHT_REQUEST_DICT)
-        self.cache_mock.get.return_value = dump_xml(orig_light_request.export_xml()).decode('utf-8')
+        self.cache_mock.get_and_remove.return_value = dump_xml(orig_light_request.export_xml()).decode('utf-8')
         token, encoded = self.get_token()
 
         view = ProxyServiceRequestView()
@@ -95,7 +95,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect('test.example.net', 1234),
                           call.get_cache('test-proxy-service-request-cache'),
-                          call.get_cache().get('request-token-id')])
+                          call.get_cache().get_and_remove('request-token-id')])
 
     @freeze_time('2017-12-11 14:12:05')
     def test_create_saml_request(self):
@@ -118,7 +118,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
     def test_post_success(self):
         self.maxDiff = None
         request = LightRequest(**LIGHT_REQUEST_DICT)
-        self.cache_mock.get.return_value = dump_xml(request.export_xml()).decode('utf-8')
+        self.cache_mock.get_and_remove.return_value = dump_xml(request.export_xml()).decode('utf-8')
 
         token, encoded = self.get_token()
         response = self.client.post(self.url, {'test_token': encoded})

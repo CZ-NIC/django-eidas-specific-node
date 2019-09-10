@@ -256,7 +256,7 @@ class ConnectorResponseView(TemplateView):
         :return: A light response.
         :raise SecurityError: If the response is not found.
         """
-        response = self.storage.get_light_response(self.light_token.id)
+        response = self.storage.pop_light_response(self.light_token.id)
         if response is None:
             raise SecurityError('Response not found in light storage.')
         return response

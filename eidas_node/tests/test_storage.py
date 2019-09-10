@@ -16,7 +16,7 @@ class IgniteMockMixin:
 
     def mock_ignite_cache(self) -> Callable[[], None]:
         """Mock Apache Ignite cache and return a callback to stop the patcher."""
-        self.cache_mock = MagicMock(spec_set=['get', 'put'])
+        self.cache_mock = MagicMock(spec_set=['get_and_remove', 'put'])
         self.client_mock = MagicMock(spec_set=['connect', 'get_cache'])
         self.client_mock.get_cache.return_value = self.cache_mock
         client_class_patcher = patch('eidas_node.storage.ignite.Client', return_value=self.client_mock)
@@ -43,47 +43,47 @@ class TestIgniteStorage(IgniteMockMixin, SimpleTestCase):
                           call.get_cache(self.REQUEST_CACHE_NAME),
                           call.get_cache(self.RESPONSE_CACHE_NAME)])
 
-    def test_get_light_request_not_found(self):
-        self.cache_mock.get.return_value = None
-        self.assertIsNone(self.storage.get_light_request('abc'))
+    def test_pop_light_request_not_found(self):
+        self.cache_mock.get_and_remove.return_value = None
+        self.assertIsNone(self.storage.pop_light_request('abc'))
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=33)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect(self.HOST, self.PORT),
                           call.get_cache(self.REQUEST_CACHE_NAME),
-                          call.get_cache().get('abc')])
+                          call.get_cache().get_and_remove('abc')])
 
-    def test_get_light_request_found(self):
+    def test_pop_light_request_found(self):
         with cast(BinaryIO, (DATA_DIR / 'light_request.xml').open('rb')) as f:
             data = f.read()
 
-        self.cache_mock.get.return_value = data.decode('utf-8')
-        self.assertEqual(LightRequest.load_xml(parse_xml(data)), self.storage.get_light_request('abc'))
+        self.cache_mock.get_and_remove.return_value = data.decode('utf-8')
+        self.assertEqual(LightRequest.load_xml(parse_xml(data)), self.storage.pop_light_request('abc'))
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=33)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect(self.HOST, self.PORT),
                           call.get_cache(self.REQUEST_CACHE_NAME),
-                          call.get_cache().get('abc')])
+                          call.get_cache().get_and_remove('abc')])
 
-    def test_get_light_response_not_found(self):
-        self.cache_mock.get.return_value = None
-        self.assertIsNone(self.storage.get_light_response('abc'))
+    def test_pop_light_response_not_found(self):
+        self.cache_mock.get_and_remove.return_value = None
+        self.assertIsNone(self.storage.pop_light_response('abc'))
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=33)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect(self.HOST, self.PORT),
                           call.get_cache(self.RESPONSE_CACHE_NAME),
-                          call.get_cache().get('abc')])
+                          call.get_cache().get_and_remove('abc')])
 
-    def test_get_light_response_found(self):
+    def test_pop_light_response_found(self):
         with cast(BinaryIO, (DATA_DIR / 'light_response.xml').open('rb')) as f:
             data = f.read()
 
-        self.cache_mock.get.return_value = data.decode('utf-8')
-        self.assertEqual(LightResponse.load_xml(parse_xml(data)), self.storage.get_light_response('abc'))
+        self.cache_mock.get_and_remove.return_value = data.decode('utf-8')
+        self.assertEqual(LightResponse.load_xml(parse_xml(data)), self.storage.pop_light_response('abc'))
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=33)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect(self.HOST, self.PORT),
                           call.get_cache(self.RESPONSE_CACHE_NAME),
-                          call.get_cache().get('abc')])
+                          call.get_cache().get_and_remove('abc')])
 
     def test_put_light_request(self):
         with cast(TextIO, (DATA_DIR / 'light_request.xml').open('r')) as f:
