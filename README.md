@@ -111,7 +111,7 @@ To use eIDAS Connector, adjust Django settings:
 
 URL configuration at `eidas_node.connector.urls` provides following views:
 
-* `/CitizenCountrySelector`:
+* `/CountrySelector`:
   Accepts a *SAML Request* and *Relay State* from Service Provider and lets a user select its *country* unless it has already been provided.
   The SAML Request is then forwarded to `/ServiceProviderRequest` endpoint.
   - Method: HTTP POST.
