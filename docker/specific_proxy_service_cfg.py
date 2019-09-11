@@ -121,5 +121,10 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'eidas_node.storage': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }

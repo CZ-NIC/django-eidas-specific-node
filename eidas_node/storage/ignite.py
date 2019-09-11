@@ -6,6 +6,7 @@ from pyignite.cache import Cache
 
 from eidas_node.models import LightRequest, LightResponse
 from eidas_node.storage import LightStorage
+from eidas_node.storage.base import LOGGER
 from eidas_node.utils import dump_xml, parse_xml
 
 
@@ -38,17 +39,23 @@ class IgniteStorage(LightStorage):
     def get_light_request(self, uid: str) -> Optional[LightRequest]:
         """Look up a LightRequest by a unique id."""
         data = self.get_cache(self.request_cache_name).get(uid)
+        LOGGER.debug('Got Light Request from cache: id=%r, data=%s', uid, data)
         return LightRequest().load_xml(parse_xml(data)) if data is not None else None
 
     def get_light_response(self, uid: str) -> Optional[LightResponse]:
         """Look up a LightResponse by a unique id."""
         data = self.get_cache(self.response_cache_name).get(uid)
+        LOGGER.debug('Got Light Response from cache: id=%r, data=%s', uid, data)
         return LightResponse().load_xml(parse_xml(data)) if data is not None else None
 
     def put_light_request(self, uid: str, request: LightRequest) -> None:
         """Store a LightRequest under a unique id."""
-        self.get_cache(self.request_cache_name).put(uid, dump_xml(request.export_xml()).decode('utf-8'))
+        data = dump_xml(request.export_xml()).decode('utf-8')
+        LOGGER.debug('Store Light Request to cache: id=%r, data=%s', uid, data)
+        self.get_cache(self.request_cache_name).put(uid, data)
 
     def put_light_response(self, uid: str, response: LightResponse) -> None:
-        """Store a LightRequest under a unique id."""
-        self.get_cache(self.response_cache_name).put(uid, dump_xml(response.export_xml()).decode('utf-8'))
+        """Store a LightResponse under a unique id."""
+        data = dump_xml(response.export_xml()).decode('utf-8')
+        LOGGER.debug('Store Light Response to cache: id=%r, data=%s', uid, data)
+        self.get_cache(self.response_cache_name).put(uid, data)
