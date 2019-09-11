@@ -75,7 +75,7 @@ class DemoServiceProviderRequestView(TemplateView):
         context = super().get_context_data(**kwargs)
 
         if self.saml_request:
-            context['connector_endpoint'] = reverse('citizen-country-selector')
+            context['connector_endpoint'] = reverse('country-selector')
             context['saml_request'] = b64encode(dump_xml(self.saml_request.document)).decode('ascii')
             context['saml_request_xml'] = dump_xml(self.saml_request.document).decode('ascii')
             relay_state = self.saml_request.relay_state

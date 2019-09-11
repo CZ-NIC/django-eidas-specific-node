@@ -26,7 +26,7 @@ class TestCitizenCountrySelectorView(SimpleTestCase):
     SAML_REQUEST = b64encode(b'<SAMLRequest>...</SAMLRequest>').decode('ascii')
 
     def setUp(self):
-        self.url = reverse('citizen-country-selector')
+        self.url = reverse('country-selector')
         self.request_endpoint = reverse('service-provider-request')
 
     def test_get_not_allowed(self):

@@ -29,7 +29,7 @@ class TestDemoServiceProviderRequestView(SimpleTestCase):
         self.assertEquals(response.context['relay_state'], '')
         self.assertEquals(response.context['country'], '')
         self.assertIn('saml_request', response.context)
-        self.assertContains(response, '<form action="/CitizenCountrySelector" method="post">')
+        self.assertContains(response, '<form action="/CountrySelector" method="post">')
         self.assertContains(response, '<input type="text" name="RelayState" value=""/>')
         self.assertContains(response, '<input type="text" name="country_param" value=""/>')
         self.assertContains(response, '<input type="hidden" name="SAMLRequest" value="{}"/>'
@@ -40,7 +40,7 @@ class TestDemoServiceProviderRequestView(SimpleTestCase):
         self.assertEquals(response.context['relay_state'], 'relay123')
         self.assertEquals(response.context['country'], 'xx')
         self.assertIn('saml_request', response.context)
-        self.assertContains(response, '<form action="/CitizenCountrySelector" method="post">')
+        self.assertContains(response, '<form action="/CountrySelector" method="post">')
         self.assertContains(response, '<input type="text" name="RelayState" value="relay123"/>')
         self.assertContains(response, '<input type="text" name="country_param" value="xx"/>')
         self.assertContains(response, '<input type="hidden" name="SAMLRequest" value="{}"/>'

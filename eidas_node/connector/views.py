@@ -25,11 +25,11 @@ from eidas_node.utils import create_xml_uuid, dump_xml, import_from_module, pars
 LOGGER = logging.getLogger('eidas_node.connector')
 
 
-class CitizenCountrySelectorView(TemplateView):
+class CountrySelectorView(TemplateView):
     """A view to select a citizen country if it isn't provided."""
 
     http_method_names = ['post']
-    template_name = 'eidas_node/connector/citizen_country_selector.html'
+    template_name = 'eidas_node/connector/country_selector.html'
     error = None  # type: Optional[str]
     saml_request = None  # type: Optional[str]
     relay_state = None  # type: Optional[str]
