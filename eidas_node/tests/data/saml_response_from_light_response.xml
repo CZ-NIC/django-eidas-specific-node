@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<saml2p:Response xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:eidas="http://eidas.europa.eu/saml-extensions" xmlns:xmlenc="http://www.w3.org/2001/04/xmlenc#" ID="test-saml-response-id" Version="2.0" IssueInstant="2017-12-11T14:12:05.148Z" Destination="test/destination" InResponseTo="Ttest-saml-request-id">
+  <saml2:Issuer>test-saml-response-issuer</saml2:Issuer>
+  <saml2p:Status>
+    <saml2p:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+  </saml2p:Status>
+  <saml2:Assertion ID="_test-saml-response-id" IssueInstant="2017-12-11T14:12:05.148Z" Version="2.0">
+    <saml2:Issuer>test-saml-response-issuer</saml2:Issuer>
+    <saml2:Subject>
+      <saml2:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</saml2:NameID>
+    </saml2:Subject>
+    <saml2:AttributeStatement>
+      <saml2:Attribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="FamilyName">
+        <saml2:AttributeValue>ČERNÝCH</saml2:AttributeValue>
+      </saml2:Attribute>
+      <saml2:Attribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentGivenName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="FirstName">
+        <saml2:AttributeValue>PAVEL</saml2:AttributeValue>
+      </saml2:Attribute>
+      <saml2:Attribute Name="http://eidas.europa.eu/attributes/naturalperson/DateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="DateOfBirth">
+        <saml2:AttributeValue>1956-07-15</saml2:AttributeValue>
+      </saml2:Attribute>
+      <saml2:Attribute Name="http://eidas.europa.eu/attributes/naturalperson/PlaceOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="PlaceOfBirth">
+        <saml2:AttributeValue>Praha 2</saml2:AttributeValue>
+      </saml2:Attribute>
+      <saml2:Attribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentAddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="CurrentAddress">
+        <saml2:AttributeValue>PGVpZGFzOkxvY2F0b3JEZXNpZ25hdG9yPjEwPC9laWRhczpMb2NhdG9yRGVzaWduYXRvcj4NCjxlaWRhczpUaG9yb3VnaGZhcmU+WmEgcGlsb3U8L2VpZGFzOlRob3JvdWdoZmFyZT4NCjxlaWRhczpQb3N0TmFtZT7EjGVza8OhIEthbWVuaWNlPC9laWRhczpQb3N0TmFtZT4NCjxlaWRhczpQb3N0Q29kZT40MDcyMTwvZWlkYXM6UG9zdENvZGU+DQo8ZWlkYXM6Q3ZhZGRyZXNzQXJlYT7EjGVza8OhIEthbWVuaWNlLCBEb2xuw60gS2FtZW5pY2U8L2VpZGFzOkN2YWRkcmVzc0FyZWE+DQo=</saml2:AttributeValue>
+      </saml2:Attribute>
+      <saml2:Attribute Name="http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="PersonIdentifier">
+        <saml2:AttributeValue>CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</saml2:AttributeValue>
+      </saml2:Attribute>
+    </saml2:AttributeStatement>
+    <saml2:AuthnStatement AuthnInstant="2017-12-11T14:12:05.148Z">
+      <saml2:SubjectLocality Address="127.0.0.1"/>
+      <saml2:AuthnContext>
+        <saml2:AuthnContextClassRef>http://eidas.europa.eu/LoA/low</saml2:AuthnContextClassRef>
+      </saml2:AuthnContext>
+    </saml2:AuthnStatement>
+  </saml2:Assertion>
+</saml2p:Response>

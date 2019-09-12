@@ -8,7 +8,7 @@ from lxml import etree
 from lxml.etree import Element, ElementTree, QName, SubElement
 
 from eidas_node.attributes import ATTRIBUTE_MAP, EIDAS_ATTRIBUTE_NAME_FORMAT
-from eidas_node.constants import StatusCode, SubStatusCode
+from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
 from eidas_node.utils import datetime_iso_format_milliseconds, dump_xml, get_element_path, is_xml_id_valid
@@ -46,11 +46,16 @@ class SAMLRequest:
 
     document = None  # type: ElementTree
     """SAML document as an element tree."""
+    citizen_country_code = None  # type: Optional[str]
+    """Country code of the requesting citizen."""
     relay_state = None  # type: Optional[str]
     """Relay state associated with the request."""
 
-    def __init__(self, document: ElementTree, relay_state: Optional[str] = None):
+    def __init__(self, document: ElementTree,
+                 citizen_country_code: Optional[str] = None,
+                 relay_state: Optional[str] = None):
         self.document = document
+        self.citizen_country_code = citizen_country_code
         self.relay_state = relay_state
 
     @classmethod
@@ -95,7 +100,8 @@ class SAMLRequest:
             SubElement(extensions, Q_NAMES['eidas:SPCountry']).text = light_request.origin_country_code
         attributes = SubElement(extensions, Q_NAMES['eidas:RequestedAttributes'])
         for name, values in light_request.requested_attributes.items():
-            attribute = create_eidas_attribute(attributes, name, True)
+            attribute = SubElement(attributes, Q_NAMES['eidas:RequestedAttribute'],
+                                   create_attribute_elm_attributes(name, True))
             for value in values:
                 SubElement(attribute, Q_NAMES['eidas:AttributeValue']).text = value
 
@@ -111,11 +117,67 @@ class SAMLRequest:
         SubElement(SubElement(root, Q_NAMES['saml2p:RequestedAuthnContext'], {'Comparison': 'minimum'}),
                    Q_NAMES['saml2:AuthnContextClassRef']).text = light_request.level_of_assurance.value
         # 8: AuthnRequestType <saml2p:Scoping> skipped
-        return cls(ElementTree(root), light_request.relay_state)
+        return cls(ElementTree(root), light_request.citizen_country_code, light_request.relay_state)
+
+    def create_light_request(self) -> LightRequest:
+        """
+        Convert SAML Request to Light Request.
+
+        :return: A Light Request.
+        :raise ValidationError: If the SAML Request cannot be parsed correctly.
+        """
+        request = LightRequest(requested_attributes=OrderedDict(),
+                               citizen_country_code=self.citizen_country_code,
+                               relay_state=self.relay_state)
+        root = self.document.getroot()
+        if root.tag != Q_NAMES['saml2p:AuthnRequest']:
+            raise ValidationError({get_element_path(root): 'Wrong root element: {!r}'.format(root.tag)})
+
+        request.id = root.attrib.get('ID')
+        request.provider_name = root.attrib.get('ProviderName')
+
+        issuer = root.find('./{}'.format(Q_NAMES['saml2:Issuer']))
+        if issuer is not None:
+            request.issuer = issuer.text
+
+        name_id_format = root.find('./{}'.format(Q_NAMES['saml2p:NameIDPolicy']))
+        if name_id_format is not None:
+            request.name_id_format = NameIdFormat(name_id_format.attrib.get('Format'))
+
+        level_of_assurance = root.find(
+            './{}/{}'.format(Q_NAMES['saml2p:RequestedAuthnContext'], Q_NAMES['saml2:AuthnContextClassRef']))
+        if level_of_assurance is not None:
+            request.level_of_assurance = LevelOfAssurance(level_of_assurance.text)
+
+        extensions = root.find('./{}'.format(Q_NAMES['saml2p:Extensions']))
+        if extensions is not None:
+            sp_type = extensions.find('./{}'.format(Q_NAMES['eidas:SPType']))
+            if sp_type is not None:
+                request.sp_type = ServiceProviderType(sp_type.text)
+
+            sp_country = extensions.find('./{}'.format(Q_NAMES['eidas:SPCountry']))
+            if sp_country is not None:
+                request.origin_country_code = sp_country.text
+
+            requested_attributes = request.requested_attributes
+            attributes = extensions.findall(
+                './{}/{}'.format(Q_NAMES['eidas:RequestedAttributes'], Q_NAMES['eidas:RequestedAttribute']))
+            for attribute in attributes:
+                name = attribute.attrib.get('Name')
+                if not name:
+                    raise ValidationError({
+                        get_element_path(attribute): "Missing attribute 'Name'"})
+                values = requested_attributes[name] = []
+                for value in attribute.findall('./{}'.format(Q_NAMES['eidas:AttributeValue'])):
+                    values.append(value.text)
+
+        return request
 
     def __str__(self) -> str:
-        return 'relay_state = {!r}, document = {}'.format(
-            self.relay_state, dump_xml(self.document).decode('utf-8') if self.document else 'None')
+        return 'citizen_country_code = {!r}, relay_state = {!r}, document = {}'.format(
+            self.citizen_country_code,
+            self.relay_state,
+            dump_xml(self.document).decode('utf-8') if self.document else 'None')
 
 
 class SAMLResponse:
@@ -132,6 +194,86 @@ class SAMLResponse:
     def __init__(self, document: ElementTree, relay_state: Optional[str] = None):
         self.document = document
         self.relay_state = relay_state
+
+    @classmethod
+    def from_light_response(cls: Type[SAMLResponseType],
+                            light_response: LightResponse,
+                            destination: Optional[str],
+                            issued: datetime) -> SAMLResponseType:
+        """Convert light response to SAML response."""
+        light_response.validate()
+        issue_instant = datetime_iso_format_milliseconds(issued) + 'Z'  # UTC
+        root_attributes = {
+            'ID': light_response.id,
+            'InResponseTo': light_response.in_response_to_id,
+            'Version': '2.0',
+            'IssueInstant': issue_instant,
+        }
+        if destination is not None:
+            root_attributes['Destination'] = destination
+        root = etree.Element(Q_NAMES['saml2p:Response'], attrib=root_attributes, nsmap=NAMESPACES)
+        # 1. StatusResponseType <saml2:Issuer> optional
+        if light_response.issuer is not None:
+            SubElement(root, Q_NAMES['saml2:Issuer']).text = light_response.issuer
+        # 2. StatusResponseType <ds:Signature> optional, skipped
+        # 3. StatusResponseType <saml2p:Extensions> optional, skipped
+        # 4. StatusResponseType <saml2p:Status> required
+        status = light_response.status
+        assert status is not None
+        status_elm = SubElement(root, Q_NAMES['saml2p:Status'])
+        # 4.1 <saml2p:Status> <saml2p:StatusCode> required
+        status_code = status.status_code
+        sub_status_code = status.sub_status_code
+        if status_code is None:
+            status_code = StatusCode.SUCCESS if not status.failure else StatusCode.RESPONDER
+
+        # VERSION_MISMATCH is a status code in SAML 2 but a sub status code in Light response!
+        if sub_status_code == SubStatusCode.VERSION_MISMATCH:
+            status_code_value = SubStatusCode.VERSION_MISMATCH.value
+            sub_status_code_value = None
+        else:
+            status_code_value = status_code.value
+            sub_status_code_value = None if sub_status_code is None else sub_status_code.value
+
+        status_code_elm = SubElement(status_elm, Q_NAMES['saml2p:StatusCode'], {'Value': status_code_value})
+        if sub_status_code_value is not None:
+            SubElement(status_code_elm, Q_NAMES['saml2p:StatusCode'], {'Value': sub_status_code_value})
+        # 4.2 <saml2p:Status> <saml2p:StatusMessage> optional
+        if status.status_message is not None:
+            SubElement(status_elm, Q_NAMES['saml2p:StatusMessage']).text = status.status_message
+        # 4.3 <saml2p:Status> <saml2p:StatusDetail> optional, skipped
+        if not status.failure:
+            # 5. AssertionType
+            assertion_elm = SubElement(root, Q_NAMES['saml2:Assertion'], {
+                'ID': '_' + light_response.id,
+                'Version': '2.0',
+                'IssueInstant': issue_instant,
+            })
+            # 5.1 AssertionType <saml2:Issuer> required
+            SubElement(assertion_elm, Q_NAMES['saml2:Issuer']).text = light_response.issuer
+            # 5.2 AssertionType <ds:Signature> optional, skipped
+            # 5.3 AssertionType <saml2:Subject> optional
+            SubElement(SubElement(assertion_elm, Q_NAMES['saml2:Subject']), Q_NAMES['saml2:NameID'],
+                       {'Format': light_response.subject_name_id_format.value}).text = light_response.subject
+            # 5.4 AssertionType <saml2:Conditions> optional, skipped
+            # 5.5 AssertionType <saml2:Advice> optional, skipped
+            # 5.5 AssertionType <saml2:Advice> optional, skipped
+            # 5.6 AssertionType <saml2:AttributeStatement>
+            attributes_elm = SubElement(assertion_elm, Q_NAMES['saml2:AttributeStatement'])
+            for name, values in light_response.attributes.items():
+                attribute = SubElement(attributes_elm, Q_NAMES['saml2:Attribute'],
+                                       create_attribute_elm_attributes(name, None))
+                for value in values:
+                    SubElement(attribute, Q_NAMES['saml2:AttributeValue']).text = value
+
+            # 5.7 AssertionType <saml2:AuthnStatement>
+            statement_elm = SubElement(assertion_elm, Q_NAMES['saml2:AuthnStatement'], {'AuthnInstant': issue_instant})
+            if light_response.ip_address is not None:
+                SubElement(statement_elm, Q_NAMES['saml2:SubjectLocality'], {'Address': light_response.ip_address})
+            SubElement(SubElement(statement_elm, Q_NAMES['saml2:AuthnContext']),
+                       Q_NAMES['saml2:AuthnContextClassRef']).text = light_response.level_of_assurance.value
+
+        return cls(ElementTree(root), light_response.relay_state)
 
     def create_light_response(self) -> LightResponse:
         """Convert SAML response to light response."""
@@ -241,12 +383,14 @@ def decrypt_xml(tree: ElementTree, key_file: str) -> None:
                 elm.text = None
 
 
-def create_eidas_attribute(parent: Element, name: str, required: bool) -> Element:
-    """Create an eIDAS requested attribute element."""
+def create_attribute_elm_attributes(name: str, required: Optional[bool]) -> Element:
+    """Create attributes for an attribute element."""
     attribute = ATTRIBUTE_MAP.get(name)
-    return SubElement(parent, Q_NAMES['eidas:RequestedAttribute'], {
+    attributes = {
         'Name': name,
         'FriendlyName': attribute.friendly_name if attribute else name.rsplit('/', 1)[-1],
         'NameFormat': attribute.name_format if attribute else EIDAS_ATTRIBUTE_NAME_FORMAT,
-        'isRequired': 'true' if required else 'false',
-    })
+    }
+    if required is not None:
+        attributes['isRequired'] = 'true' if required else 'false'
+    return attributes

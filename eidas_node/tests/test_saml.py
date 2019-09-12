@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
 from typing import BinaryIO, ContextManager, TextIO, cast
@@ -9,7 +10,7 @@ from lxml.etree import Element, ElementTree, SubElement
 from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LightRequest, LightResponse, Status
-from eidas_node.saml import NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_eidas_attribute, decrypt_xml
+from eidas_node.saml import NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_attribute_elm_attributes, decrypt_xml
 from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.utils import dump_xml, parse_xml
 
@@ -25,6 +26,9 @@ OVERRIDES = {
 LIGHT_RESPONSE_DICT.update(OVERRIDES)
 LIGHT_RESPONSE_DICT['level_of_assurance'] = LevelOfAssurance.LOW
 FAILED_LIGHT_RESPONSE_DICT.update(OVERRIDES)
+
+LIGHT_REQUEST_DICT = LIGHT_REQUEST_DICT.copy()
+LIGHT_REQUEST_DICT.update({'id': 'test-saml-request-id', 'issuer':  'test-saml-request-issuer'})
 
 
 class ValidationErrorMixin:
@@ -75,17 +79,14 @@ class TestDecrypt(SimpleTestCase):
 class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
     def test_from_light_request(self):
         self.maxDiff = None
-
-        request = LightRequest(**LIGHT_REQUEST_DICT)
-        request.id = 'test-saml-request-id'
-        request.issuer = 'test-saml-request-issuer'
-
         saml_request = SAMLRequest.from_light_request(
-            request, 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
+            LightRequest(**LIGHT_REQUEST_DICT), 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
 
         with cast(TextIO, (DATA_DIR / 'saml_request.xml').open('r')) as f2:
             data = f2.read()
         self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), data)
+        self.assertEqual(saml_request.relay_state, 'relay123')
+        self.assertEqual(saml_request.citizen_country_code, 'CA')
 
     def test_from_light_request_minimal(self):
         self.maxDiff = None
@@ -100,6 +101,8 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         with cast(TextIO, (DATA_DIR / 'saml_request_minimal.xml').open('r')) as f2:
             data = f2.read()
         self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), data)
+        self.assertEqual(saml_request.relay_state, None)
+        self.assertEqual(saml_request.citizen_country_code, 'CA')
 
     def test_from_light_request_invalid_id(self):
         self.maxDiff = None
@@ -111,11 +114,59 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         with self.assert_validation_error('id', "Light request id is not a valid XML id: '0day'"):
             SAMLRequest.from_light_request(request, 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
 
+    def test_create_light_request_success(self):
+        self.maxDiff = None
+        with cast(TextIO, (DATA_DIR / 'saml_request.xml').open('r')) as f:
+            data = f.read()
+
+        saml_request = SAMLRequest(parse_xml(data), 'CA', 'relay123')
+        self.assertEqual(
+            saml_request.create_light_request().get_data_as_dict(), LIGHT_REQUEST_DICT)
+
+    def test_create_light_request_extra_elements(self):
+        self.maxDiff = None
+        with cast(TextIO, (DATA_DIR / 'saml_request.xml').open('r')) as f:
+            document = parse_xml(f.read())
+
+        SubElement(document.getroot(), 'extra').text = 'extra'
+        SubElement(document.find(".//{}".format(Q_NAMES['eidas:RequestedAttributes'])), 'extra').text = 'extra'
+
+        saml_request = SAMLRequest(document, 'CA', 'relay123')
+        self.assertEqual(
+            saml_request.create_light_request().get_data_as_dict(), LIGHT_REQUEST_DICT)
+
+    def test_create_light_request_invalid_root_element(self):
+        root = Element('wrongRoot')
+        saml_request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assert_validation_error(
+            '<wrongRoot>', "Wrong root element: 'wrongRoot'",
+            saml_request.create_light_request)
+
+    def test_create_light_request_missing_attribute_name(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], nsmap=NAMESPACES)
+        extensions = SubElement(root, Q_NAMES['saml2p:Extensions'])
+        attributes = SubElement(extensions, Q_NAMES['eidas:RequestedAttributes'])
+        SubElement(attributes, Q_NAMES['eidas:RequestedAttribute'])
+
+        saml_request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assert_validation_error(
+            '<saml2p:AuthnRequest><saml2p:Extensions><eidas:RequestedAttributes><eidas:RequestedAttribute>',
+            "Missing attribute 'Name'",
+            saml_request.create_light_request)
+
+    def test_create_light_request_without_extensions(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], nsmap=NAMESPACES)
+        saml_request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        expected = LightRequest(citizen_country_code='CZ', relay_state='relay123', requested_attributes=OrderedDict())
+        self.assertEqual(saml_request.create_light_request(), expected)
+
     def test_str(self):
         self.assertEqual(
-            str(SAMLRequest(ElementTree(Element('root')), 'relay')),
-            "relay_state = 'relay', document = <?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
-        self.assertEqual(str(SAMLRequest(None, None)), 'relay_state = None, document = None')
+            str(SAMLRequest(ElementTree(Element('root')), 'CZ', 'relay')),
+            "citizen_country_code = 'CZ', relay_state = 'relay', document = "
+            "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
+        self.assertEqual(str(SAMLRequest(None, None, None)),
+                         'citizen_country_code = None, relay_state = None, document = None')
 
 
 class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
@@ -124,6 +175,48 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         data['status'] = Status(**data['status'])
         data.update(**kwargs)
         return LightResponse(**data)
+
+    def test_from_light_response(self):
+        self.maxDiff = None
+        saml_response = SAMLResponse.from_light_response(
+            self.create_light_response(True), 'test/destination', datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
+    def test_from_light_response_minimal(self):
+        self.maxDiff = None
+        status = Status(failure=False)
+        response = self.create_light_response(True, ip_address=None, status=status, attributes={})
+        saml_response = SAMLResponse.from_light_response(
+            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_minimal.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
+    def test_from_light_response_failed(self):
+        self.maxDiff = None
+        status = Status(failure=True, sub_status_code=SubStatusCode.AUTHN_FAILED, status_message='Oops.')
+        response = self.create_light_response(False, issuer=None, ip_address=None, status=status)
+        saml_response = SAMLResponse.from_light_response(
+            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_failed.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
+    def test_from_light_response_version_mismatch(self):
+        self.maxDiff = None
+        status = Status(failure=True, sub_status_code=SubStatusCode.VERSION_MISMATCH, status_message='Oops.')
+        response = self.create_light_response(False, issuer=None, ip_address=None, status=status)
+        saml_response = SAMLResponse.from_light_response(
+            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000))
+
+        with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_version_mismatch.xml').open('r')) as f2:
+            data = f2.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
 
     def test_create_light_response_not_encrypted(self):
         self.maxDiff = None
@@ -233,36 +326,44 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         expected.status.sub_status_code = None
         self.assertEqual(response.create_light_response(), expected)
 
+    def test_str(self):
+        self.assertEqual(
+            str(SAMLResponse(ElementTree(Element('root')), 'relay')),
+            "relay_state = 'relay', document = <?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
+        self.assertEqual(str(SAMLResponse(None, None)), 'relay_state = None, document = None')
 
-class TestCreateEidasAttribute(SimpleTestCase):
-    def test_create_eidas_attribute_known_attribute(self):
-        root = Element('whatever')
-        elm = create_eidas_attribute(root, 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName', True)
-        self.assertIs(elm, root[0])
-        expected = Element('whatever')
-        SubElement(expected, Q_NAMES['eidas:RequestedAttribute'], {
+
+class TestCreateAttributeElmAttributes(SimpleTestCase):
+    def test_create_attribute_elm_attributes_known_attribute(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
+        self.assertEqual(create_attribute_elm_attributes(name, None), {
+            'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
+            'FriendlyName': 'FamilyName',
+            'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
+        })
+
+    def test_create_attribute_elm_attributes_unknown_attribute(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName'
+        self.assertEqual(create_attribute_elm_attributes(name, None), {
+            'Name': 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName',
+            'FriendlyName': 'ConcurrentFamilyName',
+            'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
+        })
+
+    def test_create_attribute_elm_attributes_required(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
+        self.assertEqual(create_attribute_elm_attributes(name, True), {
             'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
             'FriendlyName': 'FamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
             'isRequired': 'true',
         })
-        self.assertXMLEqual(dump_xml(root).decode('utf-8'), dump_xml(expected).decode('utf-8'))
 
-    def test_create_eidas_attribute_unknown_attribute(self):
-        root = Element('whatever')
-        elm = create_eidas_attribute(root, 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName', True)
-        self.assertIs(elm, root[0])
-        expected = Element('whatever')
-        SubElement(expected, Q_NAMES['eidas:RequestedAttribute'], {
-            'Name': 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName',
-            'FriendlyName': 'ConcurrentFamilyName',
+    def test_create_attribute_elm_attributes_optional(self):
+        name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
+        self.assertEqual(create_attribute_elm_attributes(name, False), {
+            'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
+            'FriendlyName': 'FamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
-            'isRequired': 'true',
+            'isRequired': 'false',
         })
-        self.assertXMLEqual(dump_xml(root).decode('utf-8'), dump_xml(expected).decode('utf-8'))
-
-    def test_str(self):
-        self.assertEqual(
-            str(SAMLResponse(ElementTree(Element('root')), 'relay')),
-            "relay_state = 'relay', document = <?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
-        self.assertEqual(str(SAMLRequest(None, None)), 'relay_state = None, document = None')
