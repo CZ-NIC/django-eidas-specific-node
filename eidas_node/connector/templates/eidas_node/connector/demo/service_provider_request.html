@@ -1,0 +1,40 @@
+{% extends "eidas_node/connector/base.html" %}
+{% load i18n staticfiles %}
+
+{% block title %}{% trans "Demo Service Provider Request" %}{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Demo Service Provider Request" %}</h1>
+    {% if saml_request %}
+        <h2>SAML Request</h2>
+        <form action="{{ connector_endpoint }}" method="post">
+            <input type="submit" value="Submit SAML Request to Connector" /><br/>
+            <label>
+                <code>POST['RelayState']</code>:
+                <input type="text" name="RelayState" value="{{ relay_state }}"/>
+            </label><br/>
+            <label>
+                <code>POST['{{ country_parameter }}']</code>:
+                <input type="text" name="{{ country_parameter }}" value="{{ country }}"/>
+            </label><br/>
+            <code>POST['SAMLRequest']</code> (base64-decoded):
+            <input type="hidden" name="SAMLRequest" value="{{ saml_request }}"/>
+            <pre style="white-space: pre-wrap;">{{ saml_request_xml }}</pre>
+        </form>
+    {% else %}
+        <h2>Preset Requests</h2>
+        <form method="post" target="_blank">
+            <label>
+                Relay State:
+                <input type="text" name="RelayState" value="{{ relay_state }}"/>
+            </label>
+            <label>
+                Citizen country code:
+                <input type="text" name="Country" value="{{ country }}"/>
+            </label>
+            {% for key, label in presets %}
+                <br /><button type="submit" name="Request" value="{{ key }}">Request {{ label }}</button>
+            {% endfor %}
+        </form>
+    {% endif %}
+{% endblock %}
