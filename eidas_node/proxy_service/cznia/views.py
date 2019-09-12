@@ -1,11 +1,9 @@
 """Modification of views for CZ NIA."""
-from typing import Tuple
-
 from django.conf import settings
 from lxml.etree import SubElement
 
 from eidas_node.constants import StatusCode, SubStatusCode
-from eidas_node.models import LightRequest, LightResponse
+from eidas_node.models import LightResponse
 from eidas_node.proxy_service.views import IdentityProviderResponseView
 from eidas_node.saml import Q_NAMES, SAMLResponse
 
@@ -45,9 +43,9 @@ class CzNiaResponseView(IdentityProviderResponseView):
 
         return response
 
-    def create_light_response(self, *args, **kwargs) -> Tuple[LightResponse, LightRequest]:
-        """Create a light response and pair it with the corresponding light request."""
-        response, request = super().create_light_response(*args, **kwargs)
+    def create_light_response(self, *args, **kwargs) -> LightResponse:
+        """Create a light response from SAML response."""
+        response = super().create_light_response(*args, **kwargs)
 
         # Strip wrong prefix
         if getattr(settings, 'PROXY_SERVICE_STRIP_PREFIX', False):
@@ -59,4 +57,4 @@ class CzNiaResponseView(IdentityProviderResponseView):
                     values[0] = values[0][len(prefix):]
                     break
 
-        return response, request
+        return response

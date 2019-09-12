@@ -68,7 +68,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
             view.get_light_token('test_token', 'request-token-issuer', 'sha256', 'request-token-secret')
 
     def test_get_light_request_not_found(self):
-        self.cache_mock.get.return_value = None
+        self.cache_mock.get_and_remove.return_value = None
         token, encoded = self.get_token()
 
         view = ProxyServiceRequestView()
@@ -81,7 +81,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
 
     def test_get_light_request_success(self):
         orig_light_request = LightRequest(**LIGHT_REQUEST_DICT)
-        self.cache_mock.get.return_value = dump_xml(orig_light_request.export_xml()).decode('utf-8')
+        self.cache_mock.get_and_remove.return_value = dump_xml(orig_light_request.export_xml()).decode('utf-8')
         token, encoded = self.get_token()
 
         view = ProxyServiceRequestView()
@@ -95,7 +95,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect('test.example.net', 1234),
                           call.get_cache('test-proxy-service-request-cache'),
-                          call.get_cache().get('request-token-id')])
+                          call.get_cache().get_and_remove('request-token-id')])
 
     @freeze_time('2017-12-11 14:12:05')
     def test_create_saml_request(self):
@@ -109,7 +109,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
 
         saml_request = view.create_saml_request('https://test.example.net/saml/idp.xml')
         root = saml_request.document.getroot()
-        self.assertEqual(root.get('ID'), 'T' + token.id)
+        self.assertEqual(root.get('ID'), 'test-light-request-id')
         self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
         self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
                          'https://test.example.net/saml/idp.xml')
@@ -118,7 +118,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
     def test_post_success(self):
         self.maxDiff = None
         request = LightRequest(**LIGHT_REQUEST_DICT)
-        self.cache_mock.get.return_value = dump_xml(request.export_xml()).decode('utf-8')
+        self.cache_mock.get_and_remove.return_value = dump_xml(request.export_xml()).decode('utf-8')
 
         token, encoded = self.get_token()
         response = self.client.post(self.url, {'test_token': encoded})
@@ -132,7 +132,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
 
         # SAML Request
         saml_request_xml = b64decode(response.context['saml_request'].encode('utf-8')).decode('utf-8')
-        self.assertIn(token.id, saml_request_xml)  # light_request.id replaced with token.id
+        self.assertIn(request.id, saml_request_xml)  # light_request.id preserved
         self.assertIn('<saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">'
                       'https://test.example.net/saml/idp.xml</saml2:Issuer>', saml_request_xml)
         self.assertIn('Destination="http://testserver/IdentityProviderResponse"', saml_request_xml)
@@ -196,52 +196,18 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(saml_response.relay_state, 'relay123')
         self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), decrypted_saml_response_xml)
 
-    def test_create_light_response_id_not_prefixed(self):
-        view = IdentityProviderResponseView()
-        view.request = self.factory.post(self.url)
-        view.storage = IgniteStorage('test.example.net', 1234, 'test-proxy-service-request-cache', '')
-        self.cache_mock.get.return_value = None
-
-        with cast(TextIO, (DATA_DIR / 'saml_response.xml').open('r')) as f:
-            data = f.read().replace('Ttest-saml-request-id', 'test-saml-request-id')
-            view.saml_response = SAMLResponse(parse_xml(data), 'relay123')
-
-        with self.assertRaisesMessage(SecurityError, 'Invalid in-response-to id'):
-            view.create_light_response('test-light-response-issuer')
-
-    def test_create_light_response_cannot_find_request(self):
-        view = IdentityProviderResponseView()
-        view.request = self.factory.post(self.url)
-        view.storage = IgniteStorage('test.example.net', 1234, 'test-proxy-service-request-cache', '')
-        self.cache_mock.get.return_value = None
-
-        with cast(TextIO, (DATA_DIR / 'saml_response.xml').open('r')) as f:
-            view.saml_response = SAMLResponse(parse_xml(f.read()), 'relay123')
-
-        with self.assertRaisesMessage(SecurityError, 'Cannot pair light response and request'):
-            view.create_light_response('test-light-response-issuer')
-
     def test_create_light_response_correct_id_and_issuer(self):
         self.maxDiff = None
         view = IdentityProviderResponseView()
         view.request = self.factory.post(self.url)
-        view.storage = IgniteStorage('test.example.net', 1234, 'test-proxy-service-request-cache', '')
-        orig_light_request = LightRequest(**LIGHT_REQUEST_DICT)
-        orig_light_request.issuer = 'https://example.net/EidasNode/ConnectorMetadata'
-        self.cache_mock.get.return_value = dump_xml(orig_light_request.export_xml()).decode('utf-8')
 
         with cast(TextIO, (DATA_DIR / 'saml_response.xml').open('r')) as f:
             view.saml_response = SAMLResponse(parse_xml(f.read()), 'relay123')
 
-        light_response, light_request = view.create_light_response('test-light-response-issuer')
-        self.assertEqual(light_response.id, 'test-saml-response-id')
-        self.assertEqual(light_response.in_response_to_id, 'test-light-request-id')
-        self.assertEqual(light_response.issuer, 'test-light-response-issuer')
-
-        self.assertEqual(self.client_mock.mock_calls,
-                         [call.connect('test.example.net', 1234),
-                          call.get_cache('test-proxy-service-request-cache'),
-                          call.get_cache().get('test-saml-request-id')])
+        light_response = view.create_light_response('test-light-response-issuer')
+        self.assertEqual(light_response.id, 'test-saml-response-id')  # Preserved
+        self.assertEqual(light_response.in_response_to_id, 'test-saml-request-id')  # Preserved
+        self.assertEqual(light_response.issuer, 'test-light-response-issuer')  # Replaced
 
     @freeze_time('2017-12-11 14:12:05')
     @patch('eidas_node.utils.uuid4', return_value='0uuid4')
@@ -256,17 +222,12 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(token.id, 'T0uuid4')
         self.assertEqual(token.issuer, 'test-token-issuer')
         self.assertEqual(token.created, datetime(2017, 12, 11, 14, 12, 5))
-        self.assertEqual(view.light_response.id, 'T0uuid4')
         self.assertEqual(token.encode('sha256', 'test-secret').decode('ascii'), encoded_token)
         self.assertEqual(uuid_mock.mock_calls, [call()])
 
     @freeze_time('2017-12-11 14:12:05')
     @patch('eidas_node.utils.uuid4', return_value='0uuid4')
     def test_post_success(self, uuid_mock: MagicMock):
-        light_request = LightRequest(**LIGHT_REQUEST_DICT)
-        light_request.issuer = 'https://example.net/EidasNode/ConnectorMetadata'
-        self.cache_mock.get.return_value = dump_xml(light_request.export_xml()).decode('utf-8')
-
         with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
             saml_request_xml = f.read()
 
@@ -290,16 +251,14 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         light_response_data = LIGHT_RESPONSE_DICT.copy()
         light_response_data.update({
             'status': Status(**light_response_data['status']),
-            'id': 'T0uuid4',
-            'in_response_to_id': 'test-light-request-id',
-            'issuer': 'https://test.example.net/node-proxy-service-response',
+            'id': 'test-saml-response-id',  # Preserved
+            'in_response_to_id': 'test-saml-request-id',  # Preserved
+            'issuer': 'https://test.example.net/node-proxy-service-response',  # Replaced
         })
         light_response = LightResponse(**light_response_data)
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=66)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect('test.example.net', 1234),
-                          call.get_cache('test-proxy-service-request-cache'),
-                          call.get_cache().get('test-saml-request-id'),
                           call.get_cache('test-proxy-service-response-cache'),
                           call.get_cache().put('T0uuid4', dump_xml(light_response.export_xml()).decode('utf-8'))])
 
