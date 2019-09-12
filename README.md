@@ -96,4 +96,112 @@ You can customize the authorization flow by subclassing view classes in [`eidas_
 Specific Connector
 ------------------
 
-Not yet implemented.
+Sample settings are provided in [`samples/connector_settings.py`](samples/connector_settings.py).
+
+### Usage
+
+To use eIDAS Connector, adjust Django settings:
+
+* Set up  Django template engine and static files.
+* Add `'eidas_node.connector.apps.ConnectorConfig'` to `INSTALLED_APPS`.
+* Set `ROOT_URLCONF` to `'eidas_node.connector.urls'` or include it in your URL configuration.
+* Provide mandatory configuration options `CONNECTOR_REQUEST_TOKEN`, `CONNECTOR_RESPONSE_TOKEN`, `CONNECTOR_LIGHT_STORAGE`, and `CONNECTOR_SERVICE_PROVIDER` (see below).
+
+### Views
+
+Setting `ROOT_URLCONF` to `eidas_node.connector.urls` will provide you with three main views:
+
+* `/CountrySelector`:
+  Accepts a *SAML Request* and *Relay State* from Service Provider and lets user select his/her *country* unless it has already been provided.
+  The SAML Request is then forwarded to `/ServiceProviderRequest` endpoint.
+  - Method: HTTP POST.
+  - POST Parameters:
+    - `SAMLRequest` (required): A SAML request to forward to eIDAS Network.
+    - `RelayState` (required): A relay state.
+    - `country` or the value set in `CONNECTOR_SERVICE_PROVIDER['COUNTRY_PARAMETER']` (optional): Citizen country code.
+
+* `/ServiceProviderRequest`:
+  Accepts a *SAML Request*, *Relay State* and *citizen country code* from Service Provider and forwards the request to eIDAS Network.
+  - Method: HTTP POST.
+  - POST Parameters:
+    - `SAMLRequest` (required): A SAML request to forward to eIDAS Network.
+    - `RelayState` (required): A relay state.
+    - `country` or the value set in `CONNECTOR_SERVICE_PROVIDER['COUNTRY_PARAMETER']` (required): Citizen country code.
+
+* `/ConnectorResponse`:
+  Accepts a light token from eIDAS Network and forwards corresponding light response to Service Provider.
+  - Method: HTTP POST.
+  - POST Parameters:
+    - `token` or the value set in `CONNECTOR_RESPONSE_TOKEN['PARAMETER_NAME']`(required): A light token corresponding to a light response.
+
+Setting `ROOT_URLCONF` to `eidas_node.connector.demo.urls` will provide you with two additional views:
+
+* `/DemoServiceProviderRequest`:
+  A demo service provider page for sending preset SAML requests to Specific Connector.
+* `/DemoServiceProviderResponse`:
+  A demo service provider page for displaying SAML responses from Specific Connector.
+
+### Settings
+
+#### `CONNECTOR_REQUEST_TOKEN`
+
+Settings of **a light token corresponding to an outgoing light request**.
+A dictionary with following items:
+
+* `HASH_ALGORITHM` (optional, default `'sha256'`): A hash algorithm used for token digest.
+* `SECRET` (required): A token secret shared with eIDAS node.
+* `ISSUER` (required): An issuer of the light token.
+* `PARAMETER_NAME` (optional, default `'token'`): The name of the HTTP POST parameter to provide encoded light token.
+
+#### `CONNECTOR_RESPONSE_TOKEN`
+
+Settings of **a light token corresponding to an incoming light response**.
+A dictionary with following items:
+
+* `HASH_ALGORITHM` (optional, default `'sha256'`): A hash algorithm used for token digest.
+* `SECRET` (required): A token secret shared with eIDAS node.
+* `ISSUER` (required): An issuer of the light token.
+* `PARAMETER_NAME` (optional, default `'token'`): The name of the HTTP POST parameter to provide encoded light token.
+* `LIFETIME` (optional, default `10`): A lifetime of the light token in minutes until is its considered expired.
+   Set to `0` for unlimited lifetime.
+
+#### `CONNECTOR_LIGHT_STORAGE`
+
+Settings for **a storage of light requests and responses**.
+A dictionary with following items:
+
+* `BACKEND` (optional, default `'eidas_node.storage.ignite.IgniteStorage'`): The backend class for communication with the light storage.
+* `OPTIONS` (required): A dictionary with configuration of the selected backend.
+  The `IgniteStorage` backend expects following options:
+  - `host`: Apache Ignite service host.
+  - `port`: Apache Ignite service port.
+  - `request_cache_name`: The cache to retrieve light requests (e.g., `specificNodeConnectorRequestCache`).
+  - `response_cache_name`: The cache to store light responses (e.g., `nodeSpecificConnectorResponseCache`).
+  - `timeout`: A timeout for socket operations in seconds.
+
+#### `CONNECTOR_SERVICE_PROVIDER`
+
+Settings for **the interaction with Service Provider**.
+A dictionary with following items:
+
+* `ENDPOINT` (required): The URL where the Service Provider expects authentication responses.
+* `REQUEST_ISSUER` (required): The expected issuer of the Service Provider's authentication request.
+* `RESPONSE_ISSUER` (required): The issuer of the authentication response registered at Service Provider.
+* `COUNTRY_PARAMETER` (optional, default `country`): The name of a POST parameter containing citizen country code for `/CitizenCountrySelector` and `/ServiceProviderRequest` views.
+
+#### `CONNECTOR_EIDAS_NODE`
+
+Settings for **the interaction with eIDAS Node**.
+A dictionary with following items:
+
+* `CONNECTOR_REQUEST_URL` (required): The URL where eIDAS Node expects authentication requests (e.g., `https://test.example.net/EidasNode/SpecificConnectorRequest`).
+* `REQUEST_ISSUER` (required): The issuer for light requests specified in eIDAS Node configuration.
+
+#### `CONNECTOR_SELECTOR_COUNTRIES`
+
+A list of pairs with country code and name to be displayed in citizen country selector (`/CitizenCountrySelector`).
+Default is all 28 countries of EU.
+
+### Customization
+
+You can customize the authorization flow by subclassing view classes in [`eidas_node.connector.views`](eidas_node/connector/views.py), overriding necessary methods and adjusting URL configuration.
