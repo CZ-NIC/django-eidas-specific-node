@@ -113,3 +113,5 @@ CONNECTOR_EIDAS_NODE = {
     'CONNECTOR_REQUEST_URL': 'http://test.example.net/SpecificConnectorRequest',
     'REQUEST_ISSUER': 'test-connector-request-issuer',
 }  # type: Dict[str, str]
+
+CONNECTOR_SELECTOR_COUNTRIES = [('CA', 'Test Country'), ('CZ', 'Another Country')]
