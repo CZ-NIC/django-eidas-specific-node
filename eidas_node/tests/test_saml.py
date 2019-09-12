@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, ContextManager, TextIO, cast
+from typing import Any, BinaryIO, TextIO, cast
 
 import xmlsec
 from django.test import SimpleTestCase
@@ -32,7 +32,7 @@ LIGHT_REQUEST_DICT.update({'id': 'test-saml-request-id', 'issuer':  'test-saml-r
 
 
 class ValidationErrorMixin:
-    def assert_validation_error(self, path: str, message: str, *args, **kwargs) -> ContextManager[None]:
+    def assert_validation_error(self, path: str, message: str, *args, **kwargs) -> Any:
         message = str(dict([(path, message)]))
         return cast(SimpleTestCase, self).assertRaisesMessage(ValidationError, message, *args, **kwargs)
 
