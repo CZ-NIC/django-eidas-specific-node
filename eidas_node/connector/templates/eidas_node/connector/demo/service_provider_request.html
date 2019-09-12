@@ -5,7 +5,7 @@
 
 {% block content %}
     <h1>{% trans "Demo Service Provider Request" %}</h1>
-    {%  if saml_request %}
+    {% if saml_request %}
         <h2>SAML Request</h2>
         <form action="{{ connector_endpoint }}" method="post">
             <input type="submit" value="Submit SAML Request to Connector" /><br/>
