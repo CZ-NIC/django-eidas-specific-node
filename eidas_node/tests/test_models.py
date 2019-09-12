@@ -351,6 +351,13 @@ class TestStatus(ValidationMixin, SimpleTestCase):
         'status_message': 1,
     }
 
+    def test_deserialize_sub_status_code_invalid(self):
+        status = Status()
+        elm = Element('subStatusCode')
+        for invalid in '##', 'test ## test':
+            elm.text = invalid
+            self.assertIsNone(status.deserialize_sub_status_code(elm))
+
 
 class TestLightResponse(ValidationMixin, SimpleTestCase):
     MODEL = LightResponse
