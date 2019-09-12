@@ -1,11 +1,10 @@
-{% extends "eidas_node/proxy_service/base.html" %}
+{% extends "eidas_node/connector/base.html" %}
 {% load i18n staticfiles %}
 
 {% block title %}{% trans "Service Provider Request" %}{% endblock %}
-
 {% block scripts %}
     {{ block.super }}
-    <script type="text/javascript" src="{% static "eidas_node/proxy_service/formautosubmit.js" %}"></script>
+    <script type="text/javascript" src="{% static "eidas_node/connector/formautosubmit.js" %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -15,9 +14,8 @@
         <p>{{ error }}</p>
     {% else %}
         <p>{% trans "Redirect to Identity Provider is in progress. If you are not redirected automatically, use Continue button below." %}</p>
-        <form action="{{ identity_provider_endpoint }}" method="post" id="proxy-service-request-form">
-            <input type="hidden" name="SAMLRequest" value="{{ saml_request }}"/>
-            <input type="hidden" name="RelayState" value="{{ relay_state }}"/>
+        <form class="auto-submit" action="{{ eidas_url }}" method="post" id="service-provider-request-form">
+            <input type="hidden" name="{{ token_parameter }}" value="{{ token }}"/>
             <input type="submit" value="Continue" />
         </form>
     {% endif %}

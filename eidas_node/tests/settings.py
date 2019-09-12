@@ -8,6 +8,7 @@ SECRET_KEY = 'SECRET'
 
 INSTALLED_APPS = [
     'django.contrib.staticfiles',
+    'eidas_node.connector.apps.ConnectorConfig',
     'eidas_node.proxy_service.apps.ProxyServiceConfig',
 ]  # type: List[str]
 MIDDLEWARE = [
@@ -72,4 +73,43 @@ PROXY_SERVICE_EIDAS_NODE = {
     'PROXY_SERVICE_RESPONSE_URL': 'https://test.example.net/SpecificProxyServiceResponse',
     'REQUEST_ISSUER': 'test-light-request-issuer',
     'RESPONSE_ISSUER': 'https://test.example.net/node-proxy-service-response',
+}  # type: Dict[str, str]
+
+# eIDAS Connector
+CONNECTOR_REQUEST_TOKEN = {
+    'HASH_ALGORITHM': 'sha256',
+    'SECRET': 'request-token-secret',
+    'ISSUER': 'request-token-issuer',
+    'PARAMETER_NAME': 'test_request_token',
+}  # type: Dict[str, Any]
+
+CONNECTOR_RESPONSE_TOKEN = {
+    'HASH_ALGORITHM': 'sha256',
+    'SECRET': 'response-token-secret',
+    'ISSUER': 'response-token-issuer',
+    'PARAMETER_NAME': 'test_response_token',
+    'LIFETIME': 10,  # minutes
+}  # type: Dict[str, Any]
+
+CONNECTOR_SERVICE_PROVIDER = {
+    'ENDPOINT': '/DemoServiceProviderResponse',
+    'REQUEST_ISSUER': 'test-saml-request-issuer',
+    'RESPONSE_ISSUER': 'test-saml-response-issuer',
+    'COUNTRY_PARAMETER': 'country_param',
+}  # type: Dict[str, str]
+
+CONNECTOR_LIGHT_STORAGE = {
+    'BACKEND': 'eidas_node.storage.ignite.IgniteStorage',
+    'OPTIONS': {
+        'host': 'test.example.net',
+        'port': 1234,
+        'request_cache_name': 'test-connector-request-cache',
+        'response_cache_name': 'test-connector-response-cache',
+        'timeout': 66,
+    }
+}  # type: Dict[str, Any]
+
+CONNECTOR_EIDAS_NODE = {
+    'CONNECTOR_REQUEST_URL': 'http://test.example.net/SpecificConnectorRequest',
+    'REQUEST_ISSUER': 'test-connector-request-issuer',
 }  # type: Dict[str, str]
