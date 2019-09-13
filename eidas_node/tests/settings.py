@@ -1,12 +1,11 @@
 """Django settings for unitests."""
-from pathlib import Path
 from typing import Any, Dict, List
 
+from eidas_node.tests.constants import KEY_FILE
 from eidas_node.tests.warnings import setup_warnings_filter
 
 setup_warnings_filter()
 
-DATA_DIR = Path(__file__).parent / 'data'  # type: Path
 
 SECRET_KEY = 'SECRET'
 
@@ -60,7 +59,7 @@ PROXY_SERVICE_IDENTITY_PROVIDER = {
     'ENDPOINT': 'https://test.example.net/identity-provider-endpoint',
     'REQUEST_ISSUER': 'https://test.example.net/saml/idp.xml',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
-    'KEY_FILE': str(DATA_DIR / 'key.pem'),
+    'KEY_FILE': KEY_FILE,
 }  # type: Dict[str, str]
 
 PROXY_SERVICE_LIGHT_STORAGE = {

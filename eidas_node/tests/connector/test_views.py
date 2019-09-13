@@ -15,7 +15,7 @@ from eidas_node.errors import ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.saml import Q_NAMES, SAMLRequest
 from eidas_node.storage.ignite import IgniteStorage
-from eidas_node.tests.settings import DATA_DIR
+from eidas_node.tests.constants import DATA_DIR
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT
 from eidas_node.tests.test_saml import LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin

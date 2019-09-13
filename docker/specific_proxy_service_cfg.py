@@ -9,7 +9,7 @@ See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 import os
 from typing import Dict, Any
 
-from eidas_node.tests.test_models import DATA_DIR
+from eidas_node.tests.constants import DATA_DIR
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5x-fiyyunqio&)a+8%$0fqvqpc1s18n^xj21ftc-ojpu2)jmce'
