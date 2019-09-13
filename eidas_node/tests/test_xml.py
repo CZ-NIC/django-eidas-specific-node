@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import BinaryIO, cast
+from typing import BinaryIO, Optional, cast
 from unittest.mock import Mock, patch
 
 import xmlsec
@@ -8,7 +8,8 @@ from lxml.etree import Element, SubElement
 
 from eidas_node.saml import NAMESPACES, Q_NAMES
 from eidas_node.tests.test_saml import DATA_DIR
-from eidas_node.xml import create_xml_uuid, decrypt_xml, dump_xml, get_element_path, is_xml_id_valid, parse_xml
+from eidas_node.xml import (create_xml_uuid, decrypt_xml, dump_xml, get_element_path, is_xml_id_valid, parse_xml,
+                            remove_extra_xml_whitespace)
 
 
 class TestGetElementPath(SimpleTestCase):
@@ -97,3 +98,69 @@ class TestDecryptXML(SimpleTestCase):
         decrypt_xml(document_decrypted, self.KEY_FILE)
         actual = dump_xml(document_decrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
+
+
+class TestRemoveExtraWhitespace(SimpleTestCase):
+
+    def create_tree(self, text: Optional[str]) -> tuple:
+        root = Element('root')
+        root.text = text
+        root.tail = text
+        child = SubElement(root, 'child')
+        child.text = text
+        child.tail = text
+        grandchild = SubElement(child, 'child')
+        grandchild.text = text
+        grandchild.tail = text
+        return root, child, grandchild
+
+    def test_remove_extra_xml_whitespace_various_whitespace(self):
+        for space in None, '', ' ', ' \n\t':
+            with self.subTest(space=space):
+                root, child, grandchild = self.create_tree(space)
+                grandchild.text = None
+                remove_extra_xml_whitespace(root)
+                self.assertIsNone(root.text)
+                self.assertIsNone(root.tail)
+                self.assertIsNone(child.text)
+                self.assertIsNone(child.tail)
+                self.assertIsNone(grandchild.text)
+                self.assertIsNone(grandchild.tail)
+
+    def test_remove_extra_xml_whitespace_leaf_node_text_empty(self):
+        for text in None, '':
+            with self.subTest(text=text):
+                root, child, grandchild = self.create_tree(' ')
+                grandchild.text = text
+                remove_extra_xml_whitespace(root)
+                self.assertIsNone(root.text)
+                self.assertIsNone(root.tail)
+                self.assertIsNone(child.text)
+                self.assertIsNone(child.tail)
+                self.assertIsNone(grandchild.text)
+                self.assertIsNone(grandchild.tail)
+
+    def test_remove_extra_xml_whitespace_leaf_node_whitespace_text_preserved(self):
+        for text in ' ', ' \t\n':
+            with self.subTest(text=text):
+                root, child, grandchild = self.create_tree(' ')
+                grandchild.text = text
+                remove_extra_xml_whitespace(root)
+                self.assertIsNone(root.text)
+                self.assertIsNone(root.tail)
+                self.assertIsNone(child.text)
+                self.assertIsNone(child.tail)
+                self.assertEqual(grandchild.text, text)
+                self.assertIsNone(grandchild.tail)
+
+    def test_remove_extra_xml_whitespace_text_preserved(self):
+        for text in ' abc', 'abc':
+            with self.subTest(text=text):
+                root, child, grandchild = self.create_tree(text)
+                remove_extra_xml_whitespace(root)
+                self.assertEqual(root.text, text)
+                self.assertEqual(root.tail, text)
+                self.assertEqual(child.text, text)
+                self.assertEqual(child.tail, text)
+                self.assertEqual(grandchild.text, text)
+                self.assertEqual(grandchild.tail, text)

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import xmlsec
 from lxml import etree
-from lxml.etree import ElementTree
+from lxml.etree import Element, ElementTree
 
 VALID_XML_ID_RE = re.compile('^[_a-zA-Z][-._a-zA-Z0-9]*$')
 XML_ENC_NAMESPACE = 'http://www.w3.org/2001/04/xmlenc#'
@@ -77,9 +77,13 @@ def decrypt_xml(tree: ElementTree, key_file: str) -> None:
         for elm in encrypted_elements:
             enc_ctx.decrypt(elm)
 
-        # Fix pretty printing
-        for elm in tree.iter():
-            if elm.tail is not None and elm.tail.isspace():
-                elm.tail = None
-            if elm.text is not None and elm.text.isspace():
-                elm.text = None
+        remove_extra_xml_whitespace(tree.getroot())
+
+
+def remove_extra_xml_whitespace(node: Element) -> None:
+    """Remove insignificant XML whitespace."""
+    for elm in node.iter():
+        if not elm.tail or elm.tail.isspace():
+            elm.tail = None
+        if not elm.text or len(elm) and elm.text.isspace():
+            elm.text = None
