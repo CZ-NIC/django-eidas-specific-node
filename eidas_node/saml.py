@@ -11,7 +11,7 @@ from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
 from eidas_node.utils import datetime_iso_format_milliseconds
-from eidas_node.xml import XML_ENC_NAMESPACE, dump_xml, get_element_path, is_xml_id_valid
+from eidas_node.xml import XML_ENC_NAMESPACE, decrypt_xml, dump_xml, get_element_path, is_xml_id_valid
 
 NAMESPACES = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
@@ -274,6 +274,10 @@ class SAMLResponse:
                        Q_NAMES['saml2:AuthnContextClassRef']).text = light_response.level_of_assurance.value
 
         return cls(ElementTree(root), light_response.relay_state)
+
+    def decrypt(self, key_file: str) -> None:
+        """Decrypt encrypted SAML response."""
+        decrypt_xml(self.document, key_file)
 
     def create_light_response(self) -> LightResponse:
         """Convert SAML response to light response."""

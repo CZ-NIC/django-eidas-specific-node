@@ -130,6 +130,8 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
 
 
 class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
+    KEY_FILE = str(DATA_DIR / 'key.pem')
+
     def create_light_response(self, success: bool, **kwargs) -> LightResponse:
         data = (LIGHT_RESPONSE_DICT if success else FAILED_LIGHT_RESPONSE_DICT).copy()
         data['status'] = Status(**data['status'])
@@ -177,6 +179,17 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_version_mismatch.xml').open('r')) as f2:
             data = f2.read()
         self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'), data)
+
+    def test_decrypt(self):
+        self.maxDiff = None
+        with cast(BinaryIO, (DATA_DIR / 'saml_response_decrypted.xml').open('rb')) as f:
+            document_decrypted = f.read()
+        with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
+            document_encrypted = f.read()
+
+        response = SAMLResponse(parse_xml(document_encrypted))
+        response.decrypt(self.KEY_FILE)
+        self.assertXMLEqual(dump_xml(response.document).decode('utf-8'), document_decrypted.decode('utf-8'))
 
     def test_create_light_response_not_encrypted(self):
         self.maxDiff = None
