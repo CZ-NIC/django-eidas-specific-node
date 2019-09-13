@@ -8,7 +8,7 @@ from lxml.etree import Element, ElementTree, SubElement
 from eidas_node.datamodels import (DataModel, XMLDataModel, convert_field_name_to_tag_name,
                                    convert_tag_name_to_field_name)
 from eidas_node.errors import ValidationError
-from eidas_node.utils import dump_xml, parse_xml
+from eidas_node.xml import dump_xml, parse_xml
 
 
 class MyName(DataModel):  # pragma: no cover

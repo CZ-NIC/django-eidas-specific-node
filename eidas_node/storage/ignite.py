@@ -7,7 +7,7 @@ from pyignite.cache import Cache
 from eidas_node.models import LightRequest, LightResponse
 from eidas_node.storage import LightStorage
 from eidas_node.storage.base import LOGGER
-from eidas_node.utils import dump_xml, parse_xml
+from eidas_node.xml import dump_xml, parse_xml
 
 
 class IgniteStorage(LightStorage):

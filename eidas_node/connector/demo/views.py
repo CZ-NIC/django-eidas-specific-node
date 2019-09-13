@@ -15,7 +15,7 @@ from eidas_node.connector.settings import CONNECTOR_SETTINGS
 from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType
 from eidas_node.models import LightRequest
 from eidas_node.saml import SAMLRequest
-from eidas_node.utils import create_xml_uuid, dump_xml
+from eidas_node.xml import create_xml_uuid, dump_xml
 
 LOGGER = logging.getLogger('eidas_node.connector')
 

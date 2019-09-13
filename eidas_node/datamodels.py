@@ -22,7 +22,7 @@ from typing import Any, Dict, Iterator, List, Tuple, Type, TypeVar, Union
 from lxml.etree import Element, ElementTree, SubElement
 
 from eidas_node.errors import ValidationError
-from eidas_node.utils import get_element_path
+from eidas_node.xml import get_element_path
 
 
 class DataModel(ABC):

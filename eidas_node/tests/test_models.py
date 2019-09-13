@@ -12,7 +12,7 @@ from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProvider
 from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import (LightRequest, LightResponse, LightToken, Status, deserialize_attributes,
                                serialize_attributes)
-from eidas_node.utils import dump_xml, parse_xml
+from eidas_node.xml import dump_xml, parse_xml
 
 DATA_DIR = Path(__file__).parent / 'data'  # type: Path
 

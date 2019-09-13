@@ -20,7 +20,8 @@ from eidas_node.errors import EidasNodeError, ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.saml import SAMLRequest, SAMLResponse
 from eidas_node.storage import LightStorage
-from eidas_node.utils import create_xml_uuid, dump_xml, import_from_module, parse_xml
+from eidas_node.utils import import_from_module
+from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.connector')
 

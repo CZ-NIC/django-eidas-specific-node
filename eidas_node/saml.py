@@ -3,7 +3,6 @@ from collections import OrderedDict
 from datetime import datetime
 from typing import Dict, Optional, Set, Type, TypeVar
 
-import xmlsec
 from lxml import etree
 from lxml.etree import Element, ElementTree, QName, SubElement
 
@@ -11,13 +10,14 @@ from eidas_node.attributes import ATTRIBUTE_MAP, EIDAS_ATTRIBUTE_NAME_FORMAT
 from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.errors import ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
-from eidas_node.utils import datetime_iso_format_milliseconds, dump_xml, get_element_path, is_xml_id_valid
+from eidas_node.utils import datetime_iso_format_milliseconds
+from eidas_node.xml import XML_ENC_NAMESPACE, dump_xml, get_element_path, is_xml_id_valid
 
 NAMESPACES = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
     'saml2p': 'urn:oasis:names:tc:SAML:2.0:protocol',
     'eidas': 'http://eidas.europa.eu/saml-extensions',
-    'xmlenc': 'http://www.w3.org/2001/04/xmlenc#',
+    'xmlenc': XML_ENC_NAMESPACE,
 }  # type: Dict[str, str]
 """XML namespaces in SAML requests."""
 
@@ -358,29 +358,6 @@ class SAMLResponse:
     def __str__(self) -> str:
         return 'relay_state = {!r}, document = {}'.format(
             self.relay_state, dump_xml(self.document).decode('utf-8') if self.document else 'None')
-
-
-def decrypt_xml(tree: ElementTree, key_file: str) -> None:
-    """
-    Decrypt a XML document.
-
-    :param tree: The XML document to decrypt.
-    :param key_file: A path to an encryption key file.
-    """
-    encrypted_elements = tree.findall(".//{%s}EncryptedData" % NAMESPACES['xmlenc'])
-    if encrypted_elements:
-        manager = xmlsec.KeysManager()
-        manager.add_key(xmlsec.Key.from_file(key_file, xmlsec.constants.KeyDataFormatPem))
-        enc_ctx = xmlsec.EncryptionContext(manager)
-        for elm in encrypted_elements:
-            enc_ctx.decrypt(elm)
-
-        # Fix pretty printing
-        for elm in tree.iter():
-            if elm.tail is not None and elm.tail.isspace():
-                elm.tail = None
-            if elm.text is not None and elm.text.isspace():
-                elm.text = None
 
 
 def create_attribute_elm_attributes(name: str, required: Optional[bool]) -> Element:

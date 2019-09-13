@@ -6,7 +6,7 @@ from django.test import SimpleTestCase
 from eidas_node.models import LightRequest, LightResponse
 from eidas_node.storage.ignite import IgniteStorage
 from eidas_node.tests.test_models import DATA_DIR
-from eidas_node.utils import parse_xml
+from eidas_node.xml import parse_xml
 
 
 class IgniteMockMixin:
