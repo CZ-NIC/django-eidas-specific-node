@@ -8,18 +8,24 @@ from lxml.etree import Element, ElementTree, QName, SubElement
 
 from eidas_node.attributes import ATTRIBUTE_MAP, EIDAS_ATTRIBUTE_NAME_FORMAT
 from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode
-from eidas_node.errors import ValidationError
+from eidas_node.errors import SecurityError, ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
 from eidas_node.utils import datetime_iso_format_milliseconds
-from eidas_node.xml import XML_ENC_NAMESPACE, decrypt_xml, dump_xml, get_element_path, is_xml_id_valid
+from eidas_node.xml import (XML_ENC_NAMESPACE, XML_SIG_NAMESPACE, decrypt_xml, dump_xml, get_element_path,
+                            is_xml_id_valid, sign_xml_node)
 
-NAMESPACES = {
+EIDAS_NAMESPACES = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
     'saml2p': 'urn:oasis:names:tc:SAML:2.0:protocol',
     'eidas': 'http://eidas.europa.eu/saml-extensions',
-    'xmlenc': XML_ENC_NAMESPACE,
 }  # type: Dict[str, str]
-"""XML namespaces in SAML requests."""
+"""XML namespaces in SAML requests/responses."""
+
+KNOWN_NAMESPACES = {
+    'xmlenc': XML_ENC_NAMESPACE,
+    'ds': XML_SIG_NAMESPACE,
+}
+KNOWN_NAMESPACES.update(EIDAS_NAMESPACES)
 
 KNOWN_TAGS = {
     'saml2': {'Issuer', 'AuthnContextClassRef', 'EncryptedAssertion', 'Assertion', 'Subject', 'NameID',
@@ -28,12 +34,13 @@ KNOWN_TAGS = {
     'saml2p': {'AuthnRequest', 'Extensions', 'NameIDPolicy', 'RequestedAuthnContext',
                'Response', 'Status', 'StatusCode', 'StatusMessage'},
     'eidas': {'SPType', 'SPCountry', 'RequestedAttributes', 'RequestedAttribute', 'AttributeValue'},
-    'xmlenc': {'EncryptedData'}
+    'xmlenc': {'EncryptedData'},
+    'ds': {'Signature'}
 }  # type: Dict[str, Set[str]]
 """Recognized XML tags in SAML requests."""
 
 Q_NAMES = {
-    '{}:{}'.format(ns, tag): QName(NAMESPACES[ns], tag) for ns, tags in KNOWN_TAGS.items() for tag in tags
+    '{}:{}'.format(ns, tag): QName(KNOWN_NAMESPACES[ns], tag) for ns, tags in KNOWN_TAGS.items() for tag in tags
 }  # type: Dict[str, QName]
 """Qualified names of recognized XML tags in SAML requests."""
 
@@ -84,7 +91,7 @@ class SAMLRequest:
         ])
         if light_request.provider_name is not None:
             root_attributes['ProviderName'] = light_request.provider_name
-        root = etree.Element(Q_NAMES['saml2p:AuthnRequest'], attrib=root_attributes, nsmap=NAMESPACES)
+        root = etree.Element(Q_NAMES['saml2p:AuthnRequest'], attrib=root_attributes, nsmap=EIDAS_NAMESPACES)
 
         # 1. RequestAbstractType <saml2:Issuer>:
         if light_request.issuer is not None:
@@ -195,6 +202,22 @@ class SAMLResponse:
         self.document = document
         self.relay_state = relay_state
 
+    @property
+    def response_signature(self) -> Optional[Element]:
+        """Get an element of the XML signature of the whole SAML response."""
+        return self.document.getroot().find('./{}'.format(Q_NAMES['ds:Signature']))
+
+    @property
+    def assertion_signature(self) -> Optional[Element]:
+        """Get an element of XML signature of SAML assertion."""
+        root = self.document.getroot()
+        signature = root.find('./{}/{}'.format(Q_NAMES['saml2:Assertion'], Q_NAMES['ds:Signature']))
+        if signature is not None:
+            return signature
+
+        return root.find('./{}/{}/{}'.format(
+            Q_NAMES['saml2:EncryptedAssertion'], Q_NAMES['saml2:Assertion'], Q_NAMES['ds:Signature']))
+
     @classmethod
     def from_light_response(cls: Type[SAMLResponseType],
                             light_response: LightResponse,
@@ -211,7 +234,7 @@ class SAMLResponse:
         }
         if destination is not None:
             root_attributes['Destination'] = destination
-        root = etree.Element(Q_NAMES['saml2p:Response'], attrib=root_attributes, nsmap=NAMESPACES)
+        root = etree.Element(Q_NAMES['saml2p:Response'], attrib=root_attributes, nsmap=EIDAS_NAMESPACES)
         # 1. StatusResponseType <saml2:Issuer> optional
         if light_response.issuer is not None:
             SubElement(root, Q_NAMES['saml2:Issuer']).text = light_response.issuer
@@ -278,6 +301,39 @@ class SAMLResponse:
     def decrypt(self, key_file: str) -> None:
         """Decrypt encrypted SAML response."""
         decrypt_xml(self.document, key_file)
+
+    def sign_assertion(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> bool:
+        """
+        Sign the SAML assertion.
+
+        :return: `True` if the assertion element is present and has been signed, `False` otherwise.
+        :raise SecurityError: If the assertion or response signature is already present.
+        """
+        assertion = self.document.getroot().find('./{}'.format(Q_NAMES['saml2:Assertion']))
+        if assertion is None:
+            # Failure responses don't contain <Assertion>.
+            return False
+
+        if self.assertion_signature is not None:
+            raise SecurityError('The assertion signature is already present.')
+
+        if self.response_signature is not None:
+            # Signing assertion would invalidate the response signature.
+            raise SecurityError('Cannot sign assertion because response signature is already present.')
+
+        sign_xml_node(assertion, key_file, cert_file, signature_method, digest_method)
+        return True
+
+    def sign_response(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> None:
+        """
+        Sign the whole SAML response.
+
+        :raise SecurityError: If the response signature is already present.
+        """
+        if self.response_signature is not None:
+            raise SecurityError('The response signature is already present.')
+
+        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method)
 
     def create_light_response(self) -> LightResponse:
         """Convert SAML response to light response."""

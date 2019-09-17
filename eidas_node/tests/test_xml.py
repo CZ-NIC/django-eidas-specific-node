@@ -6,7 +6,7 @@ import xmlsec
 from django.test import SimpleTestCase
 from lxml.etree import Element, SubElement
 
-from eidas_node.saml import NAMESPACES, Q_NAMES
+from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES
 from eidas_node.tests.constants import DATA_DIR, KEY_FILE, SIGNATURE_OPTIONS, WRONG_KEY_FILE
 from eidas_node.xml import (create_xml_uuid, decrypt_xml, dump_xml, get_element_path, is_xml_id_valid, parse_xml,
                             remove_extra_xml_whitespace, remove_newlines_in_xml_text, sign_xml_node)
@@ -26,13 +26,13 @@ class TestGetElementPath(SimpleTestCase):
         self.assertEqual(get_element_path(grandchild), '<root><child><grandchild>')
 
     def test_get_element_path_with_namespaces(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=NAMESPACES)
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
         leaf = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
         self.assertEqual(get_element_path(root), '<saml2p:Response>')
         self.assertEqual(get_element_path(leaf), '<saml2p:Response><saml2:EncryptedAssertion>')
 
     def test_get_element_path_mixed(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=NAMESPACES)
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
         leaf = SubElement(SubElement(root, Q_NAMES['saml2:EncryptedAssertion']), 'wrong')
         self.assertEqual(get_element_path(root), '<saml2p:Response>')
         self.assertEqual(get_element_path(leaf), '<saml2p:Response><saml2:EncryptedAssertion><wrong>')
@@ -188,7 +188,7 @@ class TestRemoveNewlinesInXMLText(SimpleTestCase):
 
 
 class TestXMLSignatures(SimpleTestCase):
-    USED_NAMESPACES = {'saml2': NAMESPACES['saml2'], 'saml2p': NAMESPACES['saml2p']}
+    USED_NAMESPACES = {'saml2': EIDAS_NAMESPACES['saml2'], 'saml2p': EIDAS_NAMESPACES['saml2p']}
 
     @patch('eidas_node.xml.create_xml_uuid', return_value='id-0uuid4')
     def test_sign_xml_node_without_id(self, uuid_mock):

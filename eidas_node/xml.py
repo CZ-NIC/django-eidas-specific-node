@@ -10,6 +10,7 @@ from lxml.etree import Element, ElementTree
 
 VALID_XML_ID_RE = re.compile('^[_a-zA-Z][-._a-zA-Z0-9]*$')
 XML_ENC_NAMESPACE = 'http://www.w3.org/2001/04/xmlenc#'
+XML_SIG_NAMESPACE = 'http://www.w3.org/2000/09/xmldsig#'
 XML_ATTRIBUTE_ID = 'ID'
 
 
