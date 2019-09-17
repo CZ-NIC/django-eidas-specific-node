@@ -15,7 +15,7 @@ from eidas_node.connector.settings import CONNECTOR_SETTINGS
 from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType
 from eidas_node.models import LightRequest
 from eidas_node.saml import SAMLRequest
-from eidas_node.xml import create_xml_uuid, dump_xml
+from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.connector')
 
@@ -101,7 +101,13 @@ class DemoServiceProviderResponseView(TemplateView):
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
-        self.saml_response = b64decode(self.request.POST.get('SAMLResponse', '').encode('ascii')).decode('utf-8')
+        saml_response_xml = b64decode(self.request.POST.get('SAMLResponse', '').encode('ascii')).decode('utf-8')
+
+        if saml_response_xml:
+            # Reformat with pretty printing for display
+            saml_response_xml = dump_xml(parse_xml(saml_response_xml)).decode('utf-8')
+
+        self.saml_response = saml_response_xml
         self.relay_state = self.request.POST.get('RelayState')
         return self.get(request)
 

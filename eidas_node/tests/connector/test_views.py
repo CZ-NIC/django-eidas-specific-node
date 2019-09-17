@@ -1,6 +1,6 @@
 from base64 import b64decode, b64encode
 from datetime import datetime
-from typing import BinaryIO, Dict, List, Tuple, cast
+from typing import BinaryIO, Dict, List, Optional, Tuple, cast
 from unittest.mock import MagicMock, call, patch
 
 from django.test import RequestFactory
@@ -15,7 +15,7 @@ from eidas_node.errors import ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.saml import Q_NAMES, SAMLRequest
 from eidas_node.storage.ignite import IgniteStorage
-from eidas_node.tests.constants import DATA_DIR
+from eidas_node.tests.constants import DATA_DIR, SIGNATURE_OPTIONS
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT
 from eidas_node.tests.test_saml import LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
@@ -330,9 +330,32 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
                           call.get_cache().get_and_remove('response-token-id')])
 
     @freeze_time('2017-12-11 14:12:05')
-    def test_create_saml_response(self):
-        light_response = self.get_light_response()
+    def test_create_saml_response_not_signed(self):
         token, encoded = self.get_token()
+        for signature_options in None, {}, {'key_file': '...'}, {'cert_file': '...'}:  # type: Optional[dict]
+            light_response = self.get_light_response()
+
+            view = ConnectorResponseView()
+            view.request = self.factory.post(self.url, {'test_token': encoded})
+            view.light_token = token
+            view.light_response = light_response
+
+            saml_response = view.create_saml_response(
+                'light-request-issuer',
+                'https://test.example.net/DemoServiceProviderResponse',
+                signature_options)
+            root = saml_response.document.getroot()
+            self.assertEqual(root.get('ID'), light_response.id)
+            self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
+            self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
+                             'light-request-issuer')
+            self.assertIsNone(saml_response.response_signature)
+            self.assertIsNone(saml_response.assertion_signature)
+
+    @freeze_time('2017-12-11 14:12:05')
+    def test_create_saml_response_signed(self):
+        token, encoded = self.get_token()
+        light_response = self.get_light_response()
 
         view = ConnectorResponseView()
         view.request = self.factory.post(self.url, {'test_token': encoded})
@@ -341,12 +364,15 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
 
         saml_response = view.create_saml_response(
             'light-request-issuer',
-            'https://test.example.net/DemoServiceProviderResponse')
+            'https://test.example.net/DemoServiceProviderResponse',
+            SIGNATURE_OPTIONS)
         root = saml_response.document.getroot()
         self.assertEqual(root.get('ID'), light_response.id)
         self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
         self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
                          'light-request-issuer')
+        self.assertIsNotNone(saml_response.response_signature)
+        self.assertIsNotNone(saml_response.assertion_signature)
 
     @freeze_time('2017-12-11 14:12:05')
     def test_post_success(self):
@@ -368,6 +394,12 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertIn(light_response.id, saml_response_xml)  # light_response.id preserved
         self.assertIn('<saml2:Issuer>test-saml-response-issuer</saml2:Issuer>', saml_response_xml)
         self.assertIn('Destination="/DemoServiceProviderResponse"', saml_response_xml)
+        # No pretty-printing - it invalidates signatures
+        self.assertIn('><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo>', saml_response_xml)
+        # Response and assertion signatures
+        self.assertEqual(saml_response_xml.count('<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'), 2)
+        self.assertEqual(saml_response_xml.count('Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"'), 2)
+        self.assertEqual(saml_response_xml.count('Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"'), 2)
 
         # Rendering
         self.assertContains(response, 'Redirect to Service Provider is in progress')

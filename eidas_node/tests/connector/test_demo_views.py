@@ -63,15 +63,18 @@ class TestDemoServiceProviderResponseView(SimpleTestCase):
         self.assertContains(response, '<pre style="white-space: pre-wrap;">None</pre>')
 
     def test_post_without_relay_state(self):
-        response = self.client.post(self.url, {'SAMLResponse': b64encode(b'...').decode('ascii')})
-        self.assertEqual(response.context['saml_response'], '...')
+        response = self.client.post(self.url, {'SAMLResponse': b64encode(b'<s></s>').decode('ascii')})
+        self.assertEqual(response.context['saml_response'],
+                         "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<s/>\n")
         self.assertEqual(response.context['relay_state'], 'None')
         self.assertContains(response, '<code>None</code>')
-        self.assertContains(response, '<pre style="white-space: pre-wrap;">...</pre>')
+        self.assertContains(response, '<pre style="white-space: pre-wrap;">&lt;?xml')
 
     def test_post_with_relay_state(self):
-        response = self.client.post(self.url, {'SAMLResponse': b64encode(b'...').decode('ascii'), 'RelayState': 'xyz'})
-        self.assertEqual(response.context['saml_response'], '...')
+        response = self.client.post(self.url, {'SAMLResponse': b64encode(b'<s></s>').decode('ascii'),
+                                               'RelayState': 'xyz'})
+        self.assertEqual(response.context['saml_response'],
+                         "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<s/>\n")
         self.assertEqual(response.context['relay_state'], "'xyz'")
         self.assertContains(response, '<code>&#39;xyz&#39;</code>')
-        self.assertContains(response, '<pre style="white-space: pre-wrap;">...</pre>')
+        self.assertContains(response, '<pre style="white-space: pre-wrap;">&lt;?xml')

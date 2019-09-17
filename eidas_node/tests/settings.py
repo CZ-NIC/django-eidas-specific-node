@@ -1,7 +1,7 @@
 """Django settings for unitests."""
 from typing import Any, Dict, List
 
-from eidas_node.tests.constants import KEY_FILE
+from eidas_node.tests.constants import CERT_FILE, KEY_FILE
 from eidas_node.tests.warnings import setup_warnings_filter
 
 setup_warnings_filter()
@@ -98,8 +98,14 @@ CONNECTOR_SERVICE_PROVIDER = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
+    'RESPONSE_SIGNATURE': {
+        'KEY_FILE': KEY_FILE,
+        'CERT_FILE': CERT_FILE,
+        'SIGNATURE_METHOD': 'RSA_SHA1',
+        'DIGEST_METHOD': 'SHA1',
+    },
     'COUNTRY_PARAMETER': 'country_param',
-}  # type: Dict[str, str]
+}  # type: Dict[str, Any]
 
 CONNECTOR_LIGHT_STORAGE = {
     'BACKEND': 'eidas_node.storage.ignite.IgniteStorage',

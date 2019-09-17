@@ -9,6 +9,7 @@ See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 from typing import Dict, Any
 
 from eidas_node.connector.settings import DEFAULT_COUNTRIES
+from eidas_node.tests.constants import KEY_FILE, CERT_FILE
 
 SECRET_KEY = '5x-fiyyunqio&)a+8%$0fqvqpc1s18n^xj21ftc-ojpu2)jmce'
 DEBUG = True
@@ -57,6 +58,10 @@ CONNECTOR_SERVICE_PROVIDER = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'REQUEST_ISSUER',
     'RESPONSE_ISSUER': 'RESPONSE_ISSUER',
+    'RESPONSE_SIGNATURE': {
+        'KEY_FILE': KEY_FILE,
+        'CERT_FILE': CERT_FILE,
+    },
 }  # type: Dict[str, str]
 
 CONNECTOR_LIGHT_STORAGE = {
