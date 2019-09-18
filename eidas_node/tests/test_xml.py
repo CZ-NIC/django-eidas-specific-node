@@ -4,12 +4,14 @@ from unittest.mock import Mock, patch
 
 import xmlsec
 from django.test import SimpleTestCase
-from lxml.etree import Element, SubElement
+from lxml.etree import Element, QName, SubElement
 
+from eidas_node.errors import SecurityError
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES
-from eidas_node.tests.constants import DATA_DIR, KEY_FILE, SIGNATURE_OPTIONS, WRONG_KEY_FILE
-from eidas_node.xml import (create_xml_uuid, decrypt_xml, dump_xml, get_element_path, is_xml_id_valid, parse_xml,
-                            remove_extra_xml_whitespace, remove_newlines_in_xml_text, sign_xml_node)
+from eidas_node.tests.constants import CERT_FILE, DATA_DIR, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS, WRONG_KEY_FILE
+from eidas_node.xml import (XML_SIG_NAMESPACE, create_xml_uuid, decrypt_xml, dump_xml, get_element_path,
+                            is_xml_id_valid, parse_xml, remove_extra_xml_whitespace, remove_newlines_in_xml_text,
+                            sign_xml_node, verify_xml_signatures)
 
 
 class TestGetElementPath(SimpleTestCase):
@@ -187,7 +189,7 @@ class TestRemoveNewlinesInXMLText(SimpleTestCase):
         self.assertIsNone(root.text)
 
 
-class TestXMLSignatures(SimpleTestCase):
+class TestSignXMLNode(SimpleTestCase):
     USED_NAMESPACES = {'saml2': EIDAS_NAMESPACES['saml2'], 'saml2p': EIDAS_NAMESPACES['saml2p']}
 
     @patch('eidas_node.xml.create_xml_uuid', return_value='id-0uuid4')
@@ -222,3 +224,58 @@ class TestXMLSignatures(SimpleTestCase):
 
         with cast(TextIO, (DATA_DIR / 'signed_response_and_assertion.xml').open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
+
+
+class TestVerifyXMLSignatures(SimpleTestCase):
+    def test_verify_xml_signatures_no_signatures(self):
+        root = Element('root')
+        self.assertEqual(verify_xml_signatures(root, CERT_FILE), [])
+
+    def test_verify_xml_signatures_success(self):
+        with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+
+        remove_extra_xml_whitespace(tree)  # Reverts pretty printing applied after signing
+        verify_xml_signatures(tree, CERT_FILE)
+
+    def test_verify_xml_signatures_nia(self):
+        with cast(TextIO, (DATA_DIR / 'nia_test_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+
+        remove_extra_xml_whitespace(tree)
+        verify_xml_signatures(tree, NIA_CERT_FILE)
+
+    def test_verify_xml_signatures_fail(self):
+        with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+
+        # Fails because of pretty printing
+        self.assertRaises(SecurityError, verify_xml_signatures, tree, CERT_FILE)
+
+    def test_verify_xml_signatures_ref_not_found(self):
+        root = Element('root')
+        signature = SubElement(root, QName(XML_SIG_NAMESPACE, 'Signature'))
+        info = SubElement(signature, QName(XML_SIG_NAMESPACE, 'SignedInfo'))
+        SubElement(info, QName(XML_SIG_NAMESPACE, 'Reference'), {'URI': '#id'})
+        with self.assertRaisesMessage(SecurityError, "Signature 1, reference 1: Element with id 'id' not found."):
+            verify_xml_signatures(root, CERT_FILE)
+
+    def test_verify_xml_signatures_ref_not_once(self):
+        root = Element('root')
+        signature = SubElement(root, QName(XML_SIG_NAMESPACE, 'Signature'))
+        info = SubElement(signature, QName(XML_SIG_NAMESPACE, 'SignedInfo'))
+        SubElement(info, QName(XML_SIG_NAMESPACE, 'Reference'), {'URI': '#id'})
+        SubElement(root, 'item', {'ID': 'id'})
+        SubElement(root, 'item2', {'ID': 'id'})
+        msg = "Signature 1, reference 1: Element with id 'id' occurs more than once."
+        self.assertRaisesMessage(SecurityError, msg, verify_xml_signatures, root, CERT_FILE)
+
+    def test_verify_xml_signatures_ref_invalid(self):
+        for id_ in '', 'id', '#':
+            with self.subTest(id=id_):
+                root = Element('root')
+                signature = SubElement(root, QName(XML_SIG_NAMESPACE, 'Signature'))
+                info = SubElement(signature, QName(XML_SIG_NAMESPACE, 'SignedInfo'))
+                SubElement(info, QName(XML_SIG_NAMESPACE, 'Reference'), {'URI': id_})
+                msg = "Signature 1, reference 1: Invalid id '{}'.".format(id_)
+                self.assertRaisesMessage(SecurityError, msg, verify_xml_signatures, root, CERT_FILE)
