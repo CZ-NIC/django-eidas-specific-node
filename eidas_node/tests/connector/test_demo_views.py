@@ -1,7 +1,18 @@
 from base64 import b64encode
+from typing import Any, Dict, TextIO, cast
 
+from django.test import override_settings
 from django.test.testcases import SimpleTestCase
 from django.urls import reverse
+
+from eidas_node.tests.constants import DATA_DIR
+from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
+
+CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE = {
+    'ENDPOINT': '/DemoServiceProviderResponse',
+    'REQUEST_ISSUER': 'test-saml-request-issuer',
+    'RESPONSE_ISSUER': 'test-saml-response-issuer',
+}  # type: Dict[str, Any]
 
 
 class TestDemoServiceProviderRequestView(SimpleTestCase):
@@ -62,6 +73,7 @@ class TestDemoServiceProviderResponseView(SimpleTestCase):
         self.assertContains(response, '<code>None</code>')
         self.assertContains(response, '<pre style="white-space: pre-wrap;">None</pre>')
 
+    @override_settings(CONNECTOR_SERVICE_PROVIDER=CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE)
     def test_post_without_relay_state(self):
         response = self.client.post(self.url, {'SAMLResponse': b64encode(b'<s></s>').decode('ascii')})
         self.assertEqual(response.context['saml_response'],
@@ -70,6 +82,7 @@ class TestDemoServiceProviderResponseView(SimpleTestCase):
         self.assertContains(response, '<code>None</code>')
         self.assertContains(response, '<pre style="white-space: pre-wrap;">&lt;?xml')
 
+    @override_settings(CONNECTOR_SERVICE_PROVIDER=CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE)
     def test_post_with_relay_state(self):
         response = self.client.post(self.url, {'SAMLResponse': b64encode(b'<s></s>').decode('ascii'),
                                                'RelayState': 'xyz'})
@@ -77,4 +90,16 @@ class TestDemoServiceProviderResponseView(SimpleTestCase):
                          "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<s/>\n")
         self.assertEqual(response.context['relay_state'], "'xyz'")
         self.assertContains(response, '<code>&#39;xyz&#39;</code>')
+        self.assertContains(response, '<pre style="white-space: pre-wrap;">&lt;?xml')
+
+    def test_post_with_signed_saml_response(self):
+        with cast(TextIO, (DATA_DIR / 'signed_response_and_assertion.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+        remove_extra_xml_whitespace(tree)
+        saml_response_encoded = b64encode(dump_xml(tree, pretty_print=False)).decode('ascii')
+        response = self.client.post(self.url, {'SAMLResponse': saml_response_encoded})
+        self.assertIn('\n  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">', response.context['saml_response'])
+        self.assertIn('\n    <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">', response.context['saml_response'])
+        self.assertEqual(response.context['relay_state'], 'None')
+        self.assertContains(response, '<code>None</code>')
         self.assertContains(response, '<pre style="white-space: pre-wrap;">&lt;?xml')
