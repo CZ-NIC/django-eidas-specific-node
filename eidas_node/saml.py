@@ -8,11 +8,11 @@ from lxml.etree import Element, ElementTree, QName, SubElement
 
 from eidas_node.attributes import ATTRIBUTE_MAP, EIDAS_ATTRIBUTE_NAME_FORMAT
 from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode
-from eidas_node.errors import SecurityError, ValidationError
+from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
 from eidas_node.utils import datetime_iso_format_milliseconds
 from eidas_node.xml import (XML_ENC_NAMESPACE, XML_SIG_NAMESPACE, decrypt_xml, dump_xml, get_element_path,
-                            is_xml_id_valid, sign_xml_node)
+                            is_xml_id_valid, sign_xml_node, verify_xml_signatures)
 
 EIDAS_NAMESPACES = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
@@ -203,6 +203,16 @@ class SAMLResponse:
         self.relay_state = relay_state
 
     @property
+    def assertion(self) -> Optional[Element]:
+        """Get SAML assertion element."""
+        root = self.document.getroot()
+        candidate1 = root.find('./{}'.format(Q_NAMES['saml2:Assertion']))
+        candidate2 = root.find('./{}/{}'.format(Q_NAMES['saml2:EncryptedAssertion'], Q_NAMES['saml2:Assertion']))
+        if candidate1 is not None and candidate2 is not None:
+            raise ParseError('Too many assertion elements.')
+        return candidate2 if candidate1 is None else candidate1
+
+    @property
     def response_signature(self) -> Optional[Element]:
         """Get an element of the XML signature of the whole SAML response."""
         return self.document.getroot().find('./{}'.format(Q_NAMES['ds:Signature']))
@@ -210,13 +220,8 @@ class SAMLResponse:
     @property
     def assertion_signature(self) -> Optional[Element]:
         """Get an element of XML signature of SAML assertion."""
-        root = self.document.getroot()
-        signature = root.find('./{}/{}'.format(Q_NAMES['saml2:Assertion'], Q_NAMES['ds:Signature']))
-        if signature is not None:
-            return signature
-
-        return root.find('./{}/{}/{}'.format(
-            Q_NAMES['saml2:EncryptedAssertion'], Q_NAMES['saml2:Assertion'], Q_NAMES['ds:Signature']))
+        assertion = self.assertion
+        return assertion.find('./{}'.format(Q_NAMES['ds:Signature'])) if assertion is not None else None
 
     @classmethod
     def from_light_response(cls: Type[SAMLResponseType],
@@ -334,6 +339,35 @@ class SAMLResponse:
             raise SecurityError('The response signature is already present.')
 
         sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method)
+
+    def _verify_and_remove_signature(self, signature: Optional[Element], cert_file: str) -> None:
+        """Verify signature and remove it from document."""
+        if signature is None:
+            raise SecurityError('Signature does not exist.')
+
+        # We need to check not only that a valid signature exists but it must also reference the correct element.
+        for valid_signature, references in verify_xml_signatures(self.document.getroot(), cert_file):
+            if valid_signature is signature:
+                if signature.getparent() not in references:
+                    raise SecurityError('Signature does not reference parent element.')
+
+                # Remove the signature as further document manipulations might invalidate it.
+                # E.g., decrypting an encrypted assertion invalidates signature of the whole response.
+                signature.getparent().remove(signature)
+                break
+        else:
+            raise SecurityError('Signature not found.')
+
+    def verify_response(self, cert_file: str) -> None:
+        """Verify XML signature of the whole response."""
+        self._verify_and_remove_signature(self.response_signature, cert_file)
+
+    def verify_assertion(self, cert_file: str) -> bool:
+        """Verify XML signature of the assertion."""
+        if self.assertion is None:
+            return False
+        self._verify_and_remove_signature(self.assertion_signature, cert_file)
+        return True
 
     def create_light_response(self) -> LightResponse:
         """Convert SAML response to light response."""

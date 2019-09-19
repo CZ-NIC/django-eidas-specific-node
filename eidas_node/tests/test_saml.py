@@ -1,17 +1,18 @@
 from collections import OrderedDict
 from datetime import datetime
 from typing import Any, BinaryIO, TextIO, cast
+from unittest.mock import call, patch
 
 from django.test import SimpleTestCase
 from lxml.etree import Element, ElementTree, SubElement
 
 from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode
-from eidas_node.errors import SecurityError, ValidationError
+from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import LightRequest, LightResponse, Status
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_attribute_elm_attributes
-from eidas_node.tests.constants import DATA_DIR, KEY_FILE, SIGNATURE_OPTIONS
+from eidas_node.tests.constants import CERT_FILE, DATA_DIR, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS
 from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
-from eidas_node.xml import dump_xml, parse_xml
+from eidas_node.xml import SignatureInfo, dump_xml, parse_xml, remove_extra_xml_whitespace
 
 LIGHT_RESPONSE_DICT = LIGHT_RESPONSE_DICT.copy()
 FAILED_LIGHT_RESPONSE_DICT = FAILED_LIGHT_RESPONSE_DICT.copy()
@@ -301,6 +302,28 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
             "relay_state = 'relay', document = <?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<root/>\n")
         self.assertEqual(str(SAMLResponse(None, None)), 'relay_state = None, document = None')
 
+    def test_assertion_none(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        self.assertIsNone(SAMLResponse(ElementTree(root)).assertion)
+
+    def test_assertion_exists(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        self.assertIs(SAMLResponse(ElementTree(root)).assertion, assertion)
+
+    def test_assertion_exists_decrypted(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        encrypted_assertion = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
+        decrypted_assertion = SubElement(encrypted_assertion, Q_NAMES['saml2:Assertion'])
+        self.assertIs(SAMLResponse(ElementTree(root)).assertion, decrypted_assertion)
+
+    def test_assertion_too_many(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(SubElement(root, Q_NAMES['saml2:EncryptedAssertion']), Q_NAMES['saml2:Assertion'])
+        with self.assertRaisesMessage(ParseError, 'Too many assertion elements'):
+            SAMLResponse(ElementTree(root)).assertion
+
     def test_response_signature_not_exists(self):
         # Base structure
         root = Element(Q_NAMES['saml2p:Response'])
@@ -334,24 +357,18 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         # Base structure
         root = Element(Q_NAMES['saml2p:Response'])
         assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
-        encrypted_assertion = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
-        decrypted_assertion = SubElement(encrypted_assertion, Q_NAMES['saml2:Assertion'])
         # Place a few signature elements as booby traps
         SubElement(root, Q_NAMES['ds:Signature'])
         SubElement(SubElement(assertion, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
-        SubElement(SubElement(decrypted_assertion, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
         self.assertIsNone(SAMLResponse(ElementTree(root)).assertion_signature)
 
     def test_assertion_signature_exists(self):
         # Base structure
         root = Element(Q_NAMES['saml2p:Response'])
         assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
-        encrypted_assertion = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
-        decrypted_assertion = SubElement(encrypted_assertion, Q_NAMES['saml2:Assertion'])
         # Place a few signature elements as booby traps
         SubElement(root, Q_NAMES['ds:Signature'])
         SubElement(SubElement(assertion, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
-        SubElement(SubElement(decrypted_assertion, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
         # This one must be found
         signature = SubElement(assertion, Q_NAMES['ds:Signature'])
         self.assertIs(SAMLResponse(ElementTree(root)).assertion_signature, signature)
@@ -359,12 +376,10 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
     def test_assertion_signature_exists_decrypted(self):
         # Base structure
         root = Element(Q_NAMES['saml2p:Response'])
-        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
         encrypted_assertion = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
         decrypted_assertion = SubElement(encrypted_assertion, Q_NAMES['saml2:Assertion'])
         # Place a few signature elements as booby traps
         SubElement(root, Q_NAMES['ds:Signature'])
-        SubElement(SubElement(assertion, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
         SubElement(SubElement(decrypted_assertion, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
         # This one must be found
         signature = SubElement(decrypted_assertion, Q_NAMES['ds:Signature'])
@@ -391,7 +406,8 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
 
     def test_sign_assertion(self):
         root = Element(Q_NAMES['saml2p:Response'])
-        SubElement(root, Q_NAMES['saml2:Assertion'])
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Issuer'])
         response = SAMLResponse(ElementTree(root))
         self.assertTrue(response.sign_assertion(**SIGNATURE_OPTIONS))
         self.assertIsNone(response.response_signature)
@@ -434,6 +450,81 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         self.assertFalse(response.sign_assertion(**SIGNATURE_OPTIONS))
         self.assertIsNone(response.response_signature)
         self.assertIsNone(response.assertion_signature)
+
+    @patch('eidas_node.saml.verify_xml_signatures')
+    def test_verify_and_remove_signature_none(self, signatures_mock):
+        root = Element('root')
+        signature = SubElement(root, 'signature')
+        SubElement(root, 'child')
+        signatures_mock.return_value = [SignatureInfo(signature, (root,))]
+        response = SAMLResponse(ElementTree(root))
+        with self.assertRaisesMessage(SecurityError, 'Signature does not exist'):
+            response._verify_and_remove_signature(None, 'cert.pem')
+        self.assertEqual(signatures_mock.mock_calls, [])
+
+    @patch('eidas_node.saml.verify_xml_signatures')
+    def test_verify_and_remove_signature_not_found(self, signatures_mock):
+        root = Element('root')
+        signature = SubElement(root, 'signature')
+        SubElement(root, 'child')
+        signatures_mock.return_value = [SignatureInfo(signature, (root,))]
+        response = SAMLResponse(ElementTree(root))
+        with self.assertRaisesMessage(SecurityError, 'Signature not found'):
+            response._verify_and_remove_signature(Element('signature2'), 'cert.pem')
+        self.assertEqual(signatures_mock.mock_calls, [call(root, 'cert.pem')])
+
+    @patch('eidas_node.saml.verify_xml_signatures')
+    def test_verify_and_remove_signature_bad_reference(self, signatures_mock):
+        root = Element('root')
+        signature = SubElement(root, 'signature')
+        child = SubElement(root, 'child')
+        signatures_mock.return_value = [SignatureInfo(signature, (child,))]
+        response = SAMLResponse(ElementTree(root))
+        with self.assertRaisesMessage(SecurityError, 'Signature does not reference parent element'):
+            response._verify_and_remove_signature(signature, 'cert.pem')
+        self.assertEqual(signatures_mock.mock_calls, [call(root, 'cert.pem')])
+
+    def test_verify_assertion_without_assertion(self):
+        with cast(TextIO, (DATA_DIR / 'signed_failed_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+            remove_extra_xml_whitespace(tree)
+
+        response = SAMLResponse(tree)
+        self.assertFalse(response.verify_assertion(CERT_FILE))
+
+    def test_verify_response_without_assertion(self):
+        with cast(TextIO, (DATA_DIR / 'signed_failed_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+            remove_extra_xml_whitespace(tree)
+
+        response = SAMLResponse(tree)
+        response.verify_response(CERT_FILE)
+
+    def test_verify_response_nia(self):
+        with cast(TextIO, (DATA_DIR / 'nia_test_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+            remove_extra_xml_whitespace(tree)
+
+        response = SAMLResponse(tree)
+        response.verify_response(NIA_CERT_FILE)
+
+    def test_verify_assertion_nia_not_decrypted(self):
+        with cast(TextIO, (DATA_DIR / 'nia_test_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+            remove_extra_xml_whitespace(tree)
+
+        response = SAMLResponse(tree)
+        self.assertFalse(response.verify_assertion(NIA_CERT_FILE))
+
+    def test_verify_response_and_assertion_nia(self):
+        with cast(TextIO, (DATA_DIR / 'nia_test_response.xml').open('r')) as f:
+            tree = parse_xml(f.read())
+            remove_extra_xml_whitespace(tree)
+
+        response = SAMLResponse(tree)
+        response.verify_response(NIA_CERT_FILE)
+        response.decrypt(KEY_FILE)
+        self.assertTrue(response.verify_assertion(NIA_CERT_FILE))
 
 
 class TestCreateAttributeElmAttributes(SimpleTestCase):
