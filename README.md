@@ -205,3 +205,13 @@ Default is all 28 countries of EU.
 ### Customization
 
 You can customize the authorization flow by subclassing view classes in [`eidas_node.connector.views`](eidas_node/connector/views.py), overriding necessary methods and adjusting URL configuration.
+
+Copyright
+---------
+
+* The django-eidas-specific-node project:
+  * Copyright 2019 CZ.NIC, z. s. p. o.
+  * License: [GPL-3+](COPYRIGHT)
+* [Country flags](eidas_node/connector/static/eidas_node/connector/img/flags):
+  * Copyright 2013 Panayiotis Lipiridis
+  * License: [MIT](eidas_node/connector/static/eidas_node/connector/img/flags/LICENSE)
