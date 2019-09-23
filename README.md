@@ -7,7 +7,7 @@ Requirements
 ------------
 
 - [Django](https://docs.djangoproject.com) 2.2.x
-- [Django AppSettings](https://pypi.org/project/django-app-settings/)
+- [Django AppSettings](https://pypi.org/project/django-app-settings/) >= 0.5
 - [lxml](https://pypi.org/project/lxml/)
 - [xmlsec](https://pypi.org/project/xmlsec/)
 - [Apache Ignite Python client](https://pypi.org/project/pyignite/) (optional)
