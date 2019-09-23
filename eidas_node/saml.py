@@ -126,6 +126,11 @@ class SAMLRequest:
         # 8: AuthnRequestType <saml2p:Scoping> skipped
         return cls(ElementTree(root), light_request.citizen_country_code, light_request.relay_state)
 
+    @property
+    def request_signature(self) -> Optional[Element]:
+        """Get an element of the XML signature of the whole SAML request."""
+        return self.document.getroot().find('./{}'.format(Q_NAMES['ds:Signature']))
+
     def create_light_request(self) -> LightRequest:
         """
         Convert SAML Request to Light Request.
@@ -179,6 +184,32 @@ class SAMLRequest:
                     values.append(value.text)
 
         return request
+
+    def sign_request(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> None:
+        """
+        Sign the whole SAML request.
+
+        :raise SecurityError: If the signature already exists.
+        """
+        if self.request_signature is not None:
+            raise SecurityError('Request signature already exists.')
+
+        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method)
+
+    def verify_request(self, cert_file: str) -> None:
+        """Verify XML signature of the whole request."""
+        signature = self.request_signature
+        if signature is None:
+            raise SecurityError('Signature does not exist.')
+
+        # We need to check not only that a valid signature exists but it must also reference the correct element.
+        for valid_signature, references in verify_xml_signatures(self.document.getroot(), cert_file):
+            if valid_signature is signature:
+                if signature.getparent() not in references:
+                    raise SecurityError('Signature does not reference parent element.')
+                break
+        else:
+            raise SecurityError('Signature not found.')
 
     def __str__(self) -> str:
         return 'citizen_country_code = {!r}, relay_state = {!r}, document = {}'.format(
