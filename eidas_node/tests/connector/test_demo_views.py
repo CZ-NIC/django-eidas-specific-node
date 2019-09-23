@@ -12,6 +12,7 @@ CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
+    'COUNTRY_PARAMETER': 'country_param',
 }  # type: Dict[str, Any]
 
 
@@ -40,6 +41,7 @@ class TestDemoServiceProviderRequestView(SimpleTestCase):
         self.assertEqual(response.context['relay_state'], '')
         self.assertEqual(response.context['country'], '')
         self.assertIn('saml_request', response.context)
+        self.assertIn('<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">', response.context['saml_request_xml'])
         self.assertContains(response, '<form action="/CountrySelector" method="post">')
         self.assertContains(response, '<input type="text" name="RelayState" value=""/>')
         self.assertContains(response, '<input type="text" name="country_param" value=""/>')
@@ -51,9 +53,23 @@ class TestDemoServiceProviderRequestView(SimpleTestCase):
         self.assertEqual(response.context['relay_state'], 'relay123')
         self.assertEqual(response.context['country'], 'xx')
         self.assertIn('saml_request', response.context)
+        self.assertIn('<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">', response.context['saml_request_xml'])
         self.assertContains(response, '<form action="/CountrySelector" method="post">')
         self.assertContains(response, '<input type="text" name="RelayState" value="relay123"/>')
         self.assertContains(response, '<input type="text" name="country_param" value="xx"/>')
+        self.assertContains(response, '<input type="hidden" name="SAMLRequest" value="{}"/>'
+                            .format(response.context['saml_request']))
+
+    @override_settings(CONNECTOR_SERVICE_PROVIDER=CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE)
+    def test_post_not_signed(self):
+        response = self.client.post(self.url, {'Request': '1'})
+        self.assertEqual(response.context['relay_state'], '')
+        self.assertEqual(response.context['country'], '')
+        self.assertIn('saml_request', response.context)
+        self.assertNotIn('<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">', response.context['saml_request_xml'])
+        self.assertContains(response, '<form action="/CountrySelector" method="post">')
+        self.assertContains(response, '<input type="text" name="RelayState" value=""/>')
+        self.assertContains(response, '<input type="text" name="country_param" value=""/>')
         self.assertContains(response, '<input type="hidden" name="SAMLRequest" value="{}"/>'
                             .format(response.context['saml_request']))
 

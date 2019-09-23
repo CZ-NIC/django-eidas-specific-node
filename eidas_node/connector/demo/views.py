@@ -68,6 +68,9 @@ class DemoServiceProviderRequestView(TemplateView):
             # Use a placeholder to get through light request validation.
             light_request.citizen_country_code = COUNTRY_PLACEHOLDER
         self.saml_request = SAMLRequest.from_light_request(light_request, '/dest', datetime.utcnow())
+        signature_options = CONNECTOR_SETTINGS.service_provider['response_signature']
+        if signature_options and signature_options.get('key_file') and signature_options.get('cert_file'):
+            self.saml_request.sign_request(**signature_options)
         return self.get(request)
 
     def get_context_data(self, **kwargs) -> dict:
@@ -76,7 +79,8 @@ class DemoServiceProviderRequestView(TemplateView):
 
         if self.saml_request:
             context['connector_endpoint'] = reverse('country-selector')
-            context['saml_request'] = b64encode(dump_xml(self.saml_request.document)).decode('ascii')
+            encoded_saml_request = b64encode(dump_xml(self.saml_request.document, pretty_print=False)).decode('ascii')
+            context['saml_request'] = encoded_saml_request
             context['saml_request_xml'] = dump_xml(self.saml_request.document).decode('ascii')
             relay_state = self.saml_request.relay_state
             country = self.saml_request.citizen_country_code
