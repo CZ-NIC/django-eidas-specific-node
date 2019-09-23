@@ -1,13 +1,9 @@
 from datetime import datetime
-from io import BytesIO
-from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
-from lxml.etree import Element, SubElement
 
-from eidas_node.saml import NAMESPACES, Q_NAMES
-from eidas_node.utils import (create_eidas_timestamp, create_xml_uuid, datetime_iso_format_milliseconds,
-                              get_element_path, import_from_module, is_xml_id_valid, parse_eidas_timestamp, parse_xml)
+from eidas_node.utils import (create_eidas_timestamp, datetime_iso_format_milliseconds, import_from_module,
+                              parse_eidas_timestamp)
 
 
 class TestTimestampUtils(SimpleTestCase):
@@ -33,32 +29,6 @@ class TestTimestampUtils(SimpleTestCase):
                          '2017-12-11T14:12:00.000')
 
 
-class TestXML(SimpleTestCase):
-    def test_parse_xml_data_types(self):
-        binary = b'<lightRequest></lightRequest>'
-        parse_xml(binary)
-        parse_xml(binary.decode('ascii'))
-        parse_xml(BytesIO(binary))
-
-    def test_get_element_path_without_namespaces(self):
-        root = Element('root')
-        grandchild = SubElement(SubElement(root, 'child'), 'grandchild')
-        self.assertEqual(get_element_path(root), '<root>')
-        self.assertEqual(get_element_path(grandchild), '<root><child><grandchild>')
-
-    def test_get_element_path_with_namespaces(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=NAMESPACES)
-        leaf = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
-        self.assertEqual(get_element_path(root), '<saml2p:Response>')
-        self.assertEqual(get_element_path(leaf), '<saml2p:Response><saml2:EncryptedAssertion>')
-
-    def test_get_element_path_mixed(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=NAMESPACES)
-        leaf = SubElement(SubElement(root, Q_NAMES['saml2:EncryptedAssertion']), 'wrong')
-        self.assertEqual(get_element_path(root), '<saml2p:Response>')
-        self.assertEqual(get_element_path(leaf), '<saml2p:Response><saml2:EncryptedAssertion><wrong>')
-
-
 class TestImport(SimpleTestCase):
     def test_import_from_module(self):
         result = import_from_module('http.server.HTTPServer')
@@ -72,26 +42,3 @@ class TestImport(SimpleTestCase):
     def test_import_from_module_member_not_found(self):
         with self.assertRaisesMessage(ImportError, 'ThisClassDoesNotExist not found in http.server.'):
             import_from_module('http.server.ThisClassDoesNotExist')
-
-
-class TestValidXMLID(SimpleTestCase):
-    def test_is_xml_id_valid_success(self):
-        for value in 'aA5', 'a.5', 'a-5', '_5':
-            self.assertTrue(is_xml_id_valid(value))
-
-    def test_is_xml_id_valid_failure(self):
-        for value in '0a', '.a', '-a', '#a', 'a#', 'a:a':
-            self.assertFalse(is_xml_id_valid(value))
-
-    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
-    def test_create_xml_uuid_default_prefix(self, _uuid_mock: Mock):
-        self.assertEqual(create_xml_uuid(), '_0uuid4')
-
-    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
-    def test_create_xml_uuid_valid_prefix(self, _uuid_mock: Mock):
-        self.assertEqual(create_xml_uuid('T'), 'T0uuid4')
-
-    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
-    def test_create_xml_uuid_invalid_prefix(self, _uuid_mock: Mock):
-        for prefix in '', '-', '#':
-            self.assertRaisesMessage(ValueError, 'Invalid prefix', create_xml_uuid, prefix)

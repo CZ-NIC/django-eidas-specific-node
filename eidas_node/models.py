@@ -12,7 +12,8 @@ from lxml.etree import Element
 from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.datamodels import DataModel, XMLDataModel
 from eidas_node.errors import ParseError, SecurityError, ValidationError
-from eidas_node.utils import create_eidas_timestamp, get_element_path, parse_eidas_timestamp
+from eidas_node.utils import create_eidas_timestamp, parse_eidas_timestamp
+from eidas_node.xml import get_element_path
 
 
 class LightToken(DataModel):

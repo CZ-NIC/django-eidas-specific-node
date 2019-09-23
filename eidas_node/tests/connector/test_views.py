@@ -19,7 +19,7 @@ from eidas_node.tests.settings import DATA_DIR
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT
 from eidas_node.tests.test_saml import LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
-from eidas_node.utils import dump_xml, parse_xml
+from eidas_node.xml import dump_xml, parse_xml
 
 
 class TestCitizenCountrySelectorView(SimpleTestCase):
@@ -173,7 +173,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
             for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth')})
 
     @freeze_time('2017-12-11 14:12:05')
-    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
+    @patch('eidas_node.xml.uuid4', return_value='0uuid4')
     def test_create_light_token(self, uuid_mock: MagicMock):
         view = ServiceProviderRequestView()
         light_request_data = LIGHT_REQUEST_DICT.copy()
@@ -187,7 +187,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(uuid_mock.mock_calls, [call()])
 
     @freeze_time('2017-12-11 14:12:05')
-    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
+    @patch('eidas_node.xml.uuid4', return_value='0uuid4')
     def test_post_success(self, uuid_mock: MagicMock):
         self.maxDiff = None
         saml_request_xml, saml_request_encoded = self.load_saml_request()

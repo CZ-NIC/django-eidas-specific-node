@@ -11,7 +11,7 @@ from eidas_node.proxy_service.cznia.views import CzNiaResponseView
 from eidas_node.proxy_service.views import IdentityProviderResponseView
 from eidas_node.tests.proxy_service.test_views import DATA_DIR
 from eidas_node.tests.test_models import LIGHT_RESPONSE_DICT
-from eidas_node.utils import dump_xml
+from eidas_node.xml import dump_xml
 
 PERSON_ID = 'http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier'
 

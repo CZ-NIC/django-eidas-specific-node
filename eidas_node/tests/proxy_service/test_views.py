@@ -15,7 +15,7 @@ from eidas_node.saml import Q_NAMES, SAMLResponse
 from eidas_node.storage.ignite import IgniteStorage
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
-from eidas_node.utils import dump_xml, parse_xml
+from eidas_node.xml import dump_xml, parse_xml
 
 DATA_DIR = Path(__file__).parent.parent / 'data'  # type: Path
 
@@ -210,7 +210,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(light_response.issuer, 'test-light-response-issuer')  # Replaced
 
     @freeze_time('2017-12-11 14:12:05')
-    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
+    @patch('eidas_node.xml.uuid4', return_value='0uuid4')
     def test_create_light_token(self, uuid_mock: MagicMock):
         view = IdentityProviderResponseView()
         view.request = self.factory.post(self.url)
@@ -226,7 +226,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(uuid_mock.mock_calls, [call()])
 
     @freeze_time('2017-12-11 14:12:05')
-    @patch('eidas_node.utils.uuid4', return_value='0uuid4')
+    @patch('eidas_node.xml.uuid4', return_value='0uuid4')
     def test_post_success(self, uuid_mock: MagicMock):
         with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
             saml_request_xml = f.read()

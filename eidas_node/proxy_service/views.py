@@ -15,9 +15,10 @@ from eidas_node.constants import TOKEN_ID_PREFIX
 from eidas_node.errors import EidasNodeError, ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.proxy_service.settings import PROXY_SERVICE_SETTINGS
-from eidas_node.saml import SAMLRequest, SAMLResponse, decrypt_xml
+from eidas_node.saml import SAMLRequest, SAMLResponse
 from eidas_node.storage import LightStorage
-from eidas_node.utils import create_xml_uuid, dump_xml, import_from_module, parse_xml
+from eidas_node.utils import import_from_module
+from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.proxy_service')
 
@@ -187,7 +188,7 @@ class IdentityProviderResponseView(TemplateView):
             raise ParseError(str(e)) from None
         # FIXME: Verify signature.
         if key_file:
-            decrypt_xml(response.document, key_file)
+            response.decrypt(key_file)
         return response
 
     def get_light_storage(self, backend: str, options: Dict[str, Any]) -> LightStorage:
