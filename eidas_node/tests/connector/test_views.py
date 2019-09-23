@@ -112,7 +112,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
 
     def test_get_not_allowed(self):
         response = self.client.get(self.url)
-        self.assertEquals(response.status_code, 405)
+        self.assertEqual(response.status_code, 405)
         self.assertNotIn(b'http://test.example.net/SpecificConnectorRequest', response.content)
 
     def test_get_saml_request_without_saml_request(self):
@@ -267,7 +267,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
 
     def test_get_not_allowed(self):
         response = self.client.get(self.url)
-        self.assertEquals(response.status_code, 405)
+        self.assertEqual(response.status_code, 405)
         self.assertNotIn(b'/DemoServiceProviderResponse', response.content)
 
     def test_get_light_token_no_token(self):
