@@ -1,0 +1,113 @@
+<!-- Pretty-printed. Use `eidas_node.xml.remove_extra_xml_whitespace` before use. -->
+<saml2p:AuthnRequest xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:eidas="http://eidas.europa.eu/saml-extensions" Consent="urn:oasis:names:tc:SAML:2.0:consent:unspecified" Destination="test/destination" ID="test-saml-request-id" IssueInstant="2017-12-11T14:12:05.148Z" Version="2.0" IsPassive="false" ForceAuthn="true" ProviderName="DEMO-SP-CA">
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+      <Reference URI="#test-saml-request-id">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+          <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+        <DigestValue>lSZrjxm9KDO05OgZEHf9ATVlkBI=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>vGcCcRCCFsFjB6ycATHBdn76Lrbl/R6iM1PfqA+iV3TUuwnXBw/paQObgVLwsrtN
+IUB7KUe22ySr7nQdXwiIrF+oXlDCgllc+vPAbKoJV5qzuor5h8JJ2CdlCabntvCf
+Wpj9sxUBSOIC9QIs/kkGSHjjRjQKOtC41oaRj+/J8YSvWvMXTdqaZ+wlrmdCeVrq
+2hvSDRGxfWvvtb6C61+yyg+q3yhyjc74TCFWUcnfhbswlPT4WPrWVvp0aWHfi81O
+wjFvbGD5HbJrM0Amm9e5ylbTMO6KbUPH6iEPuwVtlf4UAOUTABYKom+klGgxcV7m
+UvqcZ96qtSBj3FGTz9CqrkoVpR4BL1VSWfX9PfI4vaa8MTZeVnnDVmDBsvJxwLHu
+VUVWWWR2Hsl0FDpzv7ZKJ1uSe2QIjt8zU+8uubc0GMgQSqmOztMMBWh2CW2ATdKk
+ZrNNv12Yq1U/Hls0/E0o27UWVnSgHt8/PxFuoTTuMCR2aIB9Vbccch4pL68BHChf
++Mf+y6LeaykaeOhUuq8427OP9fvbUa0+Ixo5lTAaPWbe2LelcynS38Yag3BYaOgz
+Y1hDmi9T6hiAjTpBDR2B1xF7cd+jm1vuQJiPnDoBuG8HhVkXeD39bW8al2LICugH
+thYWFzGDmgJOx+VB6SOt2FVZ7cwfPe2Ja+jCbi1BqFo=</SignatureValue>
+    <KeyInfo>
+      <X509Data>
+        <X509Certificate>MIIFXTCCA0WgAwIBAgIUBiL70AobFn9kGNp6hPZpPK6nvzEwDQYJKoZIhvcNAQEL
+BQAwPjEZMBcGA1UECgwQQ1ouTklDLCB6LnMucC5vLjEhMB8GA1UEAwwYZWlkYXMt
+cHJveHktc2VydmljZS50ZXN0MB4XDTE5MDgxNjEzNTYxNVoXDTI5MDgxMzEzNTYx
+NVowPjEZMBcGA1UECgwQQ1ouTklDLCB6LnMucC5vLjEhMB8GA1UEAwwYZWlkYXMt
+cHJveHktc2VydmljZS50ZXN0MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKC
+AgEAx4RPZ6XRG6W5KpBP5R4Zcfa3kxRekkBo48JXXIWlAJpI06jk3+U9R5SCIOQz
+3y+Y7pidGshxQOoA5qX/J/vjJGf0nJX01i8nDgXUQSwwq/8VBLU7Vx137+9eXCHA
+JB29ixBzezuQvu8bCqdAW60Rf67+La8uegooh3OpCVvO2oxNHHJLk1PGh2cQuPDj
+qvETsItYsCnMGG9k4v183+pGjm0/u969hzlh+tynS068ZM+rKnXbiKhpuiCKjFPs
+KSnHBS4U6/ALbGYSb9sZfKAr+BYcB/2Sx3BP+JRfAc6EFxZ8WMc0WWGKC/OJCIR4
+tLgufZ/V8YcFmRtTmIemSyjWLxha9CV74HEkKMbvy8sf/flgYWV3b5SpNaGjSkrz
+PXQU0JuxJlGkrOayh+LMM1q4V7yCOmipbkp4lsazx2gY8kIxO5ZDzsYmjkA+Fc9O
+N/HNpiFvKd5MEEjFWZC2hyNTG51SfzGHy7OxJT1W5A2pd/eLlmq9S5w8Rstknsdc
+Tfc3kURWFRIcegPWmcRj/qqEJJgBpQF0+xxyrrDoo2Gl9iM6JjB9dhNOfVM3eczS
+gtsRj86YRU4uKNYSog8W5USdCkT+/IkHiBTbvuvkLowawtQQupoJI6n5Y0nRGvfG
+3kQ3mc0AvIe2W2iI/MseQOfURdNu2y7mW9FY2+0I/buA/gsCAwEAAaNTMFEwHQYD
+VR0OBBYEFC0aZA79lgsGmSonCB+/HRh7K8WxMB8GA1UdIwQYMBaAFC0aZA79lgsG
+mSonCB+/HRh7K8WxMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggIB
+AJ2yGYqvXTk+TwPOAV2r1jb+RG8bHZAGXETIksYTGH1fNn/rE6mpaaHESD2fR4bR
+Sqnnwh5K6NTVnFoyiUqt9BQXAIEMtFYOaYOsTSETbfkfovMEnXPFXGtyFmKqTgFA
+JYZ0sJyuZBeu0m510LKgPwjLT15sluv3xMraMmpXKBfMwYszHTdUksFD4iPZngRi
+KuWVfQNvPDl195KypPM6vgp+H5LEp5VlcS4PavnABVRJjIe60XNomtT7dbph+gJn
+r3C8I5TIeJxri24M+4aGCeGDHHX41xylly0DwA8RqyJGRCRyRZRbvy570iGJoe7v
+eJyaFRyM/7HzFfeihiuXl9Xk7tqo+wsUrmqYAser1fJRqcP3Q0Kj/wBqQ6muE5Wg
+Ad/UOHwolhQTc/B9RWIA3SaZJD8MvVjV+LRftfsUWke4FbjY3RGo4mIbCnJMUwlF
+P8S2nsMWy8XKC+YxLtaaO2KjYN3YGepwGmFnP7hLCSXCwvOHXIW6MYi2HyshiG3O
+C+J6rG8sP3vL2X5W3oCZ0Oxl79uqoRjlhKDo8m936dRKOm95KBM4uUl0jQ6yqL+N
+rH1nMeXtYQ7uSjwZf2HsM/wTF9RHiBOOZnnmYWqWLoTBW2nBASlrvCa8qdQadXV7
+I6EtzY/TJQgKMFnTAFqx32bFozOgbJd+EPDCzDAudoF1</X509Certificate>
+        <X509IssuerSerial>
+          <X509IssuerName>CN=eidas-proxy-service.test,O=CZ.NIC\, z.s.p.o.</X509IssuerName>
+          <X509SerialNumber>35034105937627197988315846329862265808194354993</X509SerialNumber>
+        </X509IssuerSerial>
+      </X509Data>
+    </KeyInfo>
+  </Signature>
+  <saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">test-saml-request-issuer</saml2:Issuer>
+  <saml2p:Extensions>
+    <eidas:SPType>public</eidas:SPType>
+    <eidas:SPCountry>CA</eidas:SPCountry>
+    <eidas:RequestedAttributes>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/D-2012-17-EUIdentifier" FriendlyName="D-2012-17-EUIdentifier" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/EORI" FriendlyName="EORI" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LEI" FriendlyName="LEI" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalName" FriendlyName="LegalName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalPersonAddress" FriendlyName="LegalPersonAddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalPersonIdentifier" FriendlyName="LegalPersonIdentifier" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/SEED" FriendlyName="SEED" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/SIC" FriendlyName="SIC" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/TaxReference" FriendlyName="TaxReference" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/VATRegistrationNumber" FriendlyName="VATRegistrationNumber" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/BirthName" FriendlyName="BirthName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentAddress" FriendlyName="CurrentAddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true">
+        <eidas:AttributeValue>
+        PEFkZHJlc3NJZD5odHRwOi8vYWRkcmVzcy5leGFtcGxlL2lkL2JlL2VoMTFhYTwvQWRkcmVzc0lk
+        Pg0KPFBvQm94PjEyMzQ8L1BvQm94ID4NCjxMb2NhdG9yRGVzaWduYXRvcj4yODwvTG9jYXRvckRlc2lnbmF
+        0b3I+DQo8TG9jYXRvck5hbWU+RElHSVQgYnVpbGRpbmc8L0xvY2F0b3JOYW1lPg0KPEN2QWRkcmVzc0FyZW
+        E+RXR0ZXJiZWVrPC9DdkFkZHJlc3NBcmVhPg0KPFRob3JvdWdoZmFyZT5SdWUgQmVsbGlhcmQ8L1Rob3Jvd
+        WdoZmFyZT4NCjxQb3N0TmFtZT5FVFRFUkJFRUsgQ0hBU1NFPC9Qb3N0TmFtZT4NCjxBZG1pblVuaXRGaXJz
+        dExpbmU+QkU8L0FkbWluVW5pdEZpcnN0TGluZT4NCjxBZG1pblVuaXRTZWNvbmRMaW5lPkVUVEVSQkVFSzw
+        vQWRtaW5Vbml0U2Vjb25kTGluZT4NCjxQb3N0Q29kZT4xMDQwPC9Qb3N0Q29kZT4NCjxGdWxsQ3ZhZGRyZX
+        NzPlJ1ZSBCZWxsaWFyZCAyOFxuQkUtMTA0MCBFdHRlcmJlZWs8L0Z1bGxDdmFkZHJlc3M+
+      </eidas:AttributeValue>
+      </eidas:RequestedAttribute>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName" FriendlyName="FamilyName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentGivenName" FriendlyName="FirstName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true">
+        <eidas:AttributeValue>Antonio</eidas:AttributeValue>
+        <eidas:AttributeValue>Lucio</eidas:AttributeValue>
+        <eidas:AttributeValue>Vivaldi</eidas:AttributeValue>
+      </eidas:RequestedAttribute>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/DateOfBirth" FriendlyName="DateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/Gender" FriendlyName="Gender" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier" FriendlyName="PersonIdentifier" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true">
+        <eidas:AttributeValue>Vivaldi-987654321</eidas:AttributeValue>
+      </eidas:RequestedAttribute>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/PlaceOfBirth" FriendlyName="PlaceOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalAdditionalAttribute" FriendlyName="LegalAdditionalAttribute" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/AdditionalAttribute" FriendlyName="AdditionalAttribute" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+    </eidas:RequestedAttributes>
+  </saml2p:Extensions>
+  <saml2p:NameIDPolicy AllowCreate="true" Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"/>
+  <saml2p:RequestedAuthnContext Comparison="minimum">
+    <saml2:AuthnContextClassRef>http://eidas.europa.eu/LoA/low</saml2:AuthnContextClassRef>
+  </saml2p:RequestedAuthnContext>
+</saml2p:AuthnRequest>

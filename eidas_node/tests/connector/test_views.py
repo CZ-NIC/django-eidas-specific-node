@@ -15,11 +15,11 @@ from eidas_node.errors import ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.saml import Q_NAMES, SAMLRequest
 from eidas_node.storage.ignite import IgniteStorage
-from eidas_node.tests.constants import DATA_DIR, SIGNATURE_OPTIONS
+from eidas_node.tests.constants import CERT_FILE, DATA_DIR, SIGNATURE_OPTIONS, WRONG_CERT_FILE
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT
 from eidas_node.tests.test_saml import LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
-from eidas_node.xml import dump_xml, parse_xml
+from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
 
 
 class TestCitizenCountrySelectorView(SimpleTestCase):
@@ -105,10 +105,15 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         self.url = reverse('service-provider-request')
         self.addCleanup(self.mock_ignite_cache())
 
-    def load_saml_request(self) -> Tuple[str, str]:
-        with cast(BinaryIO, (DATA_DIR / 'saml_request.xml').open('rb')) as f:
-            saml_request_xml = f.read()
-        return saml_request_xml.decode('utf-8'), b64encode(saml_request_xml).decode('ascii')
+    def load_saml_request(self, signed=False) -> Tuple[str, str]:
+        path = 'saml_request.xml' if not signed else 'saml_request_signed.xml'
+        with cast(BinaryIO, (DATA_DIR / path).open('rb')) as f:
+            saml_request_pretty = f.read()
+
+        saml_request = parse_xml(saml_request_pretty)
+        remove_extra_xml_whitespace(saml_request)
+        saml_request_encoded = b64encode(dump_xml(saml_request, pretty_print=False))
+        return saml_request_pretty.decode('utf-8'), saml_request_encoded.decode('ascii')
 
     def test_get_not_allowed(self):
         response = self.client.get(self.url)
@@ -119,20 +124,20 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         view = ServiceProviderRequestView()
         view.request = self.factory.post(self.url, {'country_param': 'ca'})
         with self.assertRaisesMessage(ParseError, 'Document is empty'):
-            view.get_saml_request('country_param')
+            view.get_saml_request('country_param', None)
 
     def test_get_saml_request_without_country(self):
         saml_request_xml, saml_request_encoded = self.load_saml_request()
         view = ServiceProviderRequestView()
         view.request = self.factory.post(self.url, {'SAMLRequest': saml_request_encoded})
         with self.assertRaisesMessage(MultiValueDictKeyError, 'country_param'):
-            view.get_saml_request('country_param')
+            view.get_saml_request('country_param', None)
 
     def test_get_saml_request_without_relay_state(self):
         saml_request_xml, saml_request_encoded = self.load_saml_request()
         view = ServiceProviderRequestView()
         view.request = self.factory.post(self.url, {'SAMLRequest': saml_request_encoded, 'country_param': 'ca'})
-        saml_request = view.get_saml_request('country_param')
+        saml_request = view.get_saml_request('country_param', None)
         self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), saml_request_xml)
         self.assertEqual(saml_request.citizen_country_code, 'CA')
         self.assertEqual(saml_request.relay_state, None)
@@ -145,10 +150,23 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
             'RelayState': 'xyz',
             'country_param': 'ca',
         })
-        saml_request = view.get_saml_request('country_param')
+        saml_request = view.get_saml_request('country_param', None)
         self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), saml_request_xml)
         self.assertEqual(saml_request.citizen_country_code, 'CA')
         self.assertEqual(saml_request.relay_state, 'xyz')
+
+    def test_get_saml_request_valid_signature(self):
+        saml_request_xml, saml_request_encoded = self.load_saml_request(signed=True)
+        view = ServiceProviderRequestView()
+        view.request = self.factory.post(self.url, {'SAMLRequest': saml_request_encoded, 'country_param': 'ca'})
+        saml_request = view.get_saml_request('country_param', CERT_FILE)
+        self.assertXMLEqual(dump_xml(saml_request.document).decode('utf-8'), saml_request_xml)
+
+    def test_get_saml_request_invalid_signature(self):
+        saml_request_xml, saml_request_encoded = self.load_saml_request(signed=True)
+        view = ServiceProviderRequestView()
+        view.request = self.factory.post(self.url, {'SAMLRequest': saml_request_encoded, 'country_param': 'ca'})
+        self.assertRaises(SecurityError, view.get_saml_request, 'country_param', WRONG_CERT_FILE)
 
     def test_create_light_request_wrong_issuer(self):
         saml_request_xml, _saml_request_encoded = self.load_saml_request()
@@ -190,7 +208,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
     @patch('eidas_node.xml.uuid4', return_value='0uuid4')
     def test_post_success(self, uuid_mock: MagicMock):
         self.maxDiff = None
-        saml_request_xml, saml_request_encoded = self.load_saml_request()
+        saml_request_xml, saml_request_encoded = self.load_saml_request(signed=True)
         light_request = LightRequest(**LIGHT_REQUEST_DICT)
         light_request.issuer = 'https://example.net/EidasNode/ConnectorMetadata'
         self.cache_mock.get_and_remove.return_value = dump_xml(light_request.export_xml()).decode('utf-8')

@@ -96,6 +96,7 @@ CONNECTOR_RESPONSE_TOKEN = {
 
 CONNECTOR_SERVICE_PROVIDER = {
     'ENDPOINT': '/DemoServiceProviderResponse',
+    'CERT_FILE': CERT_FILE,
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
     'RESPONSE_SIGNATURE': {

@@ -186,6 +186,7 @@ Settings for **the interaction with Service Provider**.
 A dictionary with following items:
 
 * `ENDPOINT` (required): The URL where the Service Provider expects authentication responses.
+* `CERT_FILE` (optional, default `None`): The path of a certificate to verify the signature of Service Provider's authentication requests.
 * `REQUEST_ISSUER` (required): The expected issuer of the Service Provider's authentication request.
 * `RESPONSE_ISSUER` (required): The issuer of the authentication response registered at Service Provider.
 * `COUNTRY_PARAMETER` (optional, default `country`): The name of a POST parameter containing citizen country code for `/CitizenCountrySelector` and `/ServiceProviderRequest` views.
