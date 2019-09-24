@@ -174,8 +174,8 @@ class IdentityProviderResponseView(TemplateView):
             LOGGER.debug('Light Token: %s', self.light_token)
             self.storage.put_light_response(self.light_token.id, self.light_response)
         except EidasNodeError:
-            LOGGER.exception('Bad proxy service request.')
-            self.error = _('Bad proxy service request.')
+            LOGGER.exception('Bad identity provider response.')
+            self.error = _('Bad identity provider response.')
             return HttpResponseBadRequest(
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
         return super().get(request)

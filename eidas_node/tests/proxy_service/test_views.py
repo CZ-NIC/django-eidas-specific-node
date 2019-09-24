@@ -161,7 +161,8 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
 
         # Rendering
         self.assertContains(response, 'Redirect to Identity Provider is in progress')
-        self.assertContains(response, '<form action="https://test.example.net/identity-provider-endpoint"')
+        self.assertContains(response,
+                            '<form class="auto-submit" action="https://test.example.net/identity-provider-endpoint"')
         self.assertContains(response, '<input type="hidden" name="SAMLRequest" value="{}"'.format(
             response.context['saml_request']))
         self.assertContains(response, '<input type="hidden" name="RelayState" value="relay123"/>')
@@ -327,7 +328,8 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
 
         # Rendering
         self.assertContains(response, 'Redirect to Service Provider is in progress')
-        self.assertContains(response, '<form action="https://test.example.net/SpecificProxyServiceResponse"')
+        self.assertContains(response,
+                            '<form class="auto-submit" action="https://test.example.net/SpecificProxyServiceResponse"')
         self.assertContains(response, '<input type="hidden" name="test_token" value="{}"'.format(encoded_token))
         self.assertNotIn(b'An error occurred', response.content)
 
@@ -338,7 +340,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
                             'An error occurred during processing of Identity Provider response.',
                             status_code=400)
         self.assertContains(response, 'An error occurred', status_code=400)
-        self.assertEqual(response.context['error'], 'Bad proxy service request.')
+        self.assertEqual(response.context['error'], 'Bad identity provider response.')
         self.assertNotIn('eidas_url', response.context)
         self.assertNotIn('token', response.context)
         self.assertNotIn('token_parameter', response.context)

@@ -18,7 +18,7 @@
         <form class="auto-submit" action="{{ service_provider_endpoint }}" method="post" id="connector-response-form">
             <input type="hidden" name="SAMLResponse" value="{{ saml_response }}"/>
             <input type="hidden" name="RelayState" value="{{ relay_state }}"/>
-            <input type="submit" value="Continue" />
+            <input type="submit" value="Continue"/>
         </form>
     {% endif %}
 {% endblock %}

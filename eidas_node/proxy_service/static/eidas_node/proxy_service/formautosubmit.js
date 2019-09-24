@@ -1,7 +1,5 @@
 function formAutoSubmit () {
-    var form = (
-        document.getElementById('proxy-service-request-form')
-        || document.getElementById('identity-provider-response-form'))
+    var form = document.querySelector('form.auto-submit')
     if (!form) {
         return
     }

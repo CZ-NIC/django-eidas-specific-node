@@ -8,7 +8,7 @@
     {% if saml_request %}
         <h2>SAML Request</h2>
         <form action="{{ connector_endpoint }}" method="post">
-            <input type="submit" value="Submit SAML Request to Connector" /><br/>
+            <input type="submit" value="Submit SAML Request to Connector"/><br/>
             <label>
                 <code>POST['RelayState']</code>:
                 <input type="text" name="RelayState" value="{{ relay_state }}"/>
