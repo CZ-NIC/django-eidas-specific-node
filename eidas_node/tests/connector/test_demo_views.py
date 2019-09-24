@@ -22,12 +22,12 @@ class TestDemoServiceProviderRequestView(SimpleTestCase):
     def test_post_wrong_preset(self):
         for params in {}, {'999': 'whatever'}, {'one': 'whatever'}:
             response = self.client.post(self.url, params)
-            self.assertEquals(response.status_code, 400)
+            self.assertEqual(response.status_code, 400)
 
     def test_post_without_optional_params(self):
         response = self.client.post(self.url, {'Request': '1'})
-        self.assertEquals(response.context['relay_state'], '')
-        self.assertEquals(response.context['country'], '')
+        self.assertEqual(response.context['relay_state'], '')
+        self.assertEqual(response.context['country'], '')
         self.assertIn('saml_request', response.context)
         self.assertContains(response, '<form action="/CountrySelector" method="post">')
         self.assertContains(response, '<input type="text" name="RelayState" value=""/>')
@@ -37,8 +37,8 @@ class TestDemoServiceProviderRequestView(SimpleTestCase):
 
     def test_post_with_optional_params(self):
         response = self.client.post(self.url, {'Request': '1', 'Country': 'xx', 'RelayState': 'relay123'})
-        self.assertEquals(response.context['relay_state'], 'relay123')
-        self.assertEquals(response.context['country'], 'xx')
+        self.assertEqual(response.context['relay_state'], 'relay123')
+        self.assertEqual(response.context['country'], 'xx')
         self.assertIn('saml_request', response.context)
         self.assertContains(response, '<form action="/CountrySelector" method="post">')
         self.assertContains(response, '<input type="text" name="RelayState" value="relay123"/>')

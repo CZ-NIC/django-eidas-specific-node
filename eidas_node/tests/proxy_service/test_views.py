@@ -35,7 +35,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
 
     def test_get_not_allowed(self):
         response = self.client.get(self.url)
-        self.assertEquals(response.status_code, 405)
+        self.assertEqual(response.status_code, 405)
         self.assertNotIn(b'https://example.net/identity-provider-endpoint', response.content)
 
     def test_get_light_token_no_token(self):
@@ -165,7 +165,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
 
     def test_get_not_allowed(self):
         response = self.client.get(self.url)
-        self.assertEquals(response.status_code, 405)
+        self.assertEqual(response.status_code, 405)
         self.assertNotIn(b'https://example.net/EidasNode/SpecificProxyServiceResponse', response.content)
 
     def test_get_saml_response_no_data(self):

@@ -2,6 +2,10 @@
 from pathlib import Path
 from typing import Any, Dict, List
 
+from eidas_node.tests.warnings import setup_warnings_filter
+
+setup_warnings_filter()
+
 DATA_DIR = Path(__file__).parent / 'data'  # type: Path
 
 SECRET_KEY = 'SECRET'
