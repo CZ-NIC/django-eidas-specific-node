@@ -73,6 +73,11 @@ A dictionary with following items:
 * `REQUEST_ISSUER` (required): The issuer of the authentication request registered at Identity Provider.
 * `KEY_FILE` (optional, default `None`): The path of a key to decrypt Identity Provider's authentication response.
 * `CERT_FILE` (optional, default `None`): The path of a certificate to verify the signature of Identity Provider's authentication response.
+* `REQUEST_SIGNATURE` (dictionary, optional): Options for signing SAML requests sent to Service Provider:
+  * `KEY_FILE` (required, string): The path to a signing key.
+  * `CERT_FILE`: (required, string): The path to the corresponding certificate.
+  * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
+  * `DIGEST_METHOD` (optional, string, default `SHA512`): XML digest method.
 
 #### `PROXY_SERVICE_EIDAS_NODE`
 

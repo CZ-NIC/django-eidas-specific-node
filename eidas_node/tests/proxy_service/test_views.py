@@ -14,7 +14,7 @@ from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.proxy_service.views import IdentityProviderResponseView, ProxyServiceRequestView
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES, SAMLResponse
 from eidas_node.storage.ignite import IgniteStorage
-from eidas_node.tests.constants import CERT_FILE, KEY_FILE, NIA_CERT_FILE, WRONG_CERT_FILE
+from eidas_node.tests.constants import CERT_FILE, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS, WRONG_CERT_FILE
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
 from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
@@ -109,12 +109,31 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         view.light_token = token
         view.light_request = light_request
 
-        saml_request = view.create_saml_request('https://test.example.net/saml/idp.xml')
+        saml_request = view.create_saml_request('https://test.example.net/saml/idp.xml', None)
         root = saml_request.document.getroot()
         self.assertEqual(root.get('ID'), 'test-light-request-id')
         self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
         self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
                          'https://test.example.net/saml/idp.xml')
+        self.assertIsNone(root.find('./{}'.format(Q_NAMES['ds:Signature'])))
+
+    @freeze_time('2017-12-11 14:12:05')
+    def test_create_saml_request_signed(self):
+        light_request = LightRequest(**LIGHT_REQUEST_DICT)
+        token, encoded = self.get_token()
+
+        view = ProxyServiceRequestView()
+        view.request = self.factory.post(self.url, {'test_token': encoded})
+        view.light_token = token
+        view.light_request = light_request
+
+        saml_request = view.create_saml_request('https://test.example.net/saml/idp.xml', SIGNATURE_OPTIONS)
+        root = saml_request.document.getroot()
+        self.assertEqual(root.get('ID'), 'test-light-request-id')
+        self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
+        self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
+                         'https://test.example.net/saml/idp.xml')
+        self.assertIsNotNone(root.find('./{}'.format(Q_NAMES['ds:Signature'])))
 
     @freeze_time('2017-12-11 14:12:05')
     def test_post_success(self):
@@ -138,6 +157,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         self.assertIn('<saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">'
                       'https://test.example.net/saml/idp.xml</saml2:Issuer>', saml_request_xml)
         self.assertIn('Destination="http://testserver/IdentityProviderResponse"', saml_request_xml)
+        self.assertIn('<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo>', saml_request_xml)
 
         # Rendering
         self.assertContains(response, 'Redirect to Identity Provider is in progress')

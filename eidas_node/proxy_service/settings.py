@@ -1,6 +1,7 @@
 """Settings of eidas_node.proxy_service."""
 
 from appsettings import AppSettings, DictSetting, NestedSetting, PositiveIntegerSetting, StringSetting
+from django.core.exceptions import ImproperlyConfigured
 
 
 class ProxyServiceSettings(AppSettings):
@@ -22,6 +23,15 @@ class ProxyServiceSettings(AppSettings):
     identity_provider = NestedSetting(settings=dict(
         endpoint=StringSetting(required=True, min_length=1),
         request_issuer=StringSetting(required=True, min_length=1),
+        request_signature=NestedSetting(
+            settings=dict(
+                # required=True leads to a strange error:
+                # "REQUEST_SIGNATURE setting is missing required item 'REQUEST_SIGNATURE'"
+                key_file=StringSetting(min_length=1),
+                cert_file=StringSetting(min_length=1),
+                signature_method=StringSetting(default='RSA_SHA512', min_length=1),
+                digest_method=StringSetting(default='SHA512', min_length=1),
+            )),
         key_file=StringSetting(),
         cert_file=StringSetting(),
     ), required=True)
@@ -41,3 +51,13 @@ class ProxyServiceSettings(AppSettings):
 
 
 PROXY_SERVICE_SETTINGS = ProxyServiceSettings()
+
+
+def check_settings():
+    """Check settings."""
+    ProxyServiceSettings.check()
+    signature = PROXY_SERVICE_SETTINGS.identity_provider['request_signature']
+    # If one of the files is set, the other must be set as well
+    if bool(signature.get('key_file')) != bool(signature.get('cert_file')):
+        raise ImproperlyConfigured('Both PROXY_SERVICE_IDENTITY_PROVIDER.REQUEST_SIGNATURE.KEY_FILE and '
+                                   'PROXY_SERVICE_IDENTITY_PROVIDER.REQUEST_SIGNATURE.CERT_FILE must be set.')
