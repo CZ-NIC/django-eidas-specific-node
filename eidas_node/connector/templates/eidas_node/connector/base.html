@@ -1,9 +1,12 @@
+{% load static %}
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
         <meta charset="utf-8"/>
         <title>{% block title %}{% endblock %}</title>
-        {% block styles %}{% endblock %}
+        {% block styles %}
+            <link rel="stylesheet" href="{% static "eidas_node/connector/css/screen.css" %}"/>
+        {% endblock %}
         {% block scripts %}{% endblock %}
     </head>
     <body>

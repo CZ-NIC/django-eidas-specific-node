@@ -1,0 +1,95 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+
+.content {
+    color: black;
+    background: #F7F7F7;
+    padding-bottom: 32px;
+    font-size: 20px;
+    line-height: 26px;
+}
+
+.wrapper {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+h1 {
+    padding: 125px 0 50px;
+}
+
+h2 {
+    padding-bottom: 1em;
+}
+
+p {
+    margin: 1em 0;
+}
+
+.info {
+    width: 75%;
+    display: inline-block;
+    color: #808080;
+    font-size: 20px;
+    line-height: 26px;
+}
+
+.logo {
+    width: 24%;
+    display: inline-block;
+    position: relative;
+    top: 5px;
+}
+
+footer {
+    padding: 32px 0 64px;
+}
+
+form.auto-submit input[type="submit"] {
+    font-size: 20px;
+    padding: 5px;
+    margin: 30px 0 0;
+}
+
+code, pre {
+    font-size: 60%;
+    line-height: 1.4em;
+}
+
+@media (max-width: 786px) {
+    h1 {
+        padding: 65px 0 30px;
+    }
+
+    .countries {
+        padding-bottom: 65px;
+    }
+
+    .info, .logo {
+        width: 100%;
+        display: block;
+    }
+
+    .info {
+        margin-bottom: 32px;
+    }
+
+    .logo {
+        top: 0;
+    }
+
+    .content {
+        padding-bottom: 16px;
+    }
+
+    footer {
+        padding: 16px 0 64px;
+    }
+}

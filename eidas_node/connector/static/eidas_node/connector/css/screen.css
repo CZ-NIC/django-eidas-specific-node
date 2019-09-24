@@ -61,3 +61,8 @@
         columns: 1;
     }
 }
+
+label {
+    display: block;
+    margin: 0.5em 0;
+}
