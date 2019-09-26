@@ -213,10 +213,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
     def test_create_light_response_not_decrypted(self):
         with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
             response = SAMLResponse(parse_xml(f))
-        self.assert_validation_error(
-            '<samlp:Response><saml:EncryptedAssertion><xenc:EncryptedData>',
-            "Unexpected element: '{http://www.w3.org/2001/04/xmlenc#}EncryptedData'.",
-            response.create_light_response)
+        self.assertEqual(response.create_light_response().attributes, {})
 
     def test_create_light_response_wrong_root_element(self):
         root = Element('wrongRoot')
@@ -229,29 +226,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
         SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
         saml_response = SAMLResponse(ElementTree(root))
-        self.assert_validation_error(
-            '<saml2p:Response><saml2:EncryptedAssertion>',
-            'Missing assertion element.',
-            saml_response.create_light_response)
-
-    def test_create_light_response_decrypted_assertion_unexpected_element(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
-        SubElement(SubElement(root, Q_NAMES['saml2:EncryptedAssertion']), 'wrong')
-        saml_response = SAMLResponse(ElementTree(root))
-        self.assert_validation_error(
-            '<saml2p:Response><saml2:EncryptedAssertion><wrong>',
-            "Unexpected element: 'wrong'.",
-            saml_response.create_light_response)
-
-    def test_create_light_response_attribute_unexpected_element(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
-        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
-        SubElement(SubElement(assertion, Q_NAMES['saml2:AttributeStatement']), 'wrong')
-        saml_response = SAMLResponse(ElementTree(root))
-        self.assert_validation_error(
-            '<saml2p:Response><saml2:Assertion><saml2:AttributeStatement><wrong>',
-            "Unexpected element: 'wrong'.",
-            saml_response.create_light_response)
+        self.assertEqual(saml_response.create_light_response().attributes, {})
 
     def test_create_light_response_attribute_value_unexpected_element(self):
         root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
@@ -295,6 +270,23 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         expected = self.create_light_response(False)
         expected.status.sub_status_code = None
         self.assertEqual(response.create_light_response(), expected)
+
+    def test_create_light_response_no_auth_statement(self):
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
+        SubElement(root, Q_NAMES['saml2:Assertion'])
+        saml = SAMLResponse(ElementTree(root))
+        response = saml.create_light_response()
+        self.assertIsNone(response.ip_address)
+        self.assertIsNone(response.level_of_assurance)
+
+    def test_create_light_response_empty_auth_statement(self):
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:AuthnStatement'])
+        saml = SAMLResponse(ElementTree(root))
+        response = saml.create_light_response()
+        self.assertIsNone(response.ip_address)
+        self.assertIsNone(response.level_of_assurance)
 
     def test_str(self):
         self.assertEqual(

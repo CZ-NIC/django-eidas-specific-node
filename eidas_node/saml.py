@@ -379,75 +379,70 @@ class SAMLResponse:
 
         response.id = root.get('ID')
         response.in_response_to_id = root.get('InResponseTo')
-        for elm in root:
-            if elm.tag == Q_NAMES['saml2:Issuer']:
-                response.issuer = elm.text
-            elif elm.tag == Q_NAMES['saml2p:Status']:
-                response.status = status = Status()
-                for elm2 in elm:
-                    if elm2.tag == Q_NAMES['saml2p:StatusCode']:
-                        status_code = elm2.get('Value')
-                        sub_status_code = None
-                        for elm3 in elm2:
-                            if elm3.tag == Q_NAMES['saml2p:StatusCode']:
-                                sub_status_code = elm3.get('Value')
-                                break
+        issuer_elm = root.find('./{}'.format(Q_NAMES['saml2:Issuer']))
+        if issuer_elm is not None:
+            response.issuer = issuer_elm.text
 
-                        if status_code == SubStatusCode.VERSION_MISMATCH.value:
-                            # VERSION_MISMATCH is a status code in SAML 2 but a sub status code in Light response!
-                            status.status_code = StatusCode.REQUESTER
-                            status.sub_status_code = SubStatusCode.VERSION_MISMATCH
-                        else:
-                            status.status_code = StatusCode(status_code)
-                            try:
-                                status.sub_status_code = SubStatusCode(sub_status_code)
-                            except ValueError:
-                                # None or a sub status codes not recognized by eIDAS
-                                status.sub_status_code = None
+        response.status = status = Status()
+        status_code_elm = root.find('./{}/{}'.format(Q_NAMES['saml2p:Status'], Q_NAMES['saml2p:StatusCode']))
+        if status_code_elm is not None:
+            sub_status_code_elm = status_code_elm.find('./{}'.format(Q_NAMES['saml2p:StatusCode']))
+            status_message_elm = root.find('./{}/{}'.format(Q_NAMES['saml2p:Status'], Q_NAMES['saml2p:StatusMessage']))
 
-                        status.failure = status.status_code != StatusCode.SUCCESS
-                    elif elm2.tag == Q_NAMES['saml2p:StatusMessage']:
-                        status.status_message = elm2.text
-            elif elm.tag == Q_NAMES['saml2:EncryptedAssertion']:
-                if not len(elm):
-                    raise ValidationError({get_element_path(elm): 'Missing assertion element.'})
-                assertion = elm[0]
-                if assertion.tag != Q_NAMES['saml2:Assertion']:
-                    raise ValidationError({
-                        get_element_path(assertion): 'Unexpected element: {!r}.'.format(assertion.tag)})
-                self._parse_assertion(response, assertion)
-            elif elm.tag == Q_NAMES['saml2:Assertion']:
-                self._parse_assertion(response, elm)
+            status_code = status_code_elm.get('Value')
+            sub_status_code = sub_status_code_elm.get('Value') if sub_status_code_elm is not None else None
+
+            if status_code == SubStatusCode.VERSION_MISMATCH.value:
+                # VERSION_MISMATCH is a status code in SAML 2 but a sub status code in Light response!
+                status.status_code = StatusCode.REQUESTER
+                status.sub_status_code = SubStatusCode.VERSION_MISMATCH
+            else:
+                status.status_code = StatusCode(status_code)
+                try:
+                    status.sub_status_code = SubStatusCode(sub_status_code)
+                except ValueError:
+                    # None or a sub status codes not recognized by eIDAS
+                    status.sub_status_code = None
+
+            status.failure = status.status_code != StatusCode.SUCCESS
+            if status_message_elm is not None:
+                status.status_message = status_message_elm.text
+
+        assertion_elm = self.assertion
+        if assertion_elm is not None:
+            self._parse_assertion(response, assertion_elm)
+
         response.relay_state = self.relay_state
         return response
 
     def _parse_assertion(self, response: LightResponse, assertion: Element) -> None:
         attributes = response.attributes = OrderedDict()
-        for elm in assertion:
-            if elm.tag == Q_NAMES['saml2:Subject']:
-                name_id = elm.find(Q_NAMES['saml2:NameID'])
-                response.subject = name_id.text
-                response.subject_name_id_format = NameIdFormat(name_id.get('Format'))
-            elif elm.tag == Q_NAMES['saml2:AttributeStatement']:
-                for attribute in elm:
-                    if attribute.tag != Q_NAMES['saml2:Attribute']:
-                        raise ValidationError({
-                            get_element_path(attribute): 'Unexpected element: {!r}.'.format(attribute.tag)})
-                    name = attribute.get('Name')
-                    values = attributes[name] = []
-                    for value in attribute:
-                        if value.tag != Q_NAMES['saml2:AttributeValue']:
-                            raise ValidationError({
-                                get_element_path(value): 'Unexpected element: {!r}.'.format(value.tag)})
-                        values.append(value.text)
-            elif elm.tag == Q_NAMES['saml2:AuthnStatement']:
-                for stm in elm:
-                    if stm.tag == Q_NAMES['saml2:SubjectLocality']:
-                        response.ip_address = stm.get('Address')
-                    elif stm.tag == Q_NAMES['saml2:AuthnContext']:
-                        for elm2 in stm:
-                            if elm2.tag == Q_NAMES['saml2:AuthnContextClassRef']:
-                                response.level_of_assurance = LevelOfAssurance(elm2.text)
+        name_id_elm = assertion.find('./{}/{}'.format(Q_NAMES['saml2:Subject'], Q_NAMES['saml2:NameID']))
+        if name_id_elm is not None:
+            response.subject = name_id_elm.text
+            response.subject_name_id_format = NameIdFormat(name_id_elm.get('Format'))
+
+        attribute_elms = assertion.findall('./{}/{}'.format(Q_NAMES['saml2:AttributeStatement'],
+                                                            Q_NAMES['saml2:Attribute']))
+        for attribute in attribute_elms:
+            name = attribute.get('Name')
+            values = attributes[name] = []
+            for value in attribute:
+                if value.tag != Q_NAMES['saml2:AttributeValue']:
+                    raise ValidationError({
+                        get_element_path(value): 'Unexpected element: {!r}.'.format(value.tag)})
+                values.append(value.text)
+
+        stm_elm = assertion.find('./{}'.format(Q_NAMES['saml2:AuthnStatement']))
+        if stm_elm is not None:
+            locality_elm = stm_elm.find('./{}'.format(Q_NAMES['saml2:SubjectLocality']))
+            if locality_elm is not None:
+                response.ip_address = locality_elm.get('Address')
+
+            authn_class_elm = stm_elm.find('./{}/{}'.format(Q_NAMES['saml2:AuthnContext'],
+                                                            Q_NAMES['saml2:AuthnContextClassRef']))
+            if authn_class_elm is not None:
+                response.level_of_assurance = LevelOfAssurance(authn_class_elm.text)
 
     def __str__(self) -> str:
         return 'relay_state = {!r}, document = {}'.format(
