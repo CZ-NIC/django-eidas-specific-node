@@ -1,17 +1,23 @@
 """XML utility functions."""
 import re
+from collections import namedtuple
 from io import BytesIO
 from typing import BinaryIO, List, Union
 from uuid import uuid4
 
 import xmlsec
 from lxml import etree
-from lxml.etree import Element, ElementTree
+from lxml.etree import Element, ElementTree, QName
+
+from eidas_node.errors import SecurityError
 
 VALID_XML_ID_RE = re.compile('^[_a-zA-Z][-._a-zA-Z0-9]*$')
 XML_ENC_NAMESPACE = 'http://www.w3.org/2001/04/xmlenc#'
 XML_SIG_NAMESPACE = 'http://www.w3.org/2000/09/xmldsig#'
 XML_ATTRIBUTE_ID = 'ID'
+XML_ATTRIBUTE_URI = 'URI'
+
+SignatureInfo = namedtuple('SignatureInfo', 'signature,references')
 
 
 def parse_xml(xml: Union[str, bytes, BinaryIO]) -> etree.ElementTree:
@@ -152,3 +158,51 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str, signature_method
 
     # xmlsec library adds unnecessary tail newlines again, so we remove them.
     remove_extra_xml_whitespace(signature)
+
+
+def verify_xml_signatures(node: Element, cert_file: str) -> List[SignatureInfo]:
+    """
+    Verify all XML signatures from the provided node.
+
+    :param node: A XML subtree.
+    :param cert_file: A path to the certificate file.
+    :return: A list of signature details if there are any signatures, an empty list otherwise.
+    :raise SecurityError: If any of the element references or signatures are invalid.
+    """
+    signature_info = []
+    signatures = node.findall(".//{}".format(QName(XML_SIG_NAMESPACE, 'Signature')))
+    if signatures:
+        key = xmlsec.Key.from_file(cert_file, xmlsec.constants.KeyDataFormatCertPem)
+        for sig_num, signature in enumerate(signatures, 1):
+            # Find and register referenced elements
+            referenced_elements = []
+            ctx = xmlsec.SignatureContext()
+            refs = signature.findall('./{}/{}'.format(QName(XML_SIG_NAMESPACE, 'SignedInfo'),
+                                                      QName(XML_SIG_NAMESPACE, 'Reference')))
+            for ref_num, ref in enumerate(refs, 1):
+                # ID is referenced in the URI attribute and prefixed with a hash.
+                ref_id = ref.get(XML_ATTRIBUTE_URI)
+                if ref_id is None or len(ref_id) < 2 or ref_id[0] != '#':
+                    raise SecurityError('Signature {}, reference {}: Invalid id {!r}.'
+                                        .format(sig_num, ref_num, ref_id))
+                ref_id = ref_id[1:]
+                ref_elms = node.xpath('//*[@{}=\'{}\']'.format(XML_ATTRIBUTE_ID, ref_id))
+                if not ref_elms:
+                    raise SecurityError('Signature {}, reference {}: Element with id {!r} not found.'
+                                        .format(sig_num, ref_num, ref_id))
+                if len(ref_elms) > 1:
+                    raise SecurityError('Signature {}, reference {}: Element with id {!r} occurs more than once.'
+                                        .format(sig_num, ref_num, ref_id))
+                referenced_elements.append(ref_elms[0])
+                # Unlike HTML, XML doesn't have a single standardized id so we need to tell xmlsec about our id.
+                ctx.register_id(ref_elms[0], XML_ATTRIBUTE_ID, None)
+
+            # Verify the signature
+            try:
+                ctx.key = key
+                ctx.verify(signature)
+            except xmlsec.Error:
+                raise SecurityError('Signature {} is invalid.'.format(sig_num))
+
+            signature_info.append(SignatureInfo(signature, tuple(referenced_elements)))
+    return signature_info

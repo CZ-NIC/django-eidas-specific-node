@@ -14,7 +14,7 @@ from eidas_node.attributes import EIDAS_NATURAL_PERSON_ATTRIBUTES, MANDATORY_ATT
 from eidas_node.connector.settings import CONNECTOR_SETTINGS
 from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType
 from eidas_node.models import LightRequest
-from eidas_node.saml import SAMLRequest
+from eidas_node.saml import SAMLRequest, SAMLResponse
 from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.connector')
@@ -102,8 +102,14 @@ class DemoServiceProviderResponseView(TemplateView):
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
         saml_response_xml = b64decode(self.request.POST.get('SAMLResponse', '').encode('ascii')).decode('utf-8')
-
         if saml_response_xml:
+            # Verify signatures
+            cert_file = (CONNECTOR_SETTINGS.service_provider['response_signature'] or {}).get('cert_file')
+            if cert_file:
+                response = SAMLResponse(parse_xml(saml_response_xml))
+                response.verify_response(cert_file)
+                response.verify_assertion(cert_file)
+
             # Reformat with pretty printing for display
             saml_response_xml = dump_xml(parse_xml(saml_response_xml)).decode('utf-8')
 

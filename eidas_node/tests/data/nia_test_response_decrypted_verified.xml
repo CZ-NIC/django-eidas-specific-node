@@ -1,0 +1,43 @@
+<!-- Pretty-printed. Use `eidas_node.xml.remove_extra_xml_whitespace` before use. -->
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_91240224f0b64f7bb8089b18629dd037" Version="2.0" IssueInstant="2019-09-18T11:10:53Z" Destination="http://localhost.localdomain:8000/IdentityProviderResponse" InResponseTo="_EC4U.pASZbyim6prNJtsgOJW5BQUYug_vL-dVUzF-2C8Soni4zLm6GuAfvPZ8M2">
+  <saml:Issuer>urn:microsoft:cgg2010:fpsts</saml:Issuer>
+  <samlp:Status>
+    <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+  </samlp:Status>
+  <EncryptedAssertion xmlns="urn:oasis:names:tc:SAML:2.0:assertion">
+    <Assertion xmlns="urn:oasis:names:tc:SAML:2.0:assertion" ID="_5a8a0c35-ad27-4b69-b447-749164061890" IssueInstant="2019-09-18T11:10:53.417Z" Version="2.0">
+      <Issuer>urn:microsoft:cgg2010:fpsts</Issuer>
+      <Subject>
+        <NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">CZ/CZ/1cd49592-b9ba-42ed-91ac-80d07ac9faf2</NameID>
+        <SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+          <SubjectConfirmationData InResponseTo="_EC4U.pASZbyim6prNJtsgOJW5BQUYug_vL-dVUzF-2C8Soni4zLm6GuAfvPZ8M2" NotOnOrAfter="2019-09-18T12:10:53.417Z" Recipient="http://localhost.localdomain:8000/IdentityProviderResponse"/>
+        </SubjectConfirmation>
+      </Subject>
+      <Conditions NotBefore="2019-09-18T11:10:53.417Z" NotOnOrAfter="2019-09-18T12:10:53.417Z">
+        <AudienceRestriction>
+          <Audience>http://localhost.localdomain:8000/saml/idp.xml</Audience>
+        </AudienceRestriction>
+      </Conditions>
+      <AttributeStatement>
+        <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="CurrentFamilyName" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+          <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:CurrentFamilyNameType">ČERNÝCH</AttributeValue>
+        </Attribute>
+        <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/CurrentGivenName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="CurrentGivenName" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+          <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:CurrentGivenNameType">PAVEL</AttributeValue>
+        </Attribute>
+        <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/DateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="DateOfBirth" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+          <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:DateOfBirthType">1956-07-15</AttributeValue>
+        </Attribute>
+        <Attribute xmlns:a="http://schemas.xmlsoap.org/ws/2009/09/identity/claims" Name="http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="PersonIdentifier" a:OriginalIssuer="urn:microsoft:cgg2010:fpsts">
+          <AttributeValue xmlns:b="http://www.w3.org/2001/XMLSchema-instance" xmlns:tn="http://eidas.europa.eu/attributes/naturalperson" b:type="tn:PersonIdentifierType">CZ/CZ/1cd49592-b9ba-42ed-91ac-80d07ac9faf2</AttributeValue>
+        </Attribute>
+      </AttributeStatement>
+      <AuthnStatement AuthnInstant="2019-09-18T11:10:53.417Z" SessionIndex="_6fa6ffe25af24902bd40d3a9b6919f7d">
+        <SubjectLocality Address="217.31.205.1"/>
+        <AuthnContext>
+          <AuthnContextClassRef>http://eidas.europa.eu/LoA/substantial</AuthnContextClassRef>
+        </AuthnContext>
+      </AuthnStatement>
+    </Assertion>
+  </EncryptedAssertion>
+</samlp:Response>

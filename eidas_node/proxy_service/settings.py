@@ -23,6 +23,7 @@ class ProxyServiceSettings(AppSettings):
         endpoint=StringSetting(required=True, min_length=1),
         request_issuer=StringSetting(required=True, min_length=1),
         key_file=StringSetting(),
+        cert_file=StringSetting(),
     ), required=True)
     light_storage = NestedSetting(settings=dict(
         backend=StringSetting(default='eidas_node.storage.ignite.IgniteStorage', min_length=1),

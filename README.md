@@ -72,6 +72,7 @@ A dictionary with following items:
 * `ENDPOINT` (required): The URL where the Identity Provider expects authentication requests.
 * `REQUEST_ISSUER` (required): The issuer of the authentication request registered at Identity Provider.
 * `KEY_FILE` (optional, default `None`): The path of a key to decrypt Identity Provider's authentication response.
+* `CERT_FILE` (optional, default `None`): The path of a certificate to verify the signature of Identity Provider's authentication response.
 
 #### `PROXY_SERVICE_EIDAS_NODE`
 

@@ -152,7 +152,8 @@ class IdentityProviderResponseView(TemplateView):
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
         try:
-            self.saml_response = self.get_saml_response(PROXY_SERVICE_SETTINGS.identity_provider.get('key_file'))
+            self.saml_response = self.get_saml_response(PROXY_SERVICE_SETTINGS.identity_provider.get('key_file'),
+                                                        PROXY_SERVICE_SETTINGS.identity_provider.get('cert_file'))
             LOGGER.debug('SAML Response: %s', self.saml_response)
             self.storage = self.get_light_storage(PROXY_SERVICE_SETTINGS.light_storage['backend'],
                                                   PROXY_SERVICE_SETTINGS.light_storage['options'])
@@ -173,22 +174,30 @@ class IdentityProviderResponseView(TemplateView):
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
         return super().get(request)
 
-    def get_saml_response(self, key_file: Optional[str]) -> SAMLResponse:
+    def get_saml_response(self, key_file: Optional[str], cert_file: Optional[str]) -> SAMLResponse:
         """
         Extract and decrypt a SAML response from POST data.
 
         :param key_file: An optional path to a key to decrypt the response.
+        :param cert_file: An optional path to a certificate to verify the response.
         :return: A SAML response.
         """
+        raw_response = b64decode(self.request.POST.get('SAMLResponse', '').encode('ascii')).decode('utf-8')
+        LOGGER.debug('Raw SAML Response: %s', raw_response)
+
         try:
             response = SAMLResponse(
-                parse_xml(b64decode(self.request.POST.get('SAMLResponse', '').encode('ascii'))),
+                parse_xml(raw_response),
                 self.request.POST.get('RelayState'))
         except XMLSyntaxError as e:
             raise ParseError(str(e)) from None
-        # FIXME: Verify signature.
+
+        if cert_file:
+            response.verify_response(cert_file)
         if key_file:
             response.decrypt(key_file)
+        if cert_file:
+            response.verify_assertion(cert_file)
         return response
 
     def get_light_storage(self, backend: str, options: Dict[str, Any]) -> LightStorage:

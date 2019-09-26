@@ -1,0 +1,73 @@
+<!-- Pretty-printed. Use `eidas_node.xml.remove_extra_xml_whitespace` before use. -->
+<saml2p:Response xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:eidas="http://eidas.europa.eu/saml-extensions" ID="_O8tQUloQS9Uwi6hi.kcBFQju5cASaVEnPxFx76MxwiOwWLeEjL8Aa998rdwkmzU" InResponseTo="_aacf96af-2b66-4677-9bf4-430f006fc8bf" Version="2.0" IssueInstant="2019-09-19T07:31:41.148Z" Destination="/DemoServiceProviderResponse">
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      <SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha512"/>
+      <Reference URI="#_O8tQUloQS9Uwi6hi.kcBFQju5cASaVEnPxFx76MxwiOwWLeEjL8Aa998rdwkmzU">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+          <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"/>
+        <DigestValue>34d+/tNNOZZFQSf7ffCI9buQZRhXqLg027cp0GC627HNWIYo9PkTy0VaRCFgyp6m
+mNkOSAaz8ngwNfghaA1PvQ==</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>HoiFe27U/BPvs3P4FL7sIE/gquWxD5x89+uB3GbkfOZoy8CYUSvpy7J7jJC/D20a
+l7nfMJ0XiSw22nXZIi743QAgNyTL1K2IUXHFHB8Ql55kemKHN5lEukbRqZfqKDls
+aSbT1VYuOkZK9uU4mHposOysBE9dDejImIoWeEMnQSiDShLB43z7NZlvmL5Kcphl
+NnhtohYfxVdXIzw3l8QGwK2U5Vun9vciqhwDeepDJyTyfpffG5nCleIiC17nwm40
+4GGe02sSrsAqeawDZXy9nvuT5KOCVzv2E84du4ACTDdjXZ1GqE2EhAtszA7JBW3K
+By7RBDZeKL712RfUVBTb8CyRCURuSs4aE9hh3RzV+wLj3Ea1XtJspbNa9fHBd5w2
+8oGg7RfgBh22MdoGHbWt8AR3ALnjsdZYwTYMQ7UGsA+yJBT/6PEe/KaRLEQ/xPWD
+kEH3bkBdfrtg1PwCCfMa5NV34dbINQnoW3rbHlxxPd6KMZdmKH6T1gy27K3OPIaD
+ICRfgq2u+LmLNFfssCqY1glHxmTjBuhpP5RKtk7qnK83K/yn5QxKSkta4seYGk3R
+UiL1QeG8EFoHgnEd/qle7oeWOZrCKwqp6zzXl1DIpYoBSpYXrJPoYUKpj0fbSR+F
+RvMCazGDX3Oxrz5HdqAwL6ts9DVSEeKQXXrQu77xr3M=</SignatureValue>
+    <KeyInfo>
+      <X509Data>
+        <X509Certificate>MIIFXTCCA0WgAwIBAgIUBiL70AobFn9kGNp6hPZpPK6nvzEwDQYJKoZIhvcNAQEL
+BQAwPjEZMBcGA1UECgwQQ1ouTklDLCB6LnMucC5vLjEhMB8GA1UEAwwYZWlkYXMt
+cHJveHktc2VydmljZS50ZXN0MB4XDTE5MDgxNjEzNTYxNVoXDTI5MDgxMzEzNTYx
+NVowPjEZMBcGA1UECgwQQ1ouTklDLCB6LnMucC5vLjEhMB8GA1UEAwwYZWlkYXMt
+cHJveHktc2VydmljZS50ZXN0MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKC
+AgEAx4RPZ6XRG6W5KpBP5R4Zcfa3kxRekkBo48JXXIWlAJpI06jk3+U9R5SCIOQz
+3y+Y7pidGshxQOoA5qX/J/vjJGf0nJX01i8nDgXUQSwwq/8VBLU7Vx137+9eXCHA
+JB29ixBzezuQvu8bCqdAW60Rf67+La8uegooh3OpCVvO2oxNHHJLk1PGh2cQuPDj
+qvETsItYsCnMGG9k4v183+pGjm0/u969hzlh+tynS068ZM+rKnXbiKhpuiCKjFPs
+KSnHBS4U6/ALbGYSb9sZfKAr+BYcB/2Sx3BP+JRfAc6EFxZ8WMc0WWGKC/OJCIR4
+tLgufZ/V8YcFmRtTmIemSyjWLxha9CV74HEkKMbvy8sf/flgYWV3b5SpNaGjSkrz
+PXQU0JuxJlGkrOayh+LMM1q4V7yCOmipbkp4lsazx2gY8kIxO5ZDzsYmjkA+Fc9O
+N/HNpiFvKd5MEEjFWZC2hyNTG51SfzGHy7OxJT1W5A2pd/eLlmq9S5w8Rstknsdc
+Tfc3kURWFRIcegPWmcRj/qqEJJgBpQF0+xxyrrDoo2Gl9iM6JjB9dhNOfVM3eczS
+gtsRj86YRU4uKNYSog8W5USdCkT+/IkHiBTbvuvkLowawtQQupoJI6n5Y0nRGvfG
+3kQ3mc0AvIe2W2iI/MseQOfURdNu2y7mW9FY2+0I/buA/gsCAwEAAaNTMFEwHQYD
+VR0OBBYEFC0aZA79lgsGmSonCB+/HRh7K8WxMB8GA1UdIwQYMBaAFC0aZA79lgsG
+mSonCB+/HRh7K8WxMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggIB
+AJ2yGYqvXTk+TwPOAV2r1jb+RG8bHZAGXETIksYTGH1fNn/rE6mpaaHESD2fR4bR
+Sqnnwh5K6NTVnFoyiUqt9BQXAIEMtFYOaYOsTSETbfkfovMEnXPFXGtyFmKqTgFA
+JYZ0sJyuZBeu0m510LKgPwjLT15sluv3xMraMmpXKBfMwYszHTdUksFD4iPZngRi
+KuWVfQNvPDl195KypPM6vgp+H5LEp5VlcS4PavnABVRJjIe60XNomtT7dbph+gJn
+r3C8I5TIeJxri24M+4aGCeGDHHX41xylly0DwA8RqyJGRCRyRZRbvy570iGJoe7v
+eJyaFRyM/7HzFfeihiuXl9Xk7tqo+wsUrmqYAser1fJRqcP3Q0Kj/wBqQ6muE5Wg
+Ad/UOHwolhQTc/B9RWIA3SaZJD8MvVjV+LRftfsUWke4FbjY3RGo4mIbCnJMUwlF
+P8S2nsMWy8XKC+YxLtaaO2KjYN3YGepwGmFnP7hLCSXCwvOHXIW6MYi2HyshiG3O
+C+J6rG8sP3vL2X5W3oCZ0Oxl79uqoRjlhKDo8m936dRKOm95KBM4uUl0jQ6yqL+N
+rH1nMeXtYQ7uSjwZf2HsM/wTF9RHiBOOZnnmYWqWLoTBW2nBASlrvCa8qdQadXV7
+I6EtzY/TJQgKMFnTAFqx32bFozOgbJd+EPDCzDAudoF1</X509Certificate>
+        <X509IssuerSerial>
+          <X509IssuerName>CN=eidas-proxy-service.test,O=CZ.NIC\, z.s.p.o.</X509IssuerName>
+          <X509SerialNumber>35034105937627197988315846329862265808194354993</X509SerialNumber>
+        </X509IssuerSerial>
+      </X509Data>
+    </KeyInfo>
+  </Signature>
+  <saml2:Issuer>RESPONSE_ISSUER</saml2:Issuer>
+  <saml2p:Status>
+    <saml2p:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Responder">
+      <saml2p:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:AuthnFailed"/>
+    </saml2p:StatusCode>
+    <saml2p:StatusMessage>##</saml2p:StatusMessage>
+  </saml2p:Status>
+</saml2p:Response>
