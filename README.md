@@ -188,6 +188,11 @@ A dictionary with following items:
 * `REQUEST_ISSUER` (required): The expected issuer of the Service Provider's authentication request.
 * `RESPONSE_ISSUER` (required): The issuer of the authentication response registered at Service Provider.
 * `COUNTRY_PARAMETER` (optional, default `country`): The name of a POST parameter containing citizen country code for `/CitizenCountrySelector` and `/ServiceProviderRequest` views.
+* `RESPONSE_SIGNATURE` (dictionary, optional): Options for signing SAML responses returned to Service Provider:
+  * `KEY_FILE` (required, string): The path to a signing key.
+  * `CERT_FILE`: (required, string): The path to the corresponding certificate.
+  * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
+  * `DIGEST_METHOD` (optional, string, default `SHA512`): XML digest method.
 
 #### `CONNECTOR_EIDAS_NODE`
 

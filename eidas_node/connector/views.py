@@ -208,7 +208,8 @@ class ConnectorResponseView(TemplateView):
             self.light_response = self.get_light_response()
             LOGGER.debug('Light Response: %s', self.light_response)
             self.saml_response = self.create_saml_response(CONNECTOR_SETTINGS.service_provider['response_issuer'],
-                                                           CONNECTOR_SETTINGS.service_provider['endpoint'])
+                                                           CONNECTOR_SETTINGS.service_provider['endpoint'],
+                                                           CONNECTOR_SETTINGS.service_provider['response_signature'])
             LOGGER.debug('SAML Response: %s', self.saml_response)
         except EidasNodeError:
             LOGGER.exception('Bad connector response.')
@@ -262,12 +263,15 @@ class ConnectorResponseView(TemplateView):
             raise SecurityError('Response not found in light storage.')
         return response
 
-    def create_saml_response(self, issuer: str, destination: Optional[str]) -> SAMLResponse:
+    def create_saml_response(self, issuer: str, destination: Optional[str],
+                             signature_options: Optional[Dict[str, str]]) -> SAMLResponse:
         """
         Create a SAML response from a light response.
 
         :param issuer: Issuer of the SAML response.
         :param destination: Service provider's endpoint.
+        :param signature_options: Optional options to create a signed response: `key_file`, `cert_file`.
+        `signature_method`, abd `digest_method`.
         :return: A SAML response.
         """
         # Replace the original issuer with our issuer registered at the Identity Provider.
@@ -276,7 +280,11 @@ class ConnectorResponseView(TemplateView):
             self.light_response,
             destination,
             datetime.utcnow())
-        # TODO: sign and encrypt the response
+
+        # TODO: encrypt the assertion (between response.sign_assertion and response.sign_response)
+        if signature_options and signature_options.get('key_file') and signature_options.get('cert_file'):
+            response.sign_assertion(**signature_options)
+            response.sign_response(**signature_options)
         return response
 
     def get_context_data(self, **kwargs) -> dict:
@@ -286,6 +294,7 @@ class ConnectorResponseView(TemplateView):
 
         if self.saml_response:
             context['service_provider_endpoint'] = CONNECTOR_SETTINGS.service_provider['endpoint']
-            context['saml_response'] = b64encode(dump_xml(self.saml_response.document)).decode('ascii')
+            saml_response_xml = dump_xml(self.saml_response.document, pretty_print=False)
+            context['saml_response'] = b64encode(saml_response_xml).decode('ascii')
             context['relay_state'] = self.saml_response.relay_state or ''
         return context

@@ -2,7 +2,7 @@
 
 from django.apps import AppConfig
 
-from eidas_node.connector.settings import ConnectorSettings
+from eidas_node.connector.settings import check_settings
 
 
 class ConnectorConfig(AppConfig):
@@ -12,4 +12,4 @@ class ConnectorConfig(AppConfig):
 
     def ready(self):
         """Run start-up actions."""
-        ConnectorSettings.check()
+        check_settings()

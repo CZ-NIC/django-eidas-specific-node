@@ -1,15 +1,15 @@
 from io import BytesIO
-from typing import BinaryIO, Optional, cast
+from typing import BinaryIO, Optional, TextIO, cast
 from unittest.mock import Mock, patch
 
 import xmlsec
 from django.test import SimpleTestCase
 from lxml.etree import Element, SubElement
 
-from eidas_node.saml import NAMESPACES, Q_NAMES
-from eidas_node.tests.test_saml import DATA_DIR
+from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES
+from eidas_node.tests.constants import DATA_DIR, KEY_FILE, SIGNATURE_OPTIONS, WRONG_KEY_FILE
 from eidas_node.xml import (create_xml_uuid, decrypt_xml, dump_xml, get_element_path, is_xml_id_valid, parse_xml,
-                            remove_extra_xml_whitespace)
+                            remove_extra_xml_whitespace, remove_newlines_in_xml_text, sign_xml_node)
 
 
 class TestGetElementPath(SimpleTestCase):
@@ -26,13 +26,13 @@ class TestGetElementPath(SimpleTestCase):
         self.assertEqual(get_element_path(grandchild), '<root><child><grandchild>')
 
     def test_get_element_path_with_namespaces(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=NAMESPACES)
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
         leaf = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
         self.assertEqual(get_element_path(root), '<saml2p:Response>')
         self.assertEqual(get_element_path(leaf), '<saml2p:Response><saml2:EncryptedAssertion>')
 
     def test_get_element_path_mixed(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=NAMESPACES)
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
         leaf = SubElement(SubElement(root, Q_NAMES['saml2:EncryptedAssertion']), 'wrong')
         self.assertEqual(get_element_path(root), '<saml2p:Response>')
         self.assertEqual(get_element_path(leaf), '<saml2p:Response><saml2:EncryptedAssertion><wrong>')
@@ -62,14 +62,11 @@ class TestValidXMLID(SimpleTestCase):
 
 
 class TestDecryptXML(SimpleTestCase):
-    KEY_FILE = str(DATA_DIR / 'key.pem')
-    WRONG_KEY_FILE = str(DATA_DIR / 'wrong-key.pem')
-
     def test_decrypt_xml_with_document_not_encrypted(self):
         with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
             document = parse_xml(f.read())
         expected = dump_xml(document).decode('utf-8')
-        decrypt_xml(document, self.KEY_FILE)
+        decrypt_xml(document, KEY_FILE)
         actual = dump_xml(document).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -80,7 +77,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
             document_encrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        decrypt_xml(document_encrypted, self.KEY_FILE)
+        decrypt_xml(document_encrypted, KEY_FILE)
         actual = dump_xml(document_encrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -88,14 +85,14 @@ class TestDecryptXML(SimpleTestCase):
         self.maxDiff = None
         with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
             document_encrypted = parse_xml(f.read())
-        self.assertRaises(xmlsec.Error, decrypt_xml, document_encrypted, self.WRONG_KEY_FILE)
+        self.assertRaises(xmlsec.Error, decrypt_xml, document_encrypted, WRONG_KEY_FILE)
 
     def test_decrypt_xml_with_document_decrypted(self):
         self.maxDiff = None
         with cast(BinaryIO, (DATA_DIR / 'saml_response_decrypted.xml').open('rb')) as f:
             document_decrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        decrypt_xml(document_decrypted, self.KEY_FILE)
+        decrypt_xml(document_decrypted, KEY_FILE)
         actual = dump_xml(document_decrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -164,3 +161,64 @@ class TestRemoveExtraWhitespace(SimpleTestCase):
                 self.assertEqual(child.tail, text)
                 self.assertEqual(grandchild.text, text)
                 self.assertEqual(grandchild.tail, text)
+
+
+class TestRemoveNewlinesInXMLText(SimpleTestCase):
+    def test_remove_newlines_in_xml_text_only_leaf_nodes(self):
+        text_with_newlines = '\nhello \nword\n'
+        text_without_newlines = 'hello word'
+        root = Element('root')
+        root.text = text_with_newlines
+        child = SubElement(root, 'child')
+        child.text = text_with_newlines
+        child2 = SubElement(root, 'child')
+        child2.text = text_with_newlines
+        grandchild = SubElement(child2, 'child')
+        grandchild.text = text_with_newlines
+        remove_newlines_in_xml_text(root)
+        self.assertEqual(root.text, text_with_newlines)
+        self.assertEqual(child.text, text_without_newlines)
+        self.assertEqual(child2.text, text_with_newlines)
+        self.assertEqual(grandchild.text, text_without_newlines)
+
+    def test_remove_newlines_in_xml_text_none(self):
+        root = Element('root')
+        remove_newlines_in_xml_text(root)
+        self.assertIsNone(root.text)
+
+
+class TestXMLSignatures(SimpleTestCase):
+    USED_NAMESPACES = {'saml2': EIDAS_NAMESPACES['saml2'], 'saml2p': EIDAS_NAMESPACES['saml2p']}
+
+    @patch('eidas_node.xml.create_xml_uuid', return_value='id-0uuid4')
+    def test_sign_xml_node_without_id(self, uuid_mock):
+        self.maxDiff = None
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=self.USED_NAMESPACES)
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
+        sign_xml_node(root, **SIGNATURE_OPTIONS)
+
+        with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
+            self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
+
+    def test_sign_xml_node_with_id(self):
+        self.maxDiff = None
+        root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id-0uuid4'}, nsmap=self.USED_NAMESPACES)
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
+        sign_xml_node(root, **SIGNATURE_OPTIONS)
+
+        with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
+            self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
+
+    @patch('eidas_node.xml.create_xml_uuid', return_value='id-0uuid4')
+    def test_sign_xml_node_multiple(self, uuid_mock):
+        self.maxDiff = None
+        root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id-response'}, nsmap=self.USED_NAMESPACES)
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
+        sign_xml_node(assertion, **SIGNATURE_OPTIONS)
+        sign_xml_node(root, **SIGNATURE_OPTIONS)
+
+        with cast(TextIO, (DATA_DIR / 'signed_response_and_assertion.xml').open('r')) as f:
+            self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())

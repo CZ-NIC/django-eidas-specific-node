@@ -1,6 +1,7 @@
 """Settings of eidas_node.connector."""
 
 from appsettings import AppSettings, DictSetting, IterableSetting, NestedSetting, PositiveIntegerSetting, StringSetting
+from django.core.exceptions import ImproperlyConfigured
 
 DEFAULT_COUNTRIES = [
     # Country code, name
@@ -58,6 +59,15 @@ class ConnectorSettings(AppSettings):
         endpoint=StringSetting(required=True, min_length=1),
         request_issuer=StringSetting(required=True, min_length=1),
         response_issuer=StringSetting(required=True, min_length=1),
+        response_signature=NestedSetting(
+            settings=dict(
+                # required=True leads to a strange error:
+                # "RESPONSE_SIGNATURE setting is missing required item 'RESPONSE_SIGNATURE'"
+                key_file=StringSetting(min_length=1),
+                cert_file=StringSetting(min_length=1),
+                signature_method=StringSetting(default='RSA_SHA512', min_length=1),
+                digest_method=StringSetting(default='SHA512', min_length=1),
+            )),
         country_parameter=StringSetting(default='country', min_length=1),
     ), required=True)
     light_storage = NestedSetting(settings=dict(
@@ -77,3 +87,13 @@ class ConnectorSettings(AppSettings):
 
 
 CONNECTOR_SETTINGS = ConnectorSettings()
+
+
+def check_settings():
+    """Check settings."""
+    ConnectorSettings.check()
+    signature = CONNECTOR_SETTINGS.service_provider['response_signature']
+    # If one of the files is set, the other must be set as well
+    if bool(signature.get('key_file')) != bool(signature.get('cert_file')):
+        raise ImproperlyConfigured('Both CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.KEY_FILE and '
+                                   'CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.CERT_FILE must be set.')
