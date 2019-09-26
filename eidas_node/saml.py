@@ -410,7 +410,17 @@ class SAMLResponse:
 
         assertion_elm = self.assertion
         if assertion_elm is not None:
-            self._parse_assertion(response, assertion_elm)
+            try:
+                self._parse_assertion(response, assertion_elm)
+            except ValidationError as e:
+                return LightResponse(
+                    id=root.get('ID'),
+                    in_response_to_id=root.get('InResponseTo'),
+                    issuer=issuer_elm.text if issuer_elm is not None else None,
+                    status=Status(
+                        failure=True,
+                        status_code=StatusCode.RESPONDER,
+                        status_message='Invalid data of {!r}: {!r}'.format(*e.errors.popitem())))
 
         response.relay_state = self.relay_state
         return response
@@ -425,13 +435,8 @@ class SAMLResponse:
         attribute_elms = assertion.findall('./{}/{}'.format(Q_NAMES['saml2:AttributeStatement'],
                                                             Q_NAMES['saml2:Attribute']))
         for attribute in attribute_elms:
-            name = attribute.get('Name')
-            values = attributes[name] = []
-            for value in attribute:
-                if value.tag != Q_NAMES['saml2:AttributeValue']:
-                    raise ValidationError({
-                        get_element_path(value): 'Unexpected element: {!r}.'.format(value.tag)})
-                values.append(value.text)
+            attributes[attribute.get('Name')] = [
+                elm.text for elm in attribute.findall('./{}'.format(Q_NAMES['saml2:AttributeValue']))]
 
         stm_elm = assertion.find('./{}'.format(Q_NAMES['saml2:AuthnStatement']))
         if stm_elm is not None:
@@ -442,7 +447,10 @@ class SAMLResponse:
             authn_class_elm = stm_elm.find('./{}/{}'.format(Q_NAMES['saml2:AuthnContext'],
                                                             Q_NAMES['saml2:AuthnContextClassRef']))
             if authn_class_elm is not None:
-                response.level_of_assurance = LevelOfAssurance(authn_class_elm.text)
+                try:
+                    response.level_of_assurance = LevelOfAssurance(authn_class_elm.text)
+                except ValueError:
+                    raise ValidationError({get_element_path(authn_class_elm): authn_class_elm.text}) from None
 
     def __str__(self) -> str:
         return 'relay_state = {!r}, document = {}'.format(

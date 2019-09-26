@@ -228,17 +228,6 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         saml_response = SAMLResponse(ElementTree(root))
         self.assertEqual(saml_response.create_light_response().attributes, {})
 
-    def test_create_light_response_attribute_value_unexpected_element(self):
-        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
-        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
-        attributes = SubElement(assertion, Q_NAMES['saml2:AttributeStatement'])
-        SubElement(SubElement(attributes, Q_NAMES['saml2:Attribute']), 'wrong')
-        saml_response = SAMLResponse(ElementTree(root))
-        self.assert_validation_error(
-            '<saml2p:Response><saml2:Assertion><saml2:AttributeStatement><saml2:Attribute><wrong>',
-            "Unexpected element: 'wrong'.",
-            saml_response.create_light_response)
-
     def test_create_light_response_failed_response(self):
         self.maxDiff = None
         with cast(BinaryIO, (DATA_DIR / 'saml_response_failed.xml').open('rb')) as f:
@@ -286,6 +275,21 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         saml = SAMLResponse(ElementTree(root))
         response = saml.create_light_response()
         self.assertIsNone(response.ip_address)
+        self.assertIsNone(response.level_of_assurance)
+
+    def test_create_light_response_unrecognized_auth_context_class(self):
+        root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id', 'InResponseTo': 'id0'}, nsmap=EIDAS_NAMESPACES)
+        context_class = SubElement(SubElement(SubElement(SubElement(
+            root, Q_NAMES['saml2:Assertion']), Q_NAMES['saml2:AuthnStatement']),
+            Q_NAMES['saml2:AuthnContext']), Q_NAMES['saml2:AuthnContextClassRef'])
+        context_class.text = 'saml2:AuthnContextClassRef:unrecognized'
+        saml = SAMLResponse(ElementTree(root))
+        response = saml.create_light_response()
+        self.assertEqual(response.id, 'id')
+        self.assertEqual(response.in_response_to_id, 'id0')
+        self.assertTrue(response.status.failure)
+        self.assertEqual(response.status.status_code, StatusCode.RESPONDER)
+        self.assertIn('saml2:AuthnContextClassRef:unrecognized', response.status.status_message)
         self.assertIsNone(response.level_of_assurance)
 
     def test_str(self):
