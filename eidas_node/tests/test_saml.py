@@ -36,6 +36,27 @@ class ValidationErrorMixin:
 
 
 class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
+    def test_id(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], {'ID': 'test-id'}, nsmap=EIDAS_NAMESPACES)
+        request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assertEqual(request.id, 'test-id')
+
+    def test_id_none(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], nsmap=EIDAS_NAMESPACES)
+        request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assertIsNone(request.id)
+
+    def test_issuer(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], nsmap=EIDAS_NAMESPACES)
+        SubElement(root, Q_NAMES['saml2:Issuer']).text = 'test-issuer'
+        request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assertEqual(request.issuer, 'test-issuer')
+
+    def test_issuer_none(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'], nsmap=EIDAS_NAMESPACES)
+        request = SAMLRequest(ElementTree(root), 'CZ', 'relay123')
+        self.assertIsNone(request.issuer)
+
     def test_from_light_request(self):
         self.maxDiff = None
         saml_request = SAMLRequest.from_light_request(
@@ -193,6 +214,37 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
 
 
 class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
+    def test_id(self):
+        root = Element(Q_NAMES['saml2p:Response'], {'ID': 'test-id'}, nsmap=EIDAS_NAMESPACES)
+        request = SAMLResponse(ElementTree(root))
+        self.assertEqual(request.id, 'test-id')
+
+    def test_id_none(self):
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
+        request = SAMLResponse(ElementTree(root))
+        self.assertIsNone(request.id)
+
+    def test_in_response_to_id(self):
+        root = Element(Q_NAMES['saml2p:Response'], {'InResponseTo': 'test-id'}, nsmap=EIDAS_NAMESPACES)
+        response = SAMLResponse(ElementTree(root))
+        self.assertEqual(response.in_response_to_id, 'test-id')
+
+    def test_in_response_to_id_none(self):
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
+        response = SAMLResponse(ElementTree(root))
+        self.assertIsNone(response.in_response_to_id)
+
+    def test_issuer(self):
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
+        SubElement(root, Q_NAMES['saml2:Issuer']).text = 'test-issuer'
+        response = SAMLResponse(ElementTree(root))
+        self.assertEqual(response.issuer, 'test-issuer')
+
+    def test_issuer_none(self):
+        root = Element(Q_NAMES['saml2p:Response'], nsmap=EIDAS_NAMESPACES)
+        response = SAMLResponse(ElementTree(root))
+        self.assertIsNone(response.issuer)
+
     def create_light_response(self, success: bool, **kwargs) -> LightResponse:
         data = (LIGHT_RESPONSE_DICT if success else FAILED_LIGHT_RESPONSE_DICT).copy()
         data['status'] = Status(**data['status'])
