@@ -17,10 +17,11 @@ from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.proxy_service.settings import PROXY_SERVICE_SETTINGS
 from eidas_node.saml import SAMLRequest, SAMLResponse
 from eidas_node.storage import LightStorage
-from eidas_node.utils import import_from_module
+from eidas_node.utils import WrappedSeries, import_from_module
 from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.proxy_service')
+LOG_ID_SERIES = WrappedSeries()
 
 
 class ProxyServiceRequestView(TemplateView):
@@ -37,9 +38,11 @@ class ProxyServiceRequestView(TemplateView):
     light_token = None  # type: LightToken
     light_request = None  # type: LightRequest
     saml_request = None  # type: SAMLRequest
+    log_id = 0  # type: int
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
+        self.log_id = LOG_ID_SERIES.next()
         try:
             token_settings = PROXY_SERVICE_SETTINGS.request_token
             self.light_token = self.get_light_token(
@@ -56,8 +59,8 @@ class ProxyServiceRequestView(TemplateView):
             self.saml_request = self.create_saml_request(PROXY_SERVICE_SETTINGS.identity_provider['request_issuer'],
                                                          PROXY_SERVICE_SETTINGS.identity_provider['request_signature'])
             LOGGER.debug('SAML Request: %s', self.saml_request)
-        except EidasNodeError:
-            LOGGER.exception('Bad proxy service request.')
+        except EidasNodeError as e:
+            LOGGER.exception('[#%r] Bad proxy service request: %s', self.log_id, e)
             self.error = _('Bad proxy service request.')
             return HttpResponseBadRequest(
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
@@ -79,7 +82,9 @@ class ProxyServiceRequestView(TemplateView):
         :raise SecurityError: If the token digest or issuer is invalid or the token has expired.
         """
         encoded_token = self.request.POST.get(parameter_name, '').encode('utf-8')
+        LOGGER.info('[#%r] Received encoded light token: %r', self.log_id, encoded_token)
         token = LightToken.decode(encoded_token, hash_algorithm, secret)
+        LOGGER.info('[#%r] Decoded light token: id=%r, issuer=%r', self.log_id, token.id, token.issuer)
         if token.issuer != issuer:
             raise SecurityError('Invalid token issuer.')
         if lifetime and token.created + timedelta(minutes=lifetime) < datetime.now():
@@ -122,6 +127,8 @@ class ProxyServiceRequestView(TemplateView):
 
         destination = self.request.build_absolute_uri(reverse('identity-provider-response'))
         saml_request = SAMLRequest.from_light_request(self.light_request, destination, datetime.utcnow())
+        LOGGER.info('[#%r] Created SAML request: id=%r, issuer=%r', self.log_id, saml_request.id, saml_request.issuer)
+
         if signature_options and signature_options.get('key_file') and signature_options.get('cert_file'):
             saml_request.sign_request(**signature_options)
         return saml_request
@@ -154,9 +161,11 @@ class IdentityProviderResponseView(TemplateView):
     light_response = None  # type: LightResponse
     light_token = None  # type: LightToken
     encoded_token = None  # type: str
+    log_id = 0  # type: int
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
+        self.log_id = LOG_ID_SERIES.next()
         try:
             self.saml_response = self.get_saml_response(PROXY_SERVICE_SETTINGS.identity_provider.get('key_file'),
                                                         PROXY_SERVICE_SETTINGS.identity_provider.get('cert_file'))
@@ -173,8 +182,8 @@ class IdentityProviderResponseView(TemplateView):
                 token_settings['secret'], )
             LOGGER.debug('Light Token: %s', self.light_token)
             self.storage.put_light_response(self.light_token.id, self.light_response)
-        except EidasNodeError:
-            LOGGER.exception('Bad identity provider response.')
+        except EidasNodeError as e:
+            LOGGER.exception('[#%r] Bad identity provider response: %s', self.log_id, e)
             self.error = _('Bad identity provider response.')
             return HttpResponseBadRequest(
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
@@ -197,6 +206,9 @@ class IdentityProviderResponseView(TemplateView):
                 self.request.POST.get('RelayState'))
         except XMLSyntaxError as e:
             raise ParseError(str(e)) from None
+
+        LOGGER.info('[#%r] Received SAML response: id=%r, issuer=%r, in_response_to_id=%r',
+                    self.log_id, response.id, response.issuer, response.in_response_to_id)
 
         if cert_file:
             response.verify_response(cert_file)
@@ -226,6 +238,8 @@ class IdentityProviderResponseView(TemplateView):
         response = self.saml_response.create_light_response()
         # Use our issuer specified in the generic eIDAS Node configuration.
         response.issuer = issuer
+        LOGGER.info('[#%r] Created light response: id=%r, issuer=%r, in_response_to=%r',
+                    self.log_id, response.id, response.issuer, response.in_response_to_id)
         return response
 
     def create_light_token(self, issuer: str, hash_algorithm: str, secret: str) -> Tuple[LightToken, str]:
@@ -238,7 +252,9 @@ class IdentityProviderResponseView(TemplateView):
         :return: A tuple of the token and its encoded form.
         """
         token = LightToken(id=create_xml_uuid(TOKEN_ID_PREFIX), created=datetime.utcnow(), issuer=issuer)
+        LOGGER.info('[#%r] Created light token: id=%r, issuer=%r', self.log_id, token.id, token.issuer)
         encoded_token = token.encode(hash_algorithm, secret).decode('ascii')
+        LOGGER.info('[#%r] Encoded light token: %r', self.log_id, encoded_token)
         return token, encoded_token
 
     def get_context_data(self, **kwargs) -> dict:
