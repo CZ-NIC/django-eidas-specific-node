@@ -58,9 +58,15 @@ PROXY_SERVICE_RESPONSE_TOKEN = {
 PROXY_SERVICE_IDENTITY_PROVIDER = {
     'ENDPOINT': 'https://test.example.net/identity-provider-endpoint',
     'REQUEST_ISSUER': 'https://test.example.net/saml/idp.xml',
+    'REQUEST_SIGNATURE': {
+        'KEY_FILE': KEY_FILE,
+        'CERT_FILE': CERT_FILE,
+        'SIGNATURE_METHOD': 'RSA_SHA1',
+        'DIGEST_METHOD': 'SHA1',
+    },
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
     'KEY_FILE': KEY_FILE,
-}  # type: Dict[str, str]
+}  # type: Dict[str, Any]
 
 PROXY_SERVICE_LIGHT_STORAGE = {
     'OPTIONS': {

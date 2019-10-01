@@ -53,7 +53,8 @@ class ProxyServiceRequestView(TemplateView):
                                                   PROXY_SERVICE_SETTINGS.light_storage['options'])
             self.light_request = self.get_light_request()
             LOGGER.debug('Light Request: %s', self.light_request)
-            self.saml_request = self.create_saml_request(PROXY_SERVICE_SETTINGS.identity_provider['request_issuer'])
+            self.saml_request = self.create_saml_request(PROXY_SERVICE_SETTINGS.identity_provider['request_issuer'],
+                                                         PROXY_SERVICE_SETTINGS.identity_provider['request_signature'])
             LOGGER.debug('SAML Request: %s', self.saml_request)
         except EidasNodeError:
             LOGGER.exception('Bad proxy service request.')
@@ -107,19 +108,23 @@ class ProxyServiceRequestView(TemplateView):
             raise SecurityError('Request not found in light storage.')
         return request
 
-    def create_saml_request(self, issuer: str) -> SAMLRequest:
+    def create_saml_request(self, issuer: str, signature_options: Optional[Dict[str, str]]) -> SAMLRequest:
         """
         Create a SAML request from a light request.
 
         :param issuer: Issuer of the SAML request.
+        :param signature_options: Optional options to create a signed request: `key_file`, `cert_file`.
+        `signature_method`, abd `digest_method`.
         :return: A SAML request.
         """
         # Replace the original issuer with our issuer registered at the Identity Provider.
         self.light_request.issuer = issuer
-        return SAMLRequest.from_light_request(
-            self.light_request,
-            self.request.build_absolute_uri(reverse('identity-provider-response')),
-            datetime.utcnow())
+
+        destination = self.request.build_absolute_uri(reverse('identity-provider-response'))
+        saml_request = SAMLRequest.from_light_request(self.light_request, destination, datetime.utcnow())
+        if signature_options and signature_options.get('key_file') and signature_options.get('cert_file'):
+            saml_request.sign_request(**signature_options)
+        return saml_request
 
     def get_context_data(self, **kwargs) -> dict:
         """Adjust template context data."""
@@ -127,8 +132,9 @@ class ProxyServiceRequestView(TemplateView):
         context['error'] = self.error
 
         if self.saml_request:
+            encoded_saml_request = b64encode(dump_xml(self.saml_request.document, pretty_print=False)).decode('ascii')
             context['identity_provider_endpoint'] = PROXY_SERVICE_SETTINGS.identity_provider['endpoint']
-            context['saml_request'] = b64encode(dump_xml(self.saml_request.document)).decode('ascii')
+            context['saml_request'] = encoded_saml_request
             context['relay_state'] = self.saml_request.relay_state or ''
         return context
 

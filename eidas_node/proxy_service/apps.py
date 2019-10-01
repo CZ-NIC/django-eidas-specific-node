@@ -2,7 +2,7 @@
 
 from django.apps import AppConfig
 
-from eidas_node.proxy_service.settings import ProxyServiceSettings
+from eidas_node.proxy_service.settings import check_settings
 
 
 class ProxyServiceConfig(AppConfig):
@@ -12,4 +12,4 @@ class ProxyServiceConfig(AppConfig):
 
     def ready(self):
         """Run start-up actions."""
-        ProxyServiceSettings.check()
+        check_settings()
