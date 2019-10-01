@@ -80,7 +80,8 @@ class ServiceProviderRequestView(TemplateView):
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
         try:
-            self.saml_request = self.get_saml_request(CONNECTOR_SETTINGS.service_provider['country_parameter'])
+            self.saml_request = self.get_saml_request(CONNECTOR_SETTINGS.service_provider['country_parameter'],
+                                                      CONNECTOR_SETTINGS.service_provider['cert_file'])
             LOGGER.debug('SAML Request: %s', self.saml_request)
             self.light_request = self.create_light_request(CONNECTOR_SETTINGS.service_provider['request_issuer'],
                                                            CONNECTOR_SETTINGS.eidas_node['request_issuer'])
@@ -104,11 +105,12 @@ class ServiceProviderRequestView(TemplateView):
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
         return super().get(request)
 
-    def get_saml_request(self, country_parameter: str) -> SAMLRequest:
+    def get_saml_request(self, country_parameter: str, cert_file: Optional[str]) -> SAMLRequest:
         """
         Extract and decrypt a SAML request from POST data.
 
         :param country_parameter: A parameter containing citizen country code.
+        :param cert_file: The path of a certificate to verify the signature.
         :return: A SAML request.
         """
         try:
@@ -118,8 +120,8 @@ class ServiceProviderRequestView(TemplateView):
                 self.request.POST.get('RelayState'))
         except XMLSyntaxError as e:
             raise ParseError(str(e)) from None
-        # TODO: Verify signature.
-        # TODO: Decrypt encrypted request.
+        if cert_file:
+            request.verify_request(cert_file)
         return request
 
     def create_light_request(self, saml_issuer: str, light_issuer: str) -> LightRequest:

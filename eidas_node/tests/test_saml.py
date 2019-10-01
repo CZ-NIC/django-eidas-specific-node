@@ -119,6 +119,70 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         expected = LightRequest(citizen_country_code='CZ', relay_state='relay123', requested_attributes=OrderedDict())
         self.assertEqual(saml_request.create_light_request(), expected)
 
+    def test_request_signature_exists(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        # Booby trap
+        SubElement(SubElement(root, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
+        # This one must be found
+        signature = SubElement(root, Q_NAMES['ds:Signature'])
+        self.assertIs(SAMLRequest(ElementTree(root)).request_signature, signature)
+
+    def test_request_signature_not_exists(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        # Booby trap
+        SubElement(SubElement(root, Q_NAMES['saml2:Issuer']), Q_NAMES['ds:Signature'])
+        # No signature must be found
+        self.assertIsNone(SAMLRequest(ElementTree(root)).request_signature)
+
+    def test_sign_request(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        SubElement(root, Q_NAMES['saml2:Issuer'])
+        request = SAMLRequest(ElementTree(root))
+        request.sign_request(**SIGNATURE_OPTIONS)
+        self.assertIsNotNone(request.request_signature)
+
+    def test_sign_request_already_exists(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        signature = SubElement(root, Q_NAMES['ds:Signature'])
+        SubElement(root, Q_NAMES['saml2:Issuer'])
+        request = SAMLRequest(ElementTree(root))
+        with self.assertRaisesMessage(SecurityError, 'Request signature already exists.'):
+            request.sign_request(**SIGNATURE_OPTIONS)
+        self.assertIs(request.request_signature, signature)
+
+    @patch('eidas_node.saml.verify_xml_signatures')
+    def test_verify_request(self, signatures_mock):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        signature = SubElement(root, Q_NAMES['ds:Signature'])
+        signatures_mock.return_value = [SignatureInfo(signature, (root,))]
+        SAMLRequest(ElementTree(root)).verify_request('cert.pem')
+        self.assertEqual(signatures_mock.mock_calls, [call(root, 'cert.pem')])
+
+    @patch('eidas_node.saml.verify_xml_signatures')
+    def test_verify_request_none(self, signatures_mock):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        with self.assertRaisesMessage(SecurityError, 'Signature does not exist'):
+            SAMLRequest(ElementTree(root)).verify_request('cert.pem')
+        self.assertEqual(signatures_mock.mock_calls, [])
+
+    @patch('eidas_node.saml.verify_xml_signatures')
+    def test_verify_request_not_found(self, signatures_mock):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        SubElement(root, Q_NAMES['ds:Signature'])
+        signatures_mock.return_value = [SignatureInfo(Element(Q_NAMES['ds:Signature']), (root,))]
+        with self.assertRaisesMessage(SecurityError, 'Signature not found'):
+            SAMLRequest(ElementTree(root)).verify_request('cert.pem')
+        self.assertEqual(signatures_mock.mock_calls, [call(root, 'cert.pem')])
+
+    @patch('eidas_node.saml.verify_xml_signatures')
+    def test_verify_request_wrong_parent(self, signatures_mock):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        signature = SubElement(root, Q_NAMES['ds:Signature'])
+        signatures_mock.return_value = [SignatureInfo(signature, (Element('whatever'),))]
+        with self.assertRaisesMessage(SecurityError, 'Signature does not reference parent element'):
+            SAMLRequest(ElementTree(root)).verify_request('cert.pem')
+        self.assertEqual(signatures_mock.mock_calls, [call(root, 'cert.pem')])
+
     def test_str(self):
         self.assertEqual(
             str(SAMLRequest(ElementTree(Element('root')), 'CZ', 'relay')),

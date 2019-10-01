@@ -57,6 +57,7 @@ class ConnectorSettings(AppSettings):
     ), required=True)
     service_provider = NestedSetting(settings=dict(
         endpoint=StringSetting(required=True, min_length=1),
+        cert_file=StringSetting(min_length=1),
         request_issuer=StringSetting(required=True, min_length=1),
         response_issuer=StringSetting(required=True, min_length=1),
         response_signature=NestedSetting(
