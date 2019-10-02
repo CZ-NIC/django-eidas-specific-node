@@ -1,0 +1,16 @@
+{% extends "eidas_node/proxy_service/base.html" %}
+{% load i18n static %}
+
+{% block styles %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "eidas_node/css/screen.css" %}">
+{% endblock %}
+
+{% block footer %}
+    <div class="info">
+        {% trans "Service provided by CZ.NIC, CZ domain registry." %}
+    </div>
+    <div class="logo">
+        <a href='https://www.nic.cz/'><img src="{% static "eidas_node/img/logo.svg" %}"/></a>
+    </div>
+{% endblock %}

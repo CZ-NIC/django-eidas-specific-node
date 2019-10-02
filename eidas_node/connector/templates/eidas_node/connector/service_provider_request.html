@@ -2,6 +2,7 @@
 {% load i18n static %}
 
 {% block title %}{% trans "Service Provider Request" %}{% endblock %}
+
 {% block scripts %}
     {{ block.super }}
     <script type="text/javascript" src="{% static "eidas_node/connector/formautosubmit.js" %}"></script>
@@ -16,7 +17,7 @@
         <p>{% trans "Redirect to Identity Provider is in progress. If you are not redirected automatically, use Continue button below." %}</p>
         <form class="auto-submit" action="{{ eidas_url }}" method="post" id="service-provider-request-form">
             <input type="hidden" name="{{ token_parameter }}" value="{{ token }}"/>
-            <input type="submit" value="Continue" />
+            <input type="submit" value="{% trans 'Continue' %}"/>
         </form>
     {% endif %}
 {% endblock %}

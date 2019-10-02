@@ -3,11 +3,6 @@
 
 {% block title %}{% trans "Service Provider Request" %}{% endblock %}
 
-{% block styles %}
-    {{ block.super }}
-    <link rel="stylesheet" href="{% static "eidas_node/connector/css/screen.css" %}">
-{% endblock %}
-
 {% block scripts %}
     {{ block.super }}
     <script type="text/javascript" src="{% static "eidas_node/connector/formautosubmit.js" %}"></script>

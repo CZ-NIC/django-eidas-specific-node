@@ -15,10 +15,10 @@
         <p>{{ error }}</p>
     {% else %}
         <p>{% trans "Redirect to Identity Provider is in progress. If you are not redirected automatically, use Continue button below." %}</p>
-        <form action="{{ identity_provider_endpoint }}" method="post" id="proxy-service-request-form">
+        <form class="auto-submit" action="{{ identity_provider_endpoint }}" method="post" id="proxy-service-request-form">
             <input type="hidden" name="SAMLRequest" value="{{ saml_request }}"/>
             <input type="hidden" name="RelayState" value="{{ relay_state }}"/>
-            <input type="submit" value="Continue" />
+            <input type="submit" value="{% trans 'Continue' %}"/>
         </form>
     {% endif %}
 {% endblock %}
