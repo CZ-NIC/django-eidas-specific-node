@@ -20,10 +20,11 @@ from eidas_node.errors import EidasNodeError, ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.saml import SAMLRequest, SAMLResponse
 from eidas_node.storage import LightStorage
-from eidas_node.utils import import_from_module
+from eidas_node.utils import WrappedSeries, import_from_module
 from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
 LOGGER = logging.getLogger('eidas_node.connector')
+LOG_ID_SERIES = WrappedSeries()
 
 
 class CountrySelectorView(TemplateView):
@@ -76,9 +77,11 @@ class ServiceProviderRequestView(TemplateView):
     light_request = None  # type: LightRequest
     light_token = None  # type: LightToken
     encoded_token = None  # type: str
+    log_id = 0  # type: int
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
+        self.log_id = LOG_ID_SERIES.next()
         try:
             self.saml_request = self.get_saml_request(CONNECTOR_SETTINGS.service_provider['country_parameter'],
                                                       CONNECTOR_SETTINGS.service_provider['cert_file'])
@@ -98,8 +101,8 @@ class ServiceProviderRequestView(TemplateView):
             self.storage = self.get_light_storage(CONNECTOR_SETTINGS.light_storage['backend'],
                                                   CONNECTOR_SETTINGS.light_storage['options'])
             self.storage.put_light_request(self.light_token.id, self.light_request)
-        except (EidasNodeError, MultiValueDictKeyError):
-            LOGGER.exception('Bad service provider request.')
+        except (EidasNodeError, MultiValueDictKeyError) as e:
+            LOGGER.exception('[#%r] Bad service provider request: %s', self.log_id, e)
             self.error = _('Bad service provider request.')
             return HttpResponseBadRequest(
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
@@ -120,6 +123,8 @@ class ServiceProviderRequestView(TemplateView):
                 self.request.POST.get('RelayState'))
         except XMLSyntaxError as e:
             raise ParseError(str(e)) from None
+
+        LOGGER.info('[#%r] Received SAML request: id=%r, issuer=%r', self.log_id, request.id, request.issuer)
         if cert_file:
             request.verify_request(cert_file)
         return request
@@ -138,6 +143,7 @@ class ServiceProviderRequestView(TemplateView):
             raise SecurityError('Invalid SAML request issuer: {!r}'.format(request.issuer))
         # Use our issuer specified in the generic eIDAS Node configuration.
         request.issuer = light_issuer
+        LOGGER.info('[#%r] Created light request: id=%r, issuer=%r', self.log_id, request.id, request.issuer)
         return request
 
     def adjust_requested_attributes(self, attributes: Dict[str, List[str]]) -> None:
@@ -155,7 +161,9 @@ class ServiceProviderRequestView(TemplateView):
         :return: A tuple of the token and its encoded form.
         """
         token = LightToken(id=create_xml_uuid(TOKEN_ID_PREFIX), created=datetime.utcnow(), issuer=issuer)
+        LOGGER.info('[#%r] Created light token: id=%r, issuer=%r', self.log_id, token.id, token.issuer)
         encoded_token = token.encode(hash_algorithm, secret).decode('ascii')
+        LOGGER.info('[#%r] Encoded light token: %r', self.log_id, encoded_token)
         return token, encoded_token
 
     def get_light_storage(self, backend: str, options: Dict[str, Any]) -> LightStorage:
@@ -193,9 +201,11 @@ class ConnectorResponseView(TemplateView):
     light_token = None  # type: LightToken
     light_response = None  # type: LightResponse
     saml_response = None  # type: SAMLResponse
+    log_id = 0  # type: int
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
+        self.log_id = LOG_ID_SERIES.next()
         try:
             token_settings = CONNECTOR_SETTINGS.response_token
             self.light_token = self.get_light_token(
@@ -213,8 +223,8 @@ class ConnectorResponseView(TemplateView):
                                                            CONNECTOR_SETTINGS.service_provider['endpoint'],
                                                            CONNECTOR_SETTINGS.service_provider['response_signature'])
             LOGGER.debug('SAML Response: %s', self.saml_response)
-        except EidasNodeError:
-            LOGGER.exception('Bad connector response.')
+        except EidasNodeError as e:
+            LOGGER.exception('[#%r] Bad connector response: %s', self.log_id, e)
             self.error = _('Bad connector response.')
             return HttpResponseBadRequest(
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
@@ -236,7 +246,9 @@ class ConnectorResponseView(TemplateView):
         :raise SecurityError: If the token digest or issuer is invalid or the token has expired.
         """
         encoded_token = self.request.POST.get(parameter_name, '').encode('utf-8')
+        LOGGER.info('[#%r] Received encoded light token: %r', self.log_id, encoded_token)
         token = LightToken.decode(encoded_token, hash_algorithm, secret)
+        LOGGER.info('[#%r] Decoded light token: id=%r, issuer=%r', self.log_id, token.id, token.issuer)
         if token.issuer != issuer:
             raise SecurityError('Invalid token issuer: {!r}.'.format(token.issuer))
         if lifetime and token.created + timedelta(minutes=lifetime) < datetime.now():
@@ -263,6 +275,8 @@ class ConnectorResponseView(TemplateView):
         response = self.storage.pop_light_response(self.light_token.id)
         if response is None:
             raise SecurityError('Response not found in light storage.')
+        LOGGER.info('[#%r] Got light response: id=%r, issuer=%r, in_response_to=%r',
+                    self.log_id, response.id, response.issuer, response.in_response_to_id)
         return response
 
     def create_saml_response(self, issuer: str, destination: Optional[str],
@@ -282,6 +296,9 @@ class ConnectorResponseView(TemplateView):
             self.light_response,
             destination,
             datetime.utcnow())
+
+        LOGGER.info('[#%r] Created SAML response: id=%r, issuer=%r, in_response_to_id=%r',
+                    self.log_id, response.id, response.issuer, response.in_response_to_id)
 
         # TODO: encrypt the assertion (between response.sign_assertion and response.sign_response)
         if signature_options and signature_options.get('key_file') and signature_options.get('cert_file'):

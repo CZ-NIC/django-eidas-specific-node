@@ -1,6 +1,8 @@
 """Various utility functions."""
+import sys
 from datetime import datetime
 from importlib import import_module
+from threading import Lock
 from typing import Any
 
 
@@ -39,3 +41,24 @@ def import_from_module(name: str) -> Any:
         return getattr(module, class_name)
     except AttributeError:
         raise ImportError('{} not found in {}.'.format(class_name, module_name)) from None
+
+
+class WrappedSeries:
+    """Thread-safe series of integers wrapped at a maximal value."""
+
+    def __init__(self, start: int = 1, wrap: int = sys.maxsize):
+        self._start = start
+        self._next = start
+        self._wrap = wrap
+        self._lock = Lock()
+
+    def next(self) -> int:
+        """
+        Get the next number from the series.
+
+        This method is thread-safe.
+        """
+        with self._lock:
+            value = self._next
+            self._next = self._start if value == self._wrap else value + 1
+        return value

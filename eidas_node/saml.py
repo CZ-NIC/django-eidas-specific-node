@@ -65,6 +65,17 @@ class SAMLRequest:
         self.citizen_country_code = citizen_country_code
         self.relay_state = relay_state
 
+    @property
+    def id(self) -> Optional[str]:
+        """Get id of the request."""
+        return self.document.getroot().attrib.get('ID')
+
+    @property
+    def issuer(self) -> Optional[str]:
+        """Get issuer of the request."""
+        issuer = self.document.getroot().find('./{}'.format(Q_NAMES['saml2:Issuer']))
+        return issuer.text if issuer is not None else None
+
     @classmethod
     def from_light_request(cls: Type[SAMLRequestType], light_request: LightRequest,
                            destination: str, issued: datetime) -> SAMLRequestType:
@@ -148,9 +159,7 @@ class SAMLRequest:
         request.id = root.attrib.get('ID')
         request.provider_name = root.attrib.get('ProviderName')
 
-        issuer = root.find('./{}'.format(Q_NAMES['saml2:Issuer']))
-        if issuer is not None:
-            request.issuer = issuer.text
+        request.issuer = self.issuer
 
         name_id_format = root.find('./{}'.format(Q_NAMES['saml2p:NameIDPolicy']))
         if name_id_format is not None:
@@ -232,6 +241,22 @@ class SAMLResponse:
     def __init__(self, document: ElementTree, relay_state: Optional[str] = None):
         self.document = document
         self.relay_state = relay_state
+
+    @property
+    def id(self) -> Optional[str]:
+        """Get id of the response."""
+        return self.document.getroot().attrib.get('ID')
+
+    @property
+    def in_response_to_id(self) -> Optional[str]:
+        """Get id of the request corresponding to this response."""
+        return self.document.getroot().attrib.get('InResponseTo')
+
+    @property
+    def issuer(self) -> Optional[str]:
+        """Get issuer of the response."""
+        issuer = self.document.getroot().find('./{}'.format(Q_NAMES['saml2:Issuer']))
+        return issuer.text if issuer is not None else None
 
     @property
     def assertion(self) -> Optional[Element]:
@@ -410,9 +435,7 @@ class SAMLResponse:
 
         response.id = root.get('ID')
         response.in_response_to_id = root.get('InResponseTo')
-        issuer_elm = root.find('./{}'.format(Q_NAMES['saml2:Issuer']))
-        if issuer_elm is not None:
-            response.issuer = issuer_elm.text
+        response.issuer = self.issuer
 
         response.status = status = Status()
         status_code_elm = root.find('./{}/{}'.format(Q_NAMES['saml2p:Status'], Q_NAMES['saml2p:StatusCode']))
@@ -447,7 +470,7 @@ class SAMLResponse:
                 return LightResponse(
                     id=root.get('ID'),
                     in_response_to_id=root.get('InResponseTo'),
-                    issuer=issuer_elm.text if issuer_elm is not None else None,
+                    issuer=self.issuer,
                     status=Status(
                         failure=True,
                         status_code=StatusCode.RESPONDER,

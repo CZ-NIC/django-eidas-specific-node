@@ -2,8 +2,8 @@ from datetime import datetime
 
 from django.test import SimpleTestCase
 
-from eidas_node.utils import (create_eidas_timestamp, datetime_iso_format_milliseconds, import_from_module,
-                              parse_eidas_timestamp)
+from eidas_node.utils import (WrappedSeries, create_eidas_timestamp, datetime_iso_format_milliseconds,
+                              import_from_module, parse_eidas_timestamp)
 
 
 class TestTimestampUtils(SimpleTestCase):
@@ -42,3 +42,14 @@ class TestImport(SimpleTestCase):
     def test_import_from_module_member_not_found(self):
         with self.assertRaisesMessage(ImportError, 'ThisClassDoesNotExist not found in http.server.'):
             import_from_module('http.server.ThisClassDoesNotExist')
+
+
+class TestWrappedSeries(SimpleTestCase):
+    def test_next(self):
+        series = WrappedSeries(2, 4)
+        self.assertEqual(series.next(), 2)
+        self.assertEqual(series.next(), 3)
+
+    def test_next_wrap(self):
+        series = WrappedSeries(2, 4)
+        self.assertEqual([series.next() for _ in range(4)], [2, 3, 4, 2])
