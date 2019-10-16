@@ -209,6 +209,13 @@ A dictionary with following items:
 * `CONNECTOR_REQUEST_URL` (required): The URL where eIDAS Node expects authentication requests (e.g., `https://test.example.net/EidasNode/SpecificConnectorRequest`).
 * `REQUEST_ISSUER` (required): The issuer for light requests specified in eIDAS Node configuration.
 
+#### `CONNECTOR_ALLOWED_ATTRIBUTES`
+
+A set containing URI names (strings, e.g. `'http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier'`) of attributes that a service provider can request.
+Other attributes are dropped from the authentication request.
+All eIDAS natural and legal person attributes are enabled by default.
+An empty set disables the filter.
+
 #### `CONNECTOR_SELECTOR_COUNTRIES`
 
 A list of pairs with country code and name to be displayed in citizen country selector (`/CitizenCountrySelector`).

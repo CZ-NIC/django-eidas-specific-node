@@ -3,6 +3,8 @@
 from appsettings import AppSettings, DictSetting, IterableSetting, NestedSetting, PositiveIntegerSetting, StringSetting
 from django.core.exceptions import ImproperlyConfigured
 
+from eidas_node.attributes import ATTRIBUTE_MAP
+
 DEFAULT_COUNTRIES = [
     # Country code, name
     ('AT', 'Austria'),
@@ -79,6 +81,7 @@ class ConnectorSettings(AppSettings):
         connector_request_url=StringSetting(required=True, min_length=1),
         request_issuer=StringSetting(required=True, min_length=1),
     ), required=True)
+    allowed_attributes = IterableSetting(default=set(ATTRIBUTE_MAP))
     selector_countries = IterableSetting(default=DEFAULT_COUNTRIES, min_length=1)
 
     class Meta:

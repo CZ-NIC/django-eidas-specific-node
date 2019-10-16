@@ -185,10 +185,48 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
     def test_adjust_requested_attributes(self):
         view = ServiceProviderRequestView()
         attributes = {}  # type: Dict[str, List[str]]
-        view.adjust_requested_attributes(attributes)
+        view.adjust_requested_attributes(attributes, set())
         self.assertEqual(attributes, {
             EIDAS_NATURAL_PERSON_PREFIX + i: []
             for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth')})
+
+    def test_adjust_requested_attributes_without_filter(self):
+        view = ServiceProviderRequestView()
+        attributes = {'unknown': []}  # type: Dict[str, List[str]]
+        view.adjust_requested_attributes(attributes, set())
+        expected = {
+            EIDAS_NATURAL_PERSON_PREFIX + i: []
+            for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth')
+        }  # type: Dict[str, List[str]]
+        expected['unknown'] = []
+        self.assertEqual(attributes, expected)
+
+    def test_adjust_requested_attributes_with_filter(self):
+        view = ServiceProviderRequestView()
+        allowed = {EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress'}
+        attributes = {
+            'unknown': [],
+            EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress': [],
+        }  # type: Dict[str, List[str]]
+        view.adjust_requested_attributes(attributes, allowed)
+        expected = {
+            EIDAS_NATURAL_PERSON_PREFIX + i: []
+            for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth', 'CurrentAddress')
+        }  # type: Dict[str, List[str]]
+        self.assertEqual(attributes, expected)
+
+    def test_adjust_requested_attributes_with_filter_nothing_unssuported(self):
+        view = ServiceProviderRequestView()
+        allowed = {EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress'}
+        attributes = {
+            EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress': [],
+        }  # type: Dict[str, List[str]]
+        view.adjust_requested_attributes(attributes, allowed)
+        expected = {
+            EIDAS_NATURAL_PERSON_PREFIX + i: []
+            for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth', 'CurrentAddress')
+        }  # type: Dict[str, List[str]]
+        self.assertEqual(attributes, expected)
 
     @freeze_time('2017-12-11 14:12:05')
     @patch('eidas_node.xml.uuid4', return_value='0uuid4')
@@ -237,6 +275,9 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
             'issuer': 'test-connector-request-issuer',
         })
         light_request = LightRequest(**light_request_data)
+        light_request.requested_attributes = light_request.requested_attributes.copy()
+        del light_request.requested_attributes['http://eidas.europa.eu/attributes/naturalperson/AdditionalAttribute']
+        del light_request.requested_attributes['http://eidas.europa.eu/attributes/legalperson/LegalAdditionalAttribute']
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=66)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect('test.example.net', 1234),
