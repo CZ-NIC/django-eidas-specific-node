@@ -10,6 +10,7 @@ EIDAS_LEGAL_PERSON_PREFIX = 'http://eidas.europa.eu/attributes/legalperson/'
 
 EIDAS_ATTRIBUTE_NAME_FORMAT = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri'
 
+# eIDAS SAML Attribute Profile v1.2, Section 2.2 Attributes for Natural Persons
 EIDAS_NATURAL_PERSON_ATTRIBUTES = [
     Attribute(EIDAS_NATURAL_PERSON_PREFIX + name, EIDAS_ATTRIBUTE_NAME_FORMAT, friendly, required)
     for name, friendly, required in [
@@ -23,20 +24,21 @@ EIDAS_NATURAL_PERSON_ATTRIBUTES = [
         ('Gender', 'Gender', False),
     ]]  # type: List[Attribute]
 
+# eIDAS SAML Attribute Profile v1.2, Section 2.3 Attributes for Legal Persons
 EIDAS_LEGAL_PERSON_ATTRIBUTES = [
-    Attribute(EIDAS_LEGAL_PERSON_PREFIX + name, EIDAS_ATTRIBUTE_NAME_FORMAT, name, False)
-    for name in [
-        'LegalPersonIdentifier',
-        'LegalAddress',
-        'LegalName',
-        'VATRegistration',
-        'TaxReference',
-        'BusinessCodes',
-        'LEI',
-        'EORI',
-        'SEED',
-        'SIC',
-        'D-2012-17-EUIdentifier',
+    Attribute(EIDAS_LEGAL_PERSON_PREFIX + name, EIDAS_ATTRIBUTE_NAME_FORMAT, friendly, False)
+    for name, friendly in [
+        ('LegalPersonIdentifier', 'LegalPersonIdentifier'),
+        ('LegalPersonAddress', 'LegalAddress'),
+        ('LegalName', 'LegalName'),
+        ('VATRegistrationNumber', 'VATRegistration'),
+        ('TaxReference', 'TaxReference'),
+        ('BusinessCodes', 'BusinessCodes'),
+        ('LEI', 'LEI'),
+        ('EORI', 'EORI'),
+        ('SEED', 'SEED'),
+        ('SIC', 'SIC'),
+        ('D-2012-17-EUIdentifier', 'D-2012-17-EUIdentifier'),
     ]]  # type: List[Attribute]
 
 ATTRIBUTE_MAP = {

@@ -9,12 +9,12 @@
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/EORI" FriendlyName="EORI" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LEI" FriendlyName="LEI" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalName" FriendlyName="LegalName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
-      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalPersonAddress" FriendlyName="LegalPersonAddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalPersonAddress" FriendlyName="LegalAddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/LegalPersonIdentifier" FriendlyName="LegalPersonIdentifier" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/SEED" FriendlyName="SEED" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/SIC" FriendlyName="SIC" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/TaxReference" FriendlyName="TaxReference" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
-      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/VATRegistrationNumber" FriendlyName="VATRegistrationNumber" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
+      <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/legalperson/VATRegistrationNumber" FriendlyName="VATRegistration" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/BirthName" FriendlyName="BirthName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true"/>
       <eidas:RequestedAttribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentAddress" FriendlyName="CurrentAddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" isRequired="true">
         <eidas:AttributeValue>
