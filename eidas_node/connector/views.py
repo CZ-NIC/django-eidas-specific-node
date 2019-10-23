@@ -3,7 +3,7 @@ import hmac
 import logging
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.template.loader import select_template
@@ -88,7 +88,8 @@ class ServiceProviderRequestView(TemplateView):
             LOGGER.debug('SAML Request: %s', self.saml_request)
             self.light_request = self.create_light_request(CONNECTOR_SETTINGS.service_provider['request_issuer'],
                                                            CONNECTOR_SETTINGS.eidas_node['request_issuer'])
-            self.adjust_requested_attributes(self.light_request.requested_attributes)
+            self.adjust_requested_attributes(self.light_request.requested_attributes,
+                                             CONNECTOR_SETTINGS.allowed_attributes)
             LOGGER.debug('Light Request: %s', self.light_request)
 
             token_settings = CONNECTOR_SETTINGS.request_token
@@ -146,8 +147,16 @@ class ServiceProviderRequestView(TemplateView):
         LOGGER.info('[#%r] Created light request: id=%r, issuer=%r', self.log_id, request.id, request.issuer)
         return request
 
-    def adjust_requested_attributes(self, attributes: Dict[str, List[str]]) -> None:
+    def adjust_requested_attributes(self, attributes: Dict[str, List[str]], allowed_attributes: Set[str]) -> None:
         """Adjust requested attributes of the incoming authorization request."""
+        if allowed_attributes:
+            # If allowed attributes are specified, filter out the rest.
+            unsupported_attributes = set(attributes) - allowed_attributes
+            if unsupported_attributes:
+                LOGGER.warning('[#%r] Unsupported attributes: %r', self.log_id, unsupported_attributes)
+                for key in unsupported_attributes:
+                    del attributes[key]
+
         for missing in MANDATORY_ATTRIBUTE_NAMES - set(attributes):
             attributes[missing] = []
 
