@@ -9,7 +9,7 @@ from lxml.etree import Element, ElementTree, SubElement
 from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode
 from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import LightRequest, LightResponse, Status
-from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_attribute_elm_attributes
+from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_attribute_elm
 from eidas_node.tests.constants import CERT_FILE, DATA_DIR, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS
 from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.xml import SignatureInfo, dump_xml, parse_xml, remove_extra_xml_whitespace
@@ -673,7 +673,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
 class TestCreateAttributeElmAttributes(SimpleTestCase):
     def test_create_attribute_elm_attributes_known_attribute(self):
         name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
-        self.assertEqual(create_attribute_elm_attributes(name, None), {
+        self.assertEqual(create_attribute_elm(name, None), {
             'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
             'FriendlyName': 'FamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
@@ -681,7 +681,7 @@ class TestCreateAttributeElmAttributes(SimpleTestCase):
 
     def test_create_attribute_elm_attributes_unknown_attribute(self):
         name = 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName'
-        self.assertEqual(create_attribute_elm_attributes(name, None), {
+        self.assertEqual(create_attribute_elm(name, None), {
             'Name': 'http://eidas.europa.eu/attributes/naturalperson/ConcurrentFamilyName',
             'FriendlyName': 'ConcurrentFamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
@@ -689,7 +689,7 @@ class TestCreateAttributeElmAttributes(SimpleTestCase):
 
     def test_create_attribute_elm_attributes_required(self):
         name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
-        self.assertEqual(create_attribute_elm_attributes(name, True), {
+        self.assertEqual(create_attribute_elm(name, True), {
             'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
             'FriendlyName': 'FamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
@@ -698,7 +698,7 @@ class TestCreateAttributeElmAttributes(SimpleTestCase):
 
     def test_create_attribute_elm_attributes_optional(self):
         name = 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName'
-        self.assertEqual(create_attribute_elm_attributes(name, False), {
+        self.assertEqual(create_attribute_elm(name, False), {
             'Name': 'http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName',
             'FriendlyName': 'FamilyName',
             'NameFormat': 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',

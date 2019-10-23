@@ -11,13 +11,17 @@ from lxml.etree import Element, ElementTree, QName
 
 from eidas_node.errors import SecurityError
 
+SignatureInfo = namedtuple('SignatureInfo', 'signature,references')
+XmlType = namedtuple('XmlType', 'prefix,name,schema')
+
 VALID_XML_ID_RE = re.compile('^[_a-zA-Z][-._a-zA-Z0-9]*$')
 XML_ENC_NAMESPACE = 'http://www.w3.org/2001/04/xmlenc#'
 XML_SIG_NAMESPACE = 'http://www.w3.org/2000/09/xmldsig#'
+XML_SCHEMA_NAMESPACE = 'http://www.w3.org/2001/XMLSchema'
+XML_SCHEMA_INSTANCE_NAMESPACE = 'http://www.w3.org/2001/XMLSchema-instance'
 XML_ATTRIBUTE_ID = 'ID'
 XML_ATTRIBUTE_URI = 'URI'
-
-SignatureInfo = namedtuple('SignatureInfo', 'signature,references')
+XS_STRING = XmlType('xs', 'string', XML_SCHEMA_NAMESPACE)
 
 
 def parse_xml(xml: Union[str, bytes, BinaryIO]) -> etree.ElementTree:

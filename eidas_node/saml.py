@@ -1,7 +1,7 @@
 """Conversion of SAML Requests/Responses and Light Requests/Responses."""
 from collections import OrderedDict
 from datetime import datetime
-from typing import Dict, Optional, Set, Type, TypeVar
+from typing import Dict, Optional, Set, Type, TypeVar, Union
 
 from lxml import etree
 from lxml.etree import Element, ElementTree, QName, SubElement
@@ -12,7 +12,8 @@ from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
 from eidas_node.utils import datetime_iso_format_milliseconds
 from eidas_node.xml import (XML_ENC_NAMESPACE, XML_SIG_NAMESPACE, decrypt_xml, dump_xml, get_element_path,
-                            is_xml_id_valid, sign_xml_node, verify_xml_signatures)
+                            is_xml_id_valid, sign_xml_node, verify_xml_signatures, XS_STRING,
+                            XML_SCHEMA_INSTANCE_NAMESPACE)
 
 EIDAS_NAMESPACES = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
@@ -122,8 +123,7 @@ class SAMLRequest:
             SubElement(extensions, Q_NAMES['eidas:SPCountry']).text = light_request.origin_country_code
         attributes = SubElement(extensions, Q_NAMES['eidas:RequestedAttributes'])
         for name, values in light_request.requested_attributes.items():
-            attribute = SubElement(attributes, Q_NAMES['eidas:RequestedAttribute'],
-                                   create_attribute_elm_attributes(name, True))
+            attribute = create_attribute_elm(attributes, Q_NAMES['eidas:RequestedAttribute'], name, True)
             for value in values:
                 SubElement(attribute, Q_NAMES['eidas:AttributeValue']).text = value
 
@@ -359,8 +359,7 @@ class SAMLResponse:
             # 5.6 AssertionType <saml2:AttributeStatement>
             attributes_elm = SubElement(assertion_elm, Q_NAMES['saml2:AttributeStatement'])
             for name, values in light_response.attributes.items():
-                attribute = SubElement(attributes_elm, Q_NAMES['saml2:Attribute'],
-                                       create_attribute_elm_attributes(name, None))
+                attribute = create_attribute_elm(attributes_elm, Q_NAMES['saml2:Attribute'], name, None)
                 for value in values:
                     SubElement(attribute, Q_NAMES['saml2:AttributeValue']).text = value
 
@@ -527,14 +526,17 @@ class SAMLResponse:
             self.relay_state, dump_xml(self.document).decode('utf-8') if self.document else 'None')
 
 
-def create_attribute_elm_attributes(name: str, required: Optional[bool]) -> Element:
+def create_attribute_elm(parent: Element, tag: Union[str, QName], name: str, required: Optional[bool]) -> Element:
     """Create attributes for an attribute element."""
     attribute = ATTRIBUTE_MAP.get(name)
+    xml_type = XS_STRING  # FIXME: Use proper types from the specification
+    ns_map = {'xsi': XML_SCHEMA_INSTANCE_NAMESPACE, xml_type.prefix: xml_type.schema}
     attributes = {
         'Name': name,
         'FriendlyName': attribute.friendly_name if attribute else name.rsplit('/', 1)[-1],
         'NameFormat': attribute.name_format if attribute else EIDAS_ATTRIBUTE_NAME_FORMAT,
+        QName(XML_SCHEMA_INSTANCE_NAMESPACE, 'type'): '{}:{}'.format(xml_type.prefix, xml_type.name),
     }
     if required is not None:
         attributes['isRequired'] = 'true' if required else 'false'
-    return attributes
+    return SubElement(parent, tag, attributes, nsmap=ns_map)
