@@ -1,5 +1,6 @@
 <!-- Pretty-printed. Use `eidas_node.xml.remove_extra_xml_whitespace` before use. -->
 <saml2p:AuthnRequest xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:eidas="http://eidas.europa.eu/saml-extensions" Consent="urn:oasis:names:tc:SAML:2.0:consent:unspecified" Destination="test/destination" ID="test-saml-request-id" IssueInstant="2017-12-11T14:12:05.148Z" Version="2.0" IsPassive="false" ForceAuthn="true" ProviderName="DEMO-SP-CA">
+  <saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">test-saml-request-issuer</saml2:Issuer>
   <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
     <SignedInfo>
       <CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
@@ -62,7 +63,6 @@ I6EtzY/TJQgKMFnTAFqx32bFozOgbJd+EPDCzDAudoF1</X509Certificate>
       </X509Data>
     </KeyInfo>
   </Signature>
-  <saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">test-saml-request-issuer</saml2:Issuer>
   <saml2p:Extensions>
     <eidas:SPType>public</eidas:SPType>
     <eidas:SPCountry>CA</eidas:SPCountry>

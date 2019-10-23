@@ -198,7 +198,7 @@ class TestSignXMLNode(SimpleTestCase):
         root = Element(Q_NAMES['saml2p:Response'], nsmap=self.USED_NAMESPACES)
         assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
         SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
-        sign_xml_node(root, **SIGNATURE_OPTIONS)
+        sign_xml_node(root, position=0, **SIGNATURE_OPTIONS)
 
         with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
@@ -208,7 +208,7 @@ class TestSignXMLNode(SimpleTestCase):
         root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id-0uuid4'}, nsmap=self.USED_NAMESPACES)
         assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
         SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
-        sign_xml_node(root, **SIGNATURE_OPTIONS)
+        sign_xml_node(root, position=0, **SIGNATURE_OPTIONS)
 
         with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
@@ -219,8 +219,8 @@ class TestSignXMLNode(SimpleTestCase):
         root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id-response'}, nsmap=self.USED_NAMESPACES)
         assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
         SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
-        sign_xml_node(assertion, **SIGNATURE_OPTIONS)
-        sign_xml_node(root, **SIGNATURE_OPTIONS)
+        sign_xml_node(assertion, position=0, **SIGNATURE_OPTIONS)
+        sign_xml_node(root, position=0, **SIGNATURE_OPTIONS)
 
         with cast(TextIO, (DATA_DIR / 'signed_response_and_assertion.xml').open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())

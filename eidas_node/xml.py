@@ -104,15 +104,17 @@ def remove_newlines_in_xml_text(node: Element) -> None:
             elm.text = elm.text.replace('\n', '')
 
 
-def sign_xml_node(node: Element, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> None:
+def sign_xml_node(node: Element, key_file: str, cert_file: str,
+                  signature_method: str, digest_method: str, position: int = 0) -> None:
     """
-    Sign a XML element and insert the signature as the first child element.
+    Sign a XML element and insert the signature as a child element.
 
     :param node: The XML element to sign
     :param key_file: The path to a key file.
     :param cert_file: The path to a certificate file.
     :param signature_method: XMLSEC signature method, e.g., 'RSA_SHA1', 'RSA_SHA256', 'RSA_SHA512'.
     :param digest_method: XMLSEC digest method, e.g., 'SHA1', 'SHA256', 'SHA512'.
+    :param position: The position of the signature.
     """
     # Prepare signature template for xmlsec to fill it with the signature and additional data
     ctx = xmlsec.SignatureContext()
@@ -150,8 +152,8 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str, signature_method
             elm.tail = elm.tail.replace('\n', '')
     remove_extra_xml_whitespace(signature)
 
-    # Create the signature as the first child element.
-    node.insert(0, signature)
+    # Insert the signature as a child element.
+    node.insert(position, signature)
     ctx.key = xmlsec.Key.from_file(key_file, xmlsec.constants.KeyDataFormatPem)
     ctx.key.load_cert_from_file(cert_file, xmlsec.constants.KeyDataFormatPem)
     ctx.sign(signature)
