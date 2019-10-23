@@ -155,12 +155,21 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         # No signature must be found
         self.assertIsNone(SAMLRequest(ElementTree(root)).request_signature)
 
-    def test_sign_request(self):
+    def test_sign_request_without_issuer(self):
+        root = Element(Q_NAMES['saml2p:AuthnRequest'])
+        SubElement(root, Q_NAMES['saml2p:NameIDPolicy'])
+        request = SAMLRequest(ElementTree(root))
+        request.sign_request(**SIGNATURE_OPTIONS)
+        self.assertIsNotNone(request.request_signature)
+        self.assertEqual(root.index(request.request_signature), 0)
+
+    def test_sign_request_with_issuer(self):
         root = Element(Q_NAMES['saml2p:AuthnRequest'])
         SubElement(root, Q_NAMES['saml2:Issuer'])
         request = SAMLRequest(ElementTree(root))
         request.sign_request(**SIGNATURE_OPTIONS)
         self.assertIsNotNone(request.request_signature)
+        self.assertEqual(root.index(request.request_signature), 1)
 
     def test_sign_request_already_exists(self):
         root = Element(Q_NAMES['saml2p:AuthnRequest'])
@@ -497,13 +506,24 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         signature = SubElement(decrypted_assertion, Q_NAMES['ds:Signature'])
         self.assertIs(SAMLResponse(ElementTree(root)).assertion_signature, signature)
 
-    def test_sign_response(self):
+    def test_sign_response_without_issuer(self):
         root = Element(Q_NAMES['saml2p:Response'])
         SubElement(root, Q_NAMES['saml2:Assertion'])
         response = SAMLResponse(ElementTree(root))
         response.sign_response(**SIGNATURE_OPTIONS)
         self.assertIsNotNone(response.response_signature)
         self.assertIsNone(response.assertion_signature)
+        self.assertEqual(root.index(response.response_signature), 0)
+
+    def test_sign_response_with_issuer(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        SubElement(root, Q_NAMES['saml2:Issuer']).text = 'issuer'
+        SubElement(root, Q_NAMES['saml2:Assertion'])
+        response = SAMLResponse(ElementTree(root))
+        response.sign_response(**SIGNATURE_OPTIONS)
+        self.assertIsNotNone(response.response_signature)
+        self.assertIsNone(response.assertion_signature)
+        self.assertEqual(root.index(response.response_signature), 1)
 
     def test_sign_response_already_exists(self):
         root = Element(Q_NAMES['saml2p:Response'])
@@ -516,7 +536,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         self.assertIs(response.response_signature, response_signature)  # Preserved
         self.assertIs(response.assertion_signature, assertion_signature)  # Preserved
 
-    def test_sign_assertion(self):
+    def test_sign_assertion_with_issuer(self):
         root = Element(Q_NAMES['saml2p:Response'])
         assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
         SubElement(assertion, Q_NAMES['saml2:Issuer'])
@@ -524,6 +544,17 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         self.assertTrue(response.sign_assertion(**SIGNATURE_OPTIONS))
         self.assertIsNone(response.response_signature)
         self.assertIsNotNone(response.assertion_signature)
+        self.assertEqual(assertion.index(response.assertion_signature), 1)
+
+    def test_sign_assertion_without_issuer(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Subject'])
+        response = SAMLResponse(ElementTree(root))
+        self.assertTrue(response.sign_assertion(**SIGNATURE_OPTIONS))
+        self.assertIsNone(response.response_signature)
+        self.assertIsNotNone(response.assertion_signature)
+        self.assertEqual(assertion.index(response.assertion_signature), 0)
 
     def test_sign_assertion_already_exists(self):
         root = Element(Q_NAMES['saml2p:Response'])

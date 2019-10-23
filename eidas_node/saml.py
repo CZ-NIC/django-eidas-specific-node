@@ -73,8 +73,12 @@ class SAMLRequest:
     @property
     def issuer(self) -> Optional[str]:
         """Get issuer of the request."""
-        issuer = self.document.getroot().find('./{}'.format(Q_NAMES['saml2:Issuer']))
+        issuer = self._issuer_element
         return issuer.text if issuer is not None else None
+
+    @property
+    def _issuer_element(self) -> Optional[Element]:
+        return self.document.getroot().find('./{}'.format(Q_NAMES['saml2:Issuer']))
 
     @classmethod
     def from_light_request(cls: Type[SAMLRequestType], light_request: LightRequest,
@@ -203,7 +207,8 @@ class SAMLRequest:
         if self.request_signature is not None:
             raise SecurityError('Request signature already exists.')
 
-        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method)
+        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method,
+                      int(self._issuer_element is not None))
 
     def verify_request(self, cert_file: str) -> None:
         """Verify XML signature of the whole request."""
@@ -255,8 +260,12 @@ class SAMLResponse:
     @property
     def issuer(self) -> Optional[str]:
         """Get issuer of the response."""
-        issuer = self.document.getroot().find('./{}'.format(Q_NAMES['saml2:Issuer']))
+        issuer = self._response_issuer_element
         return issuer.text if issuer is not None else None
+
+    @property
+    def _response_issuer_element(self) -> Optional[Element]:
+        return self.document.getroot().find('./{}'.format(Q_NAMES['saml2:Issuer']))
 
     @property
     def assertion(self) -> Optional[Element]:
@@ -267,6 +276,11 @@ class SAMLResponse:
         if candidate1 is not None and candidate2 is not None:
             raise ParseError('Too many assertion elements.')
         return candidate2 if candidate1 is None else candidate1
+
+    @property
+    def _assertion_issuer_element(self) -> Optional[Element]:
+        assertion = self.assertion
+        return assertion.find('./{}'.format(Q_NAMES['saml2:Issuer'])) if assertion is not None else None
 
     @property
     def response_signature(self) -> Optional[Element]:
@@ -382,7 +396,8 @@ class SAMLResponse:
             # Signing assertion would invalidate the response signature.
             raise SecurityError('Cannot sign assertion because response signature is already present.')
 
-        sign_xml_node(assertion, key_file, cert_file, signature_method, digest_method)
+        sign_xml_node(assertion, key_file, cert_file, signature_method, digest_method,
+                      int(self._assertion_issuer_element is not None))
         return True
 
     def sign_response(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> None:
@@ -394,7 +409,8 @@ class SAMLResponse:
         if self.response_signature is not None:
             raise SecurityError('The response signature is already present.')
 
-        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method)
+        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method,
+                      int(self._response_issuer_element is not None))
 
     def _verify_and_remove_signature(self, signature: Optional[Element], cert_file: str) -> None:
         """Verify signature and remove it from document."""
