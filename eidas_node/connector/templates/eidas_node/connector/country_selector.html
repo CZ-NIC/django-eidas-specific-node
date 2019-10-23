@@ -1,7 +1,7 @@
 {% extends "eidas_node/connector/base.html" %}
 {% load i18n static %}
 
-{% block title %}{% trans "Service Provider Request" %}{% endblock %}
+{% block title %}{% trans "eIDAS Node" %}{% endblock %}
 
 {% block scripts %}
     {{ block.super }}
@@ -9,12 +9,11 @@
 {% endblock %}
 
 {% block content %}
-    <h1>{% trans "Service Provider Request" %}</h1>
     {% if error %}
         <p>{% trans "An error occurred during processing of Service Provider request." %}</p>
         <p>{{ error }}</p>
     {% elif citizen_country %}
-        <p>{% trans "Redirect to Identity Provider is in progress. If you are not redirected automatically, use Continue button below." %}</p>
+        <p>{% trans "Redirect to eIDAS Node is in progress. If you are not redirected automatically, use Continue button below." %}</p>
         <form class="auto-submit" action="{{ request_endpoint }}" method="post">
             <input type="hidden" name="SAMLRequest" value="{{ saml_request }}"/>
             <input type="hidden" name="RelayState" value="{{ relay_state }}"/>
@@ -22,7 +21,7 @@
             <input type="submit" value="{% trans 'Continue' %}"/>
         </form>
     {% else %}
-        <p>{% trans "Choose your country to proceed with authentication." %}</p>
+        <h1>{% trans "Choose your country to proceed with authentication" %}</h1>
         <form id="country-selector-form" action="{{ request_endpoint }}" method="post">
             {% for code, name in countries %}
                 <button type="submit" name="{{ country_parameter }}" value="{{ code }}" title="{{ code }}">

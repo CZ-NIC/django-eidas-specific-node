@@ -1,7 +1,7 @@
 {% extends "eidas_node/proxy_service/base.html" %}
 {% load i18n static %}
 
-{% block title %}{% trans "Identity Provider Response" %}{% endblock %}
+{% block title %}{% trans "eIDAS Node" %}{% endblock %}
 
 {% block scripts %}
     {{ block.super }}
@@ -9,12 +9,11 @@
 {% endblock %}
 
 {% block content %}
-    <h1>{% trans "Identity Provider Response" %}</h1>
     {% if error %}
         <p>{% trans "An error occurred during processing of Identity Provider response." %}</p>
         <p>{{ error }}</p>
     {% else %}
-        <p>{% trans "Redirect to Service Provider is in progress. If you are not redirected automatically, use Continue button below." %}</p>
+        <p>{% trans "Redirect to eIDAS Node is in progress. If you are not redirected automatically, use Continue button below." %}</p>
         <form class="auto-submit" action="{{ eidas_url }}" method="post" id="identity-provider-response-form">
             <input type="hidden" name="{{ token_parameter }}" value="{{ token }}"/>
             <input type="submit" value="{% trans 'Continue' %}"/>

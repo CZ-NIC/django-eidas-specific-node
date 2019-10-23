@@ -1,7 +1,7 @@
 {% extends "eidas_node/connector/base.html" %}
 {% load i18n static %}
 
-{% block title %}{% trans "Identity Provider Response" %}{% endblock %}
+{% block title %}{% trans "eIDAS Node" %}{% endblock %}
 
 {% block scripts %}
     {{ block.super }}
@@ -9,16 +9,15 @@
 {% endblock %}
 
 {% block content %}
-    <h1>{% trans "Identity Provider Response" %}</h1>
     {% if error %}
-        <p>{% trans "An error occurred during processing of Identity Provider response." %}</p>
+        <p>{% trans "An error occurred during processing of eIDAS Node response." %}</p>
         <p>{{ error }}</p>
     {% else %}
         <p>{% trans "Redirect to Service Provider is in progress. If you are not redirected automatically, use Continue button below." %}</p>
         <form class="auto-submit" action="{{ service_provider_endpoint }}" method="post" id="connector-response-form">
             <input type="hidden" name="SAMLResponse" value="{{ saml_response }}"/>
             <input type="hidden" name="RelayState" value="{{ relay_state }}"/>
-            <input type="submit" value="Continue"/>
+            <input type="submit" value="{% trans 'Continue' %}"/>
         </form>
     {% endif %}
 {% endblock %}

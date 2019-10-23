@@ -10,9 +10,7 @@ body {
 .content {
     color: black;
     background: #F7F7F7;
-    padding-bottom: 32px;
-    font-size: 20px;
-    line-height: 26px;
+    padding: 130px 0;
 }
 
 .wrapper {
@@ -22,7 +20,7 @@ body {
 }
 
 h1 {
-    padding: 125px 0 50px;
+    padding: 0 0 100px;
 }
 
 h2 {
@@ -31,6 +29,8 @@ h2 {
 
 p {
     margin: 1em 0;
+    font-size: 20px;
+    line-height: 26px;
 }
 
 .info {
@@ -58,18 +58,9 @@ form.auto-submit input[type="submit"] {
     margin: 30px 0 0;
 }
 
-code, pre {
-    font-size: 60%;
-    line-height: 1.4em;
-}
-
 @media (max-width: 786px) {
     h1 {
-        padding: 65px 0 30px;
-    }
-
-    .countries {
-        padding-bottom: 65px;
+        padding: 0 0 30px;
     }
 
     .info, .logo {
@@ -86,7 +77,7 @@ code, pre {
     }
 
     .content {
-        padding-bottom: 16px;
+        padding: 65px 0 16px;
     }
 
     footer {
