@@ -229,6 +229,7 @@ class ConnectorResponseView(TemplateView):
             self.light_response = self.get_light_response()
             LOGGER.debug('Light Response: %s', self.light_response)
             self.saml_response = self.create_saml_response(CONNECTOR_SETTINGS.service_provider['response_issuer'],
+                                                           CONNECTOR_SETTINGS.service_provider['request_issuer'],
                                                            CONNECTOR_SETTINGS.service_provider['endpoint'],
                                                            CONNECTOR_SETTINGS.service_provider['response_signature'],
                                                            CONNECTOR_SETTINGS.service_provider['response_validity'])
@@ -289,12 +290,13 @@ class ConnectorResponseView(TemplateView):
                     self.log_id, response.id, response.issuer, response.in_response_to_id)
         return response
 
-    def create_saml_response(self, issuer: str, destination: Optional[str],
+    def create_saml_response(self, issuer: str, audience: Optional[str], destination: Optional[str],
                              signature_options: Optional[Dict[str, str]], validity: int) -> SAMLResponse:
         """
         Create a SAML response from a light response.
 
         :param issuer: Issuer of the SAML response.
+        :param audience: The audience of the SAML response (the issuer of the SAML request).
         :param destination: Service provider's endpoint.
         :param signature_options: Optional options to create a signed response: `key_file`, `cert_file`.
         `signature_method`, abd `digest_method`.
@@ -304,7 +306,7 @@ class ConnectorResponseView(TemplateView):
         # Replace the original issuer with our issuer registered at the Identity Provider.
         self.light_response.issuer = issuer
         response = SAMLResponse.from_light_response(
-            self.light_response,  destination, datetime.utcnow(), timedelta(minutes=validity))
+            self.light_response, audience, destination, datetime.utcnow(), timedelta(minutes=validity))
 
         LOGGER.info('[#%r] Created SAML response: id=%r, issuer=%r, in_response_to_id=%r',
                     self.log_id, response.id, response.issuer, response.in_response_to_id)

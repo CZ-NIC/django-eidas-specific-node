@@ -12,6 +12,11 @@
           <saml2:SubjectConfirmationData InResponseTo="test-saml-request-id" Recipient="test/destination" NotOnOrAfter="2017-12-11T14:17:05.148Z"/>
       </saml2:SubjectConfirmation>
     </saml2:Subject>
+    <saml2:Conditions NotBefore="2017-12-11T14:12:05.148Z" NotOnOrAfter="2017-12-11T14:17:05.148Z">
+      <saml2:AudienceRestriction>
+        <saml2:Audience>saml-request-issuer</saml2:Audience>
+      </saml2:AudienceRestriction>
+    </saml2:Conditions>
     <saml2:AttributeStatement>
       <saml2:Attribute Name="http://eidas.europa.eu/attributes/naturalperson/CurrentFamilyName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="FamilyName">
         <saml2:AttributeValue>ČERNÝCH</saml2:AttributeValue>

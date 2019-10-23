@@ -30,7 +30,8 @@ KNOWN_NAMESPACES.update(EIDAS_NAMESPACES)
 KNOWN_TAGS = {
     'saml2': {'Issuer', 'AuthnContextClassRef', 'EncryptedAssertion', 'Assertion', 'Subject', 'NameID',
               'AuthnStatement', 'AttributeStatement', 'Attribute', 'AttributeValue', 'SubjectLocality',
-              'AuthnContext', 'AuthnContextClassRef', 'SubjectConfirmation', 'SubjectConfirmationData'},
+              'AuthnContext', 'AuthnContextClassRef', 'SubjectConfirmation', 'SubjectConfirmationData',
+              'Conditions', 'AudienceRestriction', 'Audience'},
     'saml2p': {'AuthnRequest', 'Extensions', 'NameIDPolicy', 'RequestedAuthnContext',
                'Response', 'Status', 'StatusCode', 'StatusMessage'},
     'eidas': {'SPType', 'SPCountry', 'RequestedAttributes', 'RequestedAttribute', 'AttributeValue'},
@@ -296,6 +297,7 @@ class SAMLResponse:
     @classmethod
     def from_light_response(cls: Type[SAMLResponseType],
                             light_response: LightResponse,
+                            audience: Optional[str],
                             destination: Optional[str],
                             issued: datetime,
                             validity: timedelta) -> SAMLResponseType:
@@ -312,6 +314,10 @@ class SAMLResponse:
         }
         confirmation_data = {
             'InResponseTo': light_response.in_response_to_id,
+            'NotOnOrAfter': valid_until
+        }
+        conditions = {
+            'NotBefore': issue_instant,
             'NotOnOrAfter': valid_until
         }
 
@@ -367,8 +373,11 @@ class SAMLResponse:
             confirmation_elm = SubElement(subject_elm, Q_NAMES['saml2:SubjectConfirmation'],
                                           {'Method': 'urn:oasis:names:tc:SAML:2.0:cm:bearer'})
             SubElement(confirmation_elm, Q_NAMES['saml2:SubjectConfirmationData'], confirmation_data)
-            # 5.4 AssertionType <saml2:Conditions> optional, skipped
-            # 5.5 AssertionType <saml2:Advice> optional, skipped
+            # 5.4 AssertionType <saml2:Conditions> optional
+            conditions_elm = SubElement(assertion_elm, Q_NAMES['saml2:Conditions'], conditions)
+            if audience is not None:
+                SubElement(SubElement(conditions_elm, Q_NAMES['saml2:AudienceRestriction']),
+                           Q_NAMES['saml2:Audience']).text = audience
             # 5.5 AssertionType <saml2:Advice> optional, skipped
             # 5.6 AssertionType <saml2:AttributeStatement>
             attributes_elm = SubElement(assertion_elm, Q_NAMES['saml2:AttributeStatement'])
