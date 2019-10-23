@@ -8,6 +8,9 @@
     <saml2:Issuer>test-saml-response-issuer</saml2:Issuer>
     <saml2:Subject>
       <saml2:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9</saml2:NameID>
+      <saml2:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+        <saml2:SubjectConfirmationData InResponseTo="test-saml-request-id" NotOnOrAfter="2017-12-11T14:17:05.148Z"/>
+      </saml2:SubjectConfirmation>
     </saml2:Subject>
     <saml2:AttributeStatement/>
     <saml2:AuthnStatement AuthnInstant="2017-12-11T14:12:05.148Z">

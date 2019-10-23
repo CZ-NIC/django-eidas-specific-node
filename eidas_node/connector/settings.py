@@ -71,6 +71,7 @@ class ConnectorSettings(AppSettings):
                 signature_method=StringSetting(default='RSA_SHA512', min_length=1),
                 digest_method=StringSetting(default='SHA512', min_length=1),
             )),
+        response_validity=PositiveIntegerSetting(default=10),
         country_parameter=StringSetting(default='country', min_length=1),
     ), required=True)
     light_storage = NestedSetting(settings=dict(

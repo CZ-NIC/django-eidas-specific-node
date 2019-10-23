@@ -200,6 +200,7 @@ A dictionary with following items:
   * `CERT_FILE`: (required, string): The path to the corresponding certificate.
   * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
   * `DIGEST_METHOD` (optional, string, default `SHA512`): XML digest method.
+* `RESPONSE_VALIDITY` (int, optional, default 10): The validity of the SAML response in minutes.
 
 #### `CONNECTOR_EIDAS_NODE`
 

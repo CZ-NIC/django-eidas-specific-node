@@ -1,6 +1,6 @@
 """Conversion of SAML Requests/Responses and Light Requests/Responses."""
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Optional, Set, Type, TypeVar
 
 from lxml import etree
@@ -30,7 +30,7 @@ KNOWN_NAMESPACES.update(EIDAS_NAMESPACES)
 KNOWN_TAGS = {
     'saml2': {'Issuer', 'AuthnContextClassRef', 'EncryptedAssertion', 'Assertion', 'Subject', 'NameID',
               'AuthnStatement', 'AttributeStatement', 'Attribute', 'AttributeValue', 'SubjectLocality',
-              'AuthnContext', 'AuthnContextClassRef'},
+              'AuthnContext', 'AuthnContextClassRef', 'SubjectConfirmation', 'SubjectConfirmationData'},
     'saml2p': {'AuthnRequest', 'Extensions', 'NameIDPolicy', 'RequestedAuthnContext',
                'Response', 'Status', 'StatusCode', 'StatusMessage'},
     'eidas': {'SPType', 'SPCountry', 'RequestedAttributes', 'RequestedAttribute', 'AttributeValue'},
@@ -297,18 +297,28 @@ class SAMLResponse:
     def from_light_response(cls: Type[SAMLResponseType],
                             light_response: LightResponse,
                             destination: Optional[str],
-                            issued: datetime) -> SAMLResponseType:
+                            issued: datetime,
+                            validity: timedelta) -> SAMLResponseType:
         """Convert light response to SAML response."""
         light_response.validate()
         issue_instant = datetime_iso_format_milliseconds(issued) + 'Z'  # UTC
+        valid_until = datetime_iso_format_milliseconds(issued + validity) + 'Z'  # UTC
+
         root_attributes = {
             'ID': light_response.id,
             'InResponseTo': light_response.in_response_to_id,
             'Version': '2.0',
             'IssueInstant': issue_instant,
         }
+        confirmation_data = {
+            'InResponseTo': light_response.in_response_to_id,
+            'NotOnOrAfter': valid_until
+        }
+
         if destination is not None:
             root_attributes['Destination'] = destination
+            confirmation_data['Recipient'] = destination
+
         root = etree.Element(Q_NAMES['saml2p:Response'], attrib=root_attributes, nsmap=EIDAS_NAMESPACES)
         # 1. StatusResponseType <saml2:Issuer> optional
         if light_response.issuer is not None:
@@ -351,8 +361,12 @@ class SAMLResponse:
             SubElement(assertion_elm, Q_NAMES['saml2:Issuer']).text = light_response.issuer
             # 5.2 AssertionType <ds:Signature> optional, skipped
             # 5.3 AssertionType <saml2:Subject> optional
-            SubElement(SubElement(assertion_elm, Q_NAMES['saml2:Subject']), Q_NAMES['saml2:NameID'],
+            subject_elm = SubElement(assertion_elm, Q_NAMES['saml2:Subject'])
+            SubElement(subject_elm, Q_NAMES['saml2:NameID'],
                        {'Format': light_response.subject_name_id_format.value}).text = light_response.subject
+            confirmation_elm = SubElement(subject_elm, Q_NAMES['saml2:SubjectConfirmation'],
+                                          {'Method': 'urn:oasis:names:tc:SAML:2.0:cm:bearer'})
+            SubElement(confirmation_elm, Q_NAMES['saml2:SubjectConfirmationData'], confirmation_data)
             # 5.4 AssertionType <saml2:Conditions> optional, skipped
             # 5.5 AssertionType <saml2:Advice> optional, skipped
             # 5.5 AssertionType <saml2:Advice> optional, skipped

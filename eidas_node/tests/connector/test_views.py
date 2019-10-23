@@ -402,7 +402,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
             saml_response = view.create_saml_response(
                 'light-request-issuer',
                 'https://test.example.net/DemoServiceProviderResponse',
-                signature_options)
+                signature_options, 5)
             root = saml_response.document.getroot()
             self.assertEqual(root.get('ID'), light_response.id)
             self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
@@ -424,7 +424,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
         saml_response = view.create_saml_response(
             'light-request-issuer',
             'https://test.example.net/DemoServiceProviderResponse',
-            SIGNATURE_OPTIONS)
+            SIGNATURE_OPTIONS, 5)
         root = saml_response.document.getroot()
         self.assertEqual(root.get('ID'), light_response.id)
         self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
