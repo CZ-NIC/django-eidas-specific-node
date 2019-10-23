@@ -178,7 +178,7 @@ class TestLightToken(ValidationMixin, SimpleTestCase):
         for name in 'id', 'issuer':
             with self.subTest(name=name):
                 data = self.VALID_DATA.copy()
-                data[name] += '|pipe'
+                data[name] = str(data[name]) + '|pipe'
                 self.assertRaises(ValidationError, self.MODEL(**data).validate)
 
     def test_digest(self):

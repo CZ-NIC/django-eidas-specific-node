@@ -90,7 +90,7 @@ class TestIgniteStorage(IgniteMockMixin, SimpleTestCase):
             data = f.read()
 
         request = LightRequest.load_xml(parse_xml(data))
-        self.assertIsNone(self.storage.put_light_request('abc', request))
+        self.storage.put_light_request('abc', request)
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=33)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect(self.HOST, self.PORT),
@@ -102,7 +102,7 @@ class TestIgniteStorage(IgniteMockMixin, SimpleTestCase):
             data = f.read()
 
         response = LightResponse.load_xml(parse_xml(data))
-        self.assertIsNone(self.storage.put_light_response('abc', response))
+        self.storage.put_light_response('abc', response)
         self.assertEqual(self.client_class_mock.mock_calls, [call(timeout=33)])
         self.assertEqual(self.client_mock.mock_calls,
                          [call.connect(self.HOST, self.PORT),
