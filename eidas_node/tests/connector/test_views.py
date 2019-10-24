@@ -89,7 +89,7 @@ class TestCitizenCountrySelectorView(SimpleTestCase):
 
         # Rendering
         self.assertContains(response, self.request_endpoint)
-        self.assertContains(response, 'Redirect to Identity Provider is in progress')
+        self.assertContains(response, 'Redirect to eIDAS Node is in progress')
         self.assertContains(response, 'eidas_node/connector/formautosubmit.js')
         self.assertContains(response, '<form class="auto-submit" action="{}"'.format(self.request_endpoint))
         self.assertContains(response, '<input type="hidden" name="country_param" value="CC"/>')
@@ -285,7 +285,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
                           call.get_cache().put('T0uuid4', dump_xml(light_request.export_xml()).decode('utf-8'))])
 
         # Rendering
-        self.assertContains(response, 'Redirect to Identity Provider is in progress')
+        self.assertContains(response, 'Redirect to eIDAS Node is in progress')
         self.assertContains(response, 'eidas_node/connector/formautosubmit.js')
         self.assertContains(response, '<form class="auto-submit" '
                                       'action="http://test.example.net/SpecificConnectorRequest"')
@@ -473,7 +473,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
         response = self.client.post(self.url)
         self.assertNotIn(b'/DemoServiceProviderResponse', response.content)
         self.assertContains(response,
-                            'An error occurred during processing of Identity Provider response.',
+                            'An error occurred during processing of eIDAS Node response.',
                             status_code=400)
         self.assertEqual(response.context['error'], 'Bad connector response.')
         self.assertNotIn('identity_provider_endpoint', response.context)

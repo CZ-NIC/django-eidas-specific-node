@@ -1,7 +1,7 @@
 {% extends "eidas_node/proxy_service/base.html" %}
 {% load i18n static %}
 
-{% block title %}{% trans "Service Provider Request" %}{% endblock %}
+{% block title %}{% trans "eIDAS Node" %}{% endblock %}
 
 {% block scripts %}
     {{ block.super }}
@@ -9,9 +9,8 @@
 {% endblock %}
 
 {% block content %}
-    <h1>{% trans "Service Provider Request" %}</h1>
     {% if error %}
-        <p>{% trans "An error occurred during processing of Service Provider request." %}</p>
+        <p>{% trans "An error occurred during processing of eIDAS Node request." %}</p>
         <p>{{ error }}</p>
     {% else %}
         <p>{% trans "Redirect to Identity Provider is in progress. If you are not redirected automatically, use Continue button below." %}</p>

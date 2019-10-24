@@ -172,7 +172,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         response = self.client.post(self.url)
         self.assertNotIn(b'https://example.net/identity-provider-endpoint', response.content)
         self.assertContains(response,
-                            'An error occurred during processing of Service Provider request.',
+                            'An error occurred during processing of eIDAS Node request.',
                             status_code=400)
         self.assertEqual(response.context['error'], 'Bad proxy service request.')
         self.assertNotIn('identity_provider_endpoint', response.context)
@@ -327,7 +327,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
                           call.get_cache().put('T0uuid4', dump_xml(light_response.export_xml()).decode('utf-8'))])
 
         # Rendering
-        self.assertContains(response, 'Redirect to Service Provider is in progress')
+        self.assertContains(response, 'Redirect to eIDAS Node is in progress')
         self.assertContains(response,
                             '<form class="auto-submit" action="https://test.example.net/SpecificProxyServiceResponse"')
         self.assertContains(response, '<input type="hidden" name="test_token" value="{}"'.format(encoded_token))
