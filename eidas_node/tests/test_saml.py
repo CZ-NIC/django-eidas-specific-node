@@ -263,7 +263,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
     def test_from_light_response(self):
         self.maxDiff = None
         saml_response = SAMLResponse.from_light_response(
-            self.create_light_response(True), 'test/destination',
+            self.create_light_response(True), 'saml-request-issuer', 'test/destination',
             datetime(2017, 12, 11, 14, 12, 5, 148000), timedelta(minutes=5))
 
         with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response.xml').open('r')) as f2:
@@ -275,7 +275,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         status = Status(failure=False)
         response = self.create_light_response(True, ip_address=None, status=status, attributes={})
         saml_response = SAMLResponse.from_light_response(
-            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000), timedelta(minutes=5))
+            response, None, None, datetime(2017, 12, 11, 14, 12, 5, 148000), timedelta(minutes=5))
 
         with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_minimal.xml').open('r')) as f2:
             data = f2.read()
@@ -286,7 +286,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         status = Status(failure=True, sub_status_code=SubStatusCode.AUTHN_FAILED, status_message='Oops.')
         response = self.create_light_response(False, issuer=None, ip_address=None, status=status)
         saml_response = SAMLResponse.from_light_response(
-            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000), timedelta(minutes=5))
+            response, None, None, datetime(2017, 12, 11, 14, 12, 5, 148000), timedelta(minutes=5))
 
         with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_failed.xml').open('r')) as f2:
             data = f2.read()
@@ -297,7 +297,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         status = Status(failure=True, sub_status_code=SubStatusCode.VERSION_MISMATCH, status_message='Oops.')
         response = self.create_light_response(False, issuer=None, ip_address=None, status=status)
         saml_response = SAMLResponse.from_light_response(
-            response, None, datetime(2017, 12, 11, 14, 12, 5, 148000), timedelta(minutes=5))
+            response, None, None, datetime(2017, 12, 11, 14, 12, 5, 148000), timedelta(minutes=5))
 
         with cast(TextIO, (DATA_DIR / 'saml_response_from_light_response_version_mismatch.xml').open('r')) as f2:
             data = f2.read()
