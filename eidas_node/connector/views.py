@@ -230,7 +230,8 @@ class ConnectorResponseView(TemplateView):
             LOGGER.debug('Light Response: %s', self.light_response)
             self.saml_response = self.create_saml_response(CONNECTOR_SETTINGS.service_provider['response_issuer'],
                                                            CONNECTOR_SETTINGS.service_provider['endpoint'],
-                                                           CONNECTOR_SETTINGS.service_provider['response_signature'])
+                                                           CONNECTOR_SETTINGS.service_provider['response_signature'],
+                                                           CONNECTOR_SETTINGS.service_provider['response_validity'])
             LOGGER.debug('SAML Response: %s', self.saml_response)
         except EidasNodeError as e:
             LOGGER.exception('[#%r] Bad connector response: %s', self.log_id, e)
@@ -289,7 +290,7 @@ class ConnectorResponseView(TemplateView):
         return response
 
     def create_saml_response(self, issuer: str, destination: Optional[str],
-                             signature_options: Optional[Dict[str, str]]) -> SAMLResponse:
+                             signature_options: Optional[Dict[str, str]], validity: int) -> SAMLResponse:
         """
         Create a SAML response from a light response.
 
@@ -297,14 +298,13 @@ class ConnectorResponseView(TemplateView):
         :param destination: Service provider's endpoint.
         :param signature_options: Optional options to create a signed response: `key_file`, `cert_file`.
         `signature_method`, abd `digest_method`.
+        :param validity: The validity of the response in minutes.
         :return: A SAML response.
         """
         # Replace the original issuer with our issuer registered at the Identity Provider.
         self.light_response.issuer = issuer
         response = SAMLResponse.from_light_response(
-            self.light_response,
-            destination,
-            datetime.utcnow())
+            self.light_response,  destination, datetime.utcnow(), timedelta(minutes=validity))
 
         LOGGER.info('[#%r] Created SAML response: id=%r, issuer=%r, in_response_to_id=%r',
                     self.log_id, response.id, response.issuer, response.in_response_to_id)
