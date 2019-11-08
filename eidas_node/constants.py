@@ -1,4 +1,6 @@
 """Constants and enumerations."""
+# This module must contain only constants and enums
+# with basic types to be importable from settings.
 from enum import Enum, unique
 
 TOKEN_ID_PREFIX = 'T'

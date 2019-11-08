@@ -464,7 +464,7 @@ class SAMLResponse:
         self._verify_and_remove_signature(self.assertion_signature, cert_file)
         return True
 
-    def create_light_response(self) -> LightResponse:
+    def create_light_response(self, auth_class_map: Dict[str, LevelOfAssurance] = None) -> LightResponse:
         """Convert SAML response to light response."""
         response = LightResponse(attributes=OrderedDict())
         root = self.document.getroot()
@@ -504,7 +504,7 @@ class SAMLResponse:
         assertion_elm = self.assertion
         if assertion_elm is not None:
             try:
-                self._parse_assertion(response, assertion_elm)
+                self._parse_assertion(response, assertion_elm, auth_class_map)
             except ValidationError as e:
                 return LightResponse(
                     id=root.get('ID'),
@@ -518,7 +518,8 @@ class SAMLResponse:
         response.relay_state = self.relay_state
         return response
 
-    def _parse_assertion(self, response: LightResponse, assertion: Element) -> None:
+    def _parse_assertion(self, response: LightResponse, assertion: Element,
+                         auth_class_map: Optional[Dict[str, LevelOfAssurance]]) -> None:
         attributes = response.attributes = OrderedDict()
         name_id_elm = assertion.find('./{}/{}'.format(Q_NAMES['saml2:Subject'], Q_NAMES['saml2:NameID']))
         if name_id_elm is not None:
@@ -543,7 +544,10 @@ class SAMLResponse:
                 try:
                     response.level_of_assurance = LevelOfAssurance(authn_class_elm.text)
                 except ValueError:
-                    raise ValidationError({get_element_path(authn_class_elm): authn_class_elm.text}) from None
+                    if auth_class_map and authn_class_elm.text in auth_class_map:
+                        response.level_of_assurance = auth_class_map[authn_class_elm.text]
+                    else:
+                        raise ValidationError({get_element_path(authn_class_elm): authn_class_elm.text}) from None
 
     def __str__(self) -> str:
         return 'relay_state = {!r}, document = {}'.format(
