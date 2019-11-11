@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from lxml.etree import XMLSyntaxError
 
-from eidas_node.constants import TOKEN_ID_PREFIX
+from eidas_node.constants import TOKEN_ID_PREFIX, LevelOfAssurance
 from eidas_node.errors import EidasNodeError, ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.proxy_service.settings import PROXY_SERVICE_SETTINGS
@@ -174,7 +174,8 @@ class IdentityProviderResponseView(TemplateView):
                                                   PROXY_SERVICE_SETTINGS.light_storage['options'])
             token_settings = PROXY_SERVICE_SETTINGS.response_token
             self.light_response = self.create_light_response(
-                PROXY_SERVICE_SETTINGS.eidas_node['response_issuer'])
+                PROXY_SERVICE_SETTINGS.eidas_node['response_issuer'],
+                PROXY_SERVICE_SETTINGS.levels_of_assurance)
             LOGGER.debug('Light Response: %s', self.light_response)
             self.light_token, self.encoded_token = self.create_light_token(
                 token_settings['issuer'],
@@ -228,14 +229,16 @@ class IdentityProviderResponseView(TemplateView):
         """
         return import_from_module(backend)(**options)
 
-    def create_light_response(self, issuer: str) -> LightResponse:
+    def create_light_response(self, issuer: str,
+                              auth_class_map: Dict[str, LevelOfAssurance] = None) -> LightResponse:
         """
         Create a light response from SAML response.
 
         :param issuer: The issuer of the light response.
+        :param auth_class_map: Mapping of non-LoA auth classes to LevelOfAssurance.
         :return: A light response.
         """
-        response = self.saml_response.create_light_response()
+        response = self.saml_response.create_light_response(auth_class_map)
         # Use our issuer specified in the generic eIDAS Node configuration.
         response.issuer = issuer
         LOGGER.info('[#%r] Created light response: id=%r, issuer=%r, in_response_to=%r',

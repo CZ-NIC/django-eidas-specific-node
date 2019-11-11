@@ -2,7 +2,7 @@ from base64 import b64decode, b64encode
 from datetime import datetime
 from pathlib import Path
 from typing import BinaryIO, TextIO, Tuple, cast
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, PropertyMock, call, patch, sentinel
 
 from django.test import RequestFactory, SimpleTestCase
 from django.urls import reverse
@@ -272,6 +272,15 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(light_response.id, 'test-saml-response-id')  # Preserved
         self.assertEqual(light_response.in_response_to_id, 'test-saml-request-id')  # Preserved
         self.assertEqual(light_response.issuer, 'test-light-response-issuer')  # Replaced
+
+    def test_create_light_response_auth_class_alias(self):
+        view = IdentityProviderResponseView()
+
+        with patch.object(IdentityProviderResponseView, 'saml_response', new_callable=PropertyMock) as response_mock:
+            view.create_light_response('test-light-response-issuer', sentinel.auth_class_map)
+
+        self.assertSequenceEqual(response_mock.mock_calls,
+                                 [call(), call().create_light_response(sentinel.auth_class_map)])
 
     @freeze_time('2017-12-11 14:12:05')
     @patch('eidas_node.xml.uuid4', return_value='0uuid4')

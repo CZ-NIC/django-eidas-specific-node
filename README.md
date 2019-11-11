@@ -88,6 +88,18 @@ A dictionary with following items:
   `https://test.example.net/EidasNode/SpecificProxyServiceResponse`).
 * `RESPONSE_ISSUER` (required): The issuer for light responses specified in eIDAS Node configuration.
 
+#### `PROXY_SERVICE_LEVELS_OF_ASSURANCE`
+
+An optional mapping of *Authentication Context Classes* (`str`) to *Levels of Assurance* (`eidas_node.constants.LevelOfAssurance`).
+The default mapping is empty so other classes than Levels of Assurance are unrecognized and propagated as an error. Example:
+
+```py
+from eidas_node.constants import LevelOfAssurance
+PROXY_SERVICE_LEVELS_OF_ASSURANCE = {
+    'urn:oasis:names:tc:SAML:2.0:ac:classes:Password': LevelOfAssurance.LOW,
+}
+```
+
 ### Customization
 
 You can customize the authorization flow by subclassing view classes in [`eidas_node.proxy_service.views`](eidas_node/proxy_service/views.py), overriding necessary methods and adjusting URL configuration.

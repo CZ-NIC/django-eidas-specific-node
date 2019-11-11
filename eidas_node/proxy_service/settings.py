@@ -3,6 +3,8 @@
 from appsettings import AppSettings, DictSetting, NestedSetting, PositiveIntegerSetting, StringSetting
 from django.core.exceptions import ImproperlyConfigured
 
+from eidas_node.constants import LevelOfAssurance
+
 
 class ProxyServiceSettings(AppSettings):
     """eIDAS Node Proxy Service settings."""
@@ -43,6 +45,7 @@ class ProxyServiceSettings(AppSettings):
         proxy_service_response_url=StringSetting(required=True, min_length=1),
         response_issuer=StringSetting(required=True, min_length=1),
     ), required=True)
+    levels_of_assurance = DictSetting(key_type=str, value_type=LevelOfAssurance)
 
     class Meta:
         """Metadata."""

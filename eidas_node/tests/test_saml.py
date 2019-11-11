@@ -418,6 +418,38 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         self.assertIn('saml2:AuthnContextClassRef:unrecognized', response.status.status_message)
         self.assertIsNone(response.level_of_assurance)
 
+    def test_create_light_response_unrecognized_auth_context_class_alias(self):
+        root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id', 'InResponseTo': 'id0'}, nsmap=EIDAS_NAMESPACES)
+        context_class = SubElement(SubElement(SubElement(SubElement(
+            root, Q_NAMES['saml2:Assertion']), Q_NAMES['saml2:AuthnStatement']),
+            Q_NAMES['saml2:AuthnContext']), Q_NAMES['saml2:AuthnContextClassRef'])
+        context_class.text = 'saml2:AuthnContextClassRef:unrecognized'
+
+        saml = SAMLResponse(ElementTree(root))
+        response = saml.create_light_response({context_class.text: LevelOfAssurance.LOW})
+
+        self.assertEqual(response.id, 'id')
+        self.assertEqual(response.in_response_to_id, 'id0')
+        self.assertFalse(response.status.failure)
+        self.assertIsNone(response.status.status_code)
+        self.assertEqual(response.level_of_assurance, LevelOfAssurance.LOW)
+
+    def test_create_light_response_auth_context_class_alias_not_used(self):
+        root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id', 'InResponseTo': 'id0'}, nsmap=EIDAS_NAMESPACES)
+        context_class = SubElement(SubElement(SubElement(SubElement(
+            root, Q_NAMES['saml2:Assertion']), Q_NAMES['saml2:AuthnStatement']),
+            Q_NAMES['saml2:AuthnContext']), Q_NAMES['saml2:AuthnContextClassRef'])
+        context_class.text = LevelOfAssurance.HIGH.value
+
+        saml = SAMLResponse(ElementTree(root))
+        response = saml.create_light_response({context_class.text: LevelOfAssurance.LOW})
+
+        self.assertEqual(response.id, 'id')
+        self.assertEqual(response.in_response_to_id, 'id0')
+        self.assertFalse(response.status.failure)
+        self.assertIsNone(response.status.status_code)
+        self.assertEqual(response.level_of_assurance, LevelOfAssurance.HIGH)  # Not overridden
+
     def test_str(self):
         self.assertEqual(
             str(SAMLResponse(ElementTree(Element('root')), 'relay')),
