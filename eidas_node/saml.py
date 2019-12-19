@@ -119,8 +119,12 @@ class SAMLRequest:
         extensions = SubElement(root, Q_NAMES['saml2p:Extensions'])
         if light_request.sp_type:
             SubElement(extensions, Q_NAMES['eidas:SPType']).text = light_request.sp_type.value
+        # In patched version 2.3.1 of CEF eIDAS Node (according EID-922), origin_country_code is used
         if light_request.origin_country_code:
             SubElement(extensions, Q_NAMES['eidas:SPCountry']).text = light_request.origin_country_code
+        # In the version 2.4 of CEF eIDAS Node, citizen_country_code is used
+        elif light_request.citizen_country_code:
+            SubElement(extensions, Q_NAMES['eidas:SPCountry']).text = light_request.citizen_country_code
         attributes = SubElement(extensions, Q_NAMES['eidas:RequestedAttributes'])
         for name, values in light_request.requested_attributes.items():
             attribute = SubElement(attributes, Q_NAMES['eidas:RequestedAttribute'],
