@@ -7,8 +7,9 @@ from uuid import uuid4
 
 import xmlsec
 from lxml import etree
-from lxml.etree import Element, ElementTree, QName
+from lxml.etree import Element, ElementTree, QName, SubElement
 
+from eidas_node.constants import XmlBlockCipher, XmlKeyTransport
 from eidas_node.errors import SecurityError
 
 VALID_XML_ID_RE = re.compile('^[_a-zA-Z][-._a-zA-Z0-9]*$')
@@ -18,6 +19,18 @@ XML_ATTRIBUTE_ID = 'ID'
 XML_ATTRIBUTE_URI = 'URI'
 
 SignatureInfo = namedtuple('SignatureInfo', 'signature,references')
+XmlKeyInfo = namedtuple('XmlKeyInfo', 'key_type,key_length')
+
+# Specification: https://www.w3.org/TR/xmlenc-core1/#sec-Alg-Block
+XML_KEY_INFO = {
+    XmlBlockCipher.TRIPLEDES_CBC: XmlKeyInfo(xmlsec.KeyData.DES, 192),
+    XmlBlockCipher.AES128_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 128),
+    XmlBlockCipher.AES192_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 192),
+    XmlBlockCipher.AES256_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 256),
+    XmlBlockCipher.AES128_GCM: XmlKeyInfo(xmlsec.KeyData.AES, 128),
+    XmlBlockCipher.AES192_GCM: XmlKeyInfo(xmlsec.KeyData.AES, 192),
+    XmlBlockCipher.AES256_GCM: XmlKeyInfo(xmlsec.KeyData.AES, 256),
+}
 
 
 def parse_xml(xml: Union[str, bytes, BinaryIO]) -> etree.ElementTree:
@@ -88,6 +101,58 @@ def decrypt_xml(tree: ElementTree, key_file: str) -> int:
 
         remove_extra_xml_whitespace(tree.getroot())
     return len(encrypted_elements)
+
+
+def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_transport: XmlKeyTransport) -> None:
+    """
+    Encrypt a XML node.
+
+    The node is removed from the parent element and replaced with <EncryptedData> element.
+
+    :param node: A XML subtree.
+    :param cert_file: A path to the certificate file.
+    :param cipher: Encryption algorithm to use.
+    :param key_transport: Key transport algorithm to use.
+    """
+    # Create a template for encryption. xmlsec.template functions don't cover all libxmlsec1 features yet.
+    enc_data = SubElement(node.getparent(),
+                          '{%s}EncryptedData' % XML_ENC_NAMESPACE,
+                          {'Type': xmlsec.EncryptionType.ELEMENT},
+                          nsmap={'xmlenc': XML_ENC_NAMESPACE})
+    SubElement(enc_data, '{%s}EncryptionMethod' % XML_ENC_NAMESPACE, {'Algorithm': cipher.value})
+    SubElement(enc_data, '{%s}CipherData' % XML_ENC_NAMESPACE)
+    xmlsec.template.encrypted_data_ensure_cipher_value(enc_data)
+
+    # Info about the generated encryption key.
+    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_data, ns='ds')
+    enc_key = SubElement(key_info, '{%s}EncryptedKey' % XML_ENC_NAMESPACE)
+    SubElement(enc_key, '{%s}EncryptionMethod' % XML_ENC_NAMESPACE, {'Algorithm': key_transport.value})
+    SubElement(enc_key, '{%s}CipherData' % XML_ENC_NAMESPACE)
+    xmlsec.template.encrypted_data_ensure_cipher_value(enc_key)
+
+    # Info about the certificate.
+    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_key, ns='ds')
+    x509_data = xmlsec.template.add_x509_data(key_info)
+    xmlsec.template.x509_data_add_certificate(x509_data)
+    xmlsec.template.x509_data_add_issuer_serial(x509_data)
+
+    # xmlsec library adds unnecessary newlines to the signature template.
+    remove_extra_xml_whitespace(enc_data)
+
+    # Encrypt with a newly generated key
+    key_type, key_length = XML_KEY_INFO[cipher]
+    manager = xmlsec.KeysManager()
+    manager.add_key(xmlsec.Key.from_file(cert_file, xmlsec.KeyFormat.CERT_PEM))
+    ctx = xmlsec.EncryptionContext(manager)
+    ctx.key = xmlsec.Key.generate(key_type, key_length, xmlsec.KeyDataType.SESSION)
+
+    try:
+        ctx.encrypt_xml(enc_data, node)
+    except xmlsec.Error:
+        raise SecurityError('XML encryption failed. Invalid certificate, invalid or unsupported encryption method.')
+
+    # xmlsec library adds unnecessary tail newlines again, so we remove them.
+    remove_extra_xml_whitespace(enc_data)
 
 
 def remove_extra_xml_whitespace(node: Element) -> None:
