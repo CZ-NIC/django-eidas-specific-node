@@ -6,7 +6,7 @@ from unittest.mock import call, patch
 from django.test import SimpleTestCase
 from lxml.etree import Element, ElementTree, SubElement
 
-from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode
+from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode, XmlBlockCipher, XmlKeyTransport
 from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import LightRequest, LightResponse, Status
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_attribute_elm_attributes
@@ -701,6 +701,57 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         response.verify_response(NIA_CERT_FILE)
         response.decrypt(KEY_FILE)
         self.assertTrue(response.verify_assertion(NIA_CERT_FILE))
+
+    def test_encrypt_assertion_no_assertion(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        response = SAMLResponse((ElementTree(root)))
+        # Nothing to encrypt.
+        self.assertFalse(response.encrypt_assertion(CERT_FILE,
+                                                    XmlBlockCipher.AES256_CBC,
+                                                    XmlKeyTransport.RSA_OAEP_MGF1P))
+
+    def test_encrypt_assertion_without_encrypted_assertion_elm(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        first_child = SubElement(root, 'FirstChild')
+        assertion = SubElement(root, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'CZ.NIC'
+        third_child = SubElement(root, 'ThirdChild')
+        response = SAMLResponse((ElementTree(root)))
+
+        # Encryption happened.
+        self.assertTrue(response.encrypt_assertion(CERT_FILE,
+                                                   XmlBlockCipher.AES256_CBC,
+                                                   XmlKeyTransport.RSA_OAEP_MGF1P))
+        # Order of elements kept.
+        self.assertIs(root[0], first_child)
+        self.assertIs(root[2], third_child)
+        # <Assertion> replaced with <EncryptedAssertion>.
+        self.assertEqual(root[1].tag, Q_NAMES['saml2:EncryptedAssertion'])
+        self.assertEqual(root[1][0].tag, Q_NAMES['xmlenc:EncryptedData'])
+        # Make sure we can decrypt the result.
+        self.assertEqual(response.decrypt(KEY_FILE), 1)
+
+    def test_encrypt_assertion_with_encrypted_assertion_elm(self):
+        root = Element(Q_NAMES['saml2p:Response'])
+        first_child = SubElement(root, 'FirstChild')
+        encrypted_assertion = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
+        assertion = SubElement(encrypted_assertion, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'CZ.NIC'
+        third_child = SubElement(root, 'ThirdChild')
+        response = SAMLResponse((ElementTree(root)))
+
+        # Encryption happened.
+        self.assertTrue(response.encrypt_assertion(CERT_FILE,
+                                                   XmlBlockCipher.AES256_CBC,
+                                                   XmlKeyTransport.RSA_OAEP_MGF1P))
+        # Order of elements kept.
+        self.assertIs(root[0], first_child)
+        self.assertIs(root[1], encrypted_assertion)
+        self.assertIs(root[2], third_child)
+        # <Assertion> replaced with <EncryptedData>.
+        self.assertEqual(root[1][0].tag, Q_NAMES['xmlenc:EncryptedData'])
+        # Make sure we can decrypt the result.
+        self.assertEqual(response.decrypt(KEY_FILE), 1)
 
 
 class TestCreateAttributeElmAttributes(SimpleTestCase):
