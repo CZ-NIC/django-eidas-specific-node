@@ -70,12 +70,13 @@ def create_xml_uuid(prefix: str = '_') -> str:
     return prefix + str(uuid4())
 
 
-def decrypt_xml(tree: ElementTree, key_file: str) -> None:
+def decrypt_xml(tree: ElementTree, key_file: str) -> int:
     """
     Decrypt a XML document.
 
     :param tree: The XML document to decrypt.
     :param key_file: A path to an encryption key file.
+    :return: The number of decrypted elements
     """
     encrypted_elements = tree.findall(".//{%s}EncryptedData" % XML_ENC_NAMESPACE)
     if encrypted_elements:
@@ -86,6 +87,7 @@ def decrypt_xml(tree: ElementTree, key_file: str) -> None:
             enc_ctx.decrypt(elm)
 
         remove_extra_xml_whitespace(tree.getroot())
+    return len(encrypted_elements)
 
 
 def remove_extra_xml_whitespace(node: Element) -> None:

@@ -311,7 +311,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
             document_encrypted = f.read()
 
         response = SAMLResponse(parse_xml(document_encrypted))
-        response.decrypt(KEY_FILE)
+        self.assertEqual(response.decrypt(KEY_FILE), 1)
         self.assertXMLEqual(dump_xml(response.document).decode('utf-8'), document_decrypted.decode('utf-8'))
 
     def test_create_light_response_not_encrypted(self):

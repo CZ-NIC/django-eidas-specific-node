@@ -401,9 +401,9 @@ class SAMLResponse:
 
         return cls(ElementTree(root), light_response.relay_state)
 
-    def decrypt(self, key_file: str) -> None:
+    def decrypt(self, key_file: str) -> int:
         """Decrypt encrypted SAML response."""
-        decrypt_xml(self.document, key_file)
+        return decrypt_xml(self.document, key_file)
 
     def sign_assertion(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> bool:
         """

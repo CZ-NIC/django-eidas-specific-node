@@ -68,7 +68,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
             document = parse_xml(f.read())
         expected = dump_xml(document).decode('utf-8')
-        decrypt_xml(document, KEY_FILE)
+        self.assertEqual(decrypt_xml(document, KEY_FILE), 0)
         actual = dump_xml(document).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -79,7 +79,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
             document_encrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        decrypt_xml(document_encrypted, KEY_FILE)
+        self.assertEqual(decrypt_xml(document_encrypted, KEY_FILE), 1)
         actual = dump_xml(document_encrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -94,7 +94,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response_decrypted.xml').open('rb')) as f:
             document_decrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        decrypt_xml(document_decrypted, KEY_FILE)
+        self.assertEqual(decrypt_xml(document_decrypted, KEY_FILE), 0)
         actual = dump_xml(document_decrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
