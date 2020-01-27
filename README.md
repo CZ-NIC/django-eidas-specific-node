@@ -212,6 +212,15 @@ A dictionary with following items:
   * `CERT_FILE`: (required, string): The path to the corresponding certificate.
   * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
   * `DIGEST_METHOD` (optional, string, default `SHA512`): XML digest method.
+* `RESPONSE_ENCRYPTION` (dictionary, optional): Options for encrypting SAML responses returned to Service Provider:
+  * `CERT_FILE`: (required, string): The path to the certificate to encrypt a generated encryption key.
+  * `ENCRYPTION_METHOD` (optional, string, default `AES256_GCM`):
+    [XML encryption method](https://www.w3.org/TR/xmlenc-core1/#sec-Alg-Block).
+    `AES256_GCM`, `AES192_GCM`, and `AES168_GCM` are available with libxmlsec1 >= 1.2.27.
+    `AES256_CBC`, `AES192_CBC`, `AES168_CBC`, and `TRIPLEDES_CBC` are supported by older libxmlsec1 but should not be used without consideration of possibly severe security risks.
+  * `KEY_TRANSPORT` (optional, string, default `RSA_OAEP_MGF1P`):
+    [XML key transport method](https://www.w3.org/TR/xmlenc-core1/#sec-Alg-KeyTransport).
+    `RSA` (RSA Version 1.5) and `RSA_OAEP_MGF1P` (RSA-OAEP with MGF1-SHA1 as a mask generation function) are supported.
 * `RESPONSE_VALIDITY` (int, optional, default 10): The validity of the SAML response in minutes.
 
 #### `CONNECTOR_EIDAS_NODE`
