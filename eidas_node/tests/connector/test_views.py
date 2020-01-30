@@ -15,7 +15,7 @@ from eidas_node.errors import ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.saml import Q_NAMES, SAMLRequest
 from eidas_node.storage.ignite import IgniteStorage
-from eidas_node.tests.constants import CERT_FILE, DATA_DIR, SIGNATURE_OPTIONS, WRONG_CERT_FILE
+from eidas_node.tests.constants import CERT_FILE, DATA_DIR, ENCRYPTION_OPTIONS, SIGNATURE_OPTIONS, WRONG_CERT_FILE
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT
 from eidas_node.tests.test_saml import LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
@@ -389,7 +389,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
                           call.get_cache().get_and_remove('response-token-id')])
 
     @freeze_time('2017-12-11 14:12:05')
-    def test_create_saml_response_not_signed(self):
+    def test_create_saml_response_not_signed_not_encrypted(self):
         token, encoded = self.get_token()
         for signature_options in None, {}, {'key_file': '...'}, {'cert_file': '...'}:  # type: Optional[dict]
             light_response = self.get_light_response()
@@ -408,11 +408,14 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
             self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
             self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
                              'light-request-issuer')
+            # Not signed
             self.assertIsNone(saml_response.response_signature)
             self.assertIsNone(saml_response.assertion_signature)
+            # Not encrypted
+            self.assertIsNone(root.find(".//{}".format(Q_NAMES['xmlenc:EncryptedData'])))
 
     @freeze_time('2017-12-11 14:12:05')
-    def test_create_saml_response_signed(self):
+    def test_create_saml_response_signed_not_encrypted(self):
         token, encoded = self.get_token()
         light_response = self.get_light_response()
 
@@ -430,8 +433,65 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
         self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
                          'light-request-issuer')
+        # Signed
         self.assertIsNotNone(saml_response.response_signature)
         self.assertIsNotNone(saml_response.assertion_signature)
+        # Not encrypted
+        self.assertIsNone(root.find(".//{}".format(Q_NAMES['xmlenc:EncryptedData'])))
+
+    @freeze_time('2017-12-11 14:12:05')
+    def test_create_saml_response_signed_encrypted(self):
+        token, encoded = self.get_token()
+        light_response = self.get_light_response()
+
+        view = ConnectorResponseView()
+        view.request = self.factory.post(self.url, {'test_token': encoded})
+        view.light_token = token
+        view.light_response = light_response
+
+        saml_response = view.create_saml_response(
+            'light-request-issuer', 'saml-request-issuer',
+            'https://test.example.net/DemoServiceProviderResponse',
+            SIGNATURE_OPTIONS, 5, ENCRYPTION_OPTIONS)
+        root = saml_response.document.getroot()
+        self.assertEqual(root.get('ID'), light_response.id)
+        self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
+        self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
+                         'light-request-issuer')
+        # Signed
+        self.assertIsNotNone(saml_response.response_signature)
+        # Encrypted
+        self.assertIsNotNone(root.find(".//{}".format(Q_NAMES['xmlenc:EncryptedData'])))
+        # Hidden by encryption
+        self.assertIsNone(saml_response.assertion)
+        self.assertIsNone(saml_response.assertion_signature)
+
+    @freeze_time('2017-12-11 14:12:05')
+    def test_create_saml_response_not_signed_but_encrypted(self):
+        token, encoded = self.get_token()
+        light_response = self.get_light_response()
+
+        view = ConnectorResponseView()
+        view.request = self.factory.post(self.url, {'test_token': encoded})
+        view.light_token = token
+        view.light_response = light_response
+
+        saml_response = view.create_saml_response(
+            'light-request-issuer', 'saml-request-issuer',
+            'https://test.example.net/DemoServiceProviderResponse',
+            {}, 5, ENCRYPTION_OPTIONS)
+        root = saml_response.document.getroot()
+        self.assertEqual(root.get('ID'), light_response.id)
+        self.assertEqual(root.get('IssueInstant'), '2017-12-11T14:12:05.000Z')
+        self.assertEqual(root.find(".//{}".format(Q_NAMES['saml2:Issuer'])).text,
+                         'light-request-issuer')
+        # Not signed
+        self.assertIsNone(saml_response.response_signature)
+        self.assertIsNone(saml_response.assertion_signature)
+        # Encrypted
+        self.assertIsNotNone(root.find(".//{}".format(Q_NAMES['xmlenc:EncryptedData'])))
+        # Hidden by encryption
+        self.assertIsNone(saml_response.assertion)
 
     @freeze_time('2017-12-11 14:12:05')
     def test_post_success(self):

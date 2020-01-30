@@ -7,12 +7,12 @@ from lxml import etree
 from lxml.etree import Element, ElementTree, QName, SubElement
 
 from eidas_node.attributes import ATTRIBUTE_MAP, EIDAS_ATTRIBUTE_NAME_FORMAT
-from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode
+from eidas_node.constants import ServiceProviderType, StatusCode, SubStatusCode, XmlBlockCipher, XmlKeyTransport
 from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import LevelOfAssurance, LightRequest, LightResponse, NameIdFormat, Status
 from eidas_node.utils import datetime_iso_format_milliseconds
-from eidas_node.xml import (XML_ENC_NAMESPACE, XML_SIG_NAMESPACE, decrypt_xml, dump_xml, get_element_path,
-                            is_xml_id_valid, sign_xml_node, verify_xml_signatures)
+from eidas_node.xml import (XML_ENC_NAMESPACE, XML_SIG_NAMESPACE, decrypt_xml, dump_xml, encrypt_xml_node,
+                            get_element_path, is_xml_id_valid, sign_xml_node, verify_xml_signatures)
 
 EIDAS_NAMESPACES = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
@@ -401,9 +401,9 @@ class SAMLResponse:
 
         return cls(ElementTree(root), light_response.relay_state)
 
-    def decrypt(self, key_file: str) -> None:
+    def decrypt(self, key_file: str) -> int:
         """Decrypt encrypted SAML response."""
-        decrypt_xml(self.document, key_file)
+        return decrypt_xml(self.document, key_file)
 
     def sign_assertion(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> bool:
         """
@@ -426,6 +426,29 @@ class SAMLResponse:
 
         sign_xml_node(assertion, key_file, cert_file, signature_method, digest_method,
                       int(self._assertion_issuer_element is not None))
+        return True
+
+    def encrypt_assertion(self, cert_file: str, cipher: XmlBlockCipher, key_transport: XmlKeyTransport) -> bool:
+        """
+        Encrypt the SAML assertion.
+
+        :param cert_file: A path to the certificate file.
+        :param cipher: Encryption algorithm to use.
+        :param key_transport: Key transport algorithm to use.
+        :return: `True` if the assertion element is present and has been signed, `False` otherwise.
+        """
+        assertion = self.assertion
+        if assertion is None:
+            # Failure responses don't contain <Assertion>.
+            return False
+
+        # Insert <EncryptedAssertion> if necessary.
+        parent = assertion.getparent()
+        if parent.tag != Q_NAMES['saml2:EncryptedAssertion']:
+            encrypted = parent[parent.index(assertion)] = Element(Q_NAMES['saml2:EncryptedAssertion'])
+            encrypted.append(assertion)
+
+        encrypt_xml_node(assertion, cert_file, cipher, key_transport)
         return True
 
     def sign_response(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> None:

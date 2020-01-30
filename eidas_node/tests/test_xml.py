@@ -1,17 +1,23 @@
+import re
 from io import BytesIO
-from typing import BinaryIO, Optional, TextIO, cast
+from typing import BinaryIO, Optional, Set, TextIO, cast
 from unittest.mock import Mock, patch
 
 import xmlsec
 from django.test import SimpleTestCase
 from lxml.etree import Element, QName, SubElement
 
+from eidas_node.constants import XmlBlockCipher, XmlKeyTransport
 from eidas_node.errors import SecurityError
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES
 from eidas_node.tests.constants import CERT_FILE, DATA_DIR, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS, WRONG_KEY_FILE
-from eidas_node.xml import (XML_SIG_NAMESPACE, create_xml_uuid, decrypt_xml, dump_xml, get_element_path,
-                            is_xml_id_valid, parse_xml, remove_extra_xml_whitespace, remove_newlines_in_xml_text,
-                            sign_xml_node, verify_xml_signatures)
+from eidas_node.xml import (XML_SIG_NAMESPACE, XmlKeyInfo, create_xml_uuid, decrypt_xml, dump_xml, encrypt_xml_node,
+                            get_element_path, is_xml_id_valid, parse_xml, remove_extra_xml_whitespace,
+                            remove_newlines_in_xml_text, sign_xml_node, verify_xml_signatures)
+
+# This is an ugly hack but only for unit tests...
+# TODO: Remove when we drop support for libxmlsec1 < 1.2.27
+LIBXMLSEC_VERSION = tuple(map(int, re.search(r'\((\d+)\.(\d+)\.(\d+)\)', xmlsec.__doc__).groups()))  # type: ignore
 
 
 class TestGetElementPath(SimpleTestCase):
@@ -68,7 +74,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
             document = parse_xml(f.read())
         expected = dump_xml(document).decode('utf-8')
-        decrypt_xml(document, KEY_FILE)
+        self.assertEqual(decrypt_xml(document, KEY_FILE), 0)
         actual = dump_xml(document).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -79,7 +85,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
             document_encrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        decrypt_xml(document_encrypted, KEY_FILE)
+        self.assertEqual(decrypt_xml(document_encrypted, KEY_FILE), 1)
         actual = dump_xml(document_encrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -94,7 +100,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response_decrypted.xml').open('rb')) as f:
             document_decrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        decrypt_xml(document_decrypted, KEY_FILE)
+        self.assertEqual(decrypt_xml(document_decrypted, KEY_FILE), 0)
         actual = dump_xml(document_decrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -279,3 +285,39 @@ class TestVerifyXMLSignatures(SimpleTestCase):
                 SubElement(info, QName(XML_SIG_NAMESPACE, 'Reference'), {'URI': id_})
                 msg = "Signature 1, reference 1: Invalid id '{}'.".format(id_)
                 self.assertRaisesMessage(SecurityError, msg, verify_xml_signatures, root, CERT_FILE)
+
+
+class TestEncryptXMLNode(SimpleTestCase):
+    def test_encrypt_xml_node(self):
+        supported_ciphers = set(XmlBlockCipher)  # type: Set[XmlBlockCipher]
+        if LIBXMLSEC_VERSION < (1, 2, 27):  # pragma: no cover
+            supported_ciphers -= {XmlBlockCipher.AES128_GCM, XmlBlockCipher.AES192_GCM, XmlBlockCipher.AES256_GCM}
+
+        for cipher in supported_ciphers:
+            with cast(BinaryIO, (DATA_DIR / 'saml_response_decrypted.xml').open('rb')) as f:
+                document = parse_xml(f.read())
+            remove_extra_xml_whitespace(document.getroot())
+            original = dump_xml(document).decode()
+
+            # Encrypt <Assertion>
+            assertion = document.find(".//{}".format(Q_NAMES['saml2:Assertion']))
+            encrypt_xml_node(assertion, CERT_FILE, cipher, XmlKeyTransport.RSA_OAEP_MGF1P)
+
+            # <Assertion> replaced with <EncryptedData>
+            self.assertIsNone(document.find(".//{}".format(Q_NAMES['saml2:Assertion'])))
+            enc_data = document.find(".//{}/{}".format(Q_NAMES['saml2:EncryptedAssertion'],
+                                                       Q_NAMES['xmlenc:EncryptedData']))
+            self.assertIsNotNone(enc_data)
+            self.assertEqual(enc_data[0].get('Algorithm'), cipher.value)
+
+            # Verify that the original and decrypted document match.
+            self.assertEqual(decrypt_xml(document, KEY_FILE), 1)
+            decrypted = dump_xml(document).decode()
+            self.assertEqual(original, decrypted)
+
+    @patch.dict('eidas_node.xml.XML_KEY_INFO', {XmlBlockCipher.TRIPLEDES_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 192)})
+    def test_encrypt_xml_node_failure_wrong_key_type(self):
+        root = Element('root')
+        data = SubElement(root, 'data')
+        with self.assertRaisesMessage(SecurityError, 'Invalid certificate, invalid or unsupported encryption method'):
+            encrypt_xml_node(data, CERT_FILE, XmlBlockCipher.TRIPLEDES_CBC, XmlKeyTransport.RSA_OAEP_MGF1P)

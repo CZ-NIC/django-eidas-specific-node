@@ -4,6 +4,8 @@ from appsettings import AppSettings, DictSetting, IterableSetting, NestedSetting
 from django.core.exceptions import ImproperlyConfigured
 
 from eidas_node.attributes import ATTRIBUTE_MAP
+from eidas_node.constants import XmlBlockCipher, XmlKeyTransport
+from eidas_node.settings import EnumSetting
 
 DEFAULT_COUNTRIES = [
     # Country code, name
@@ -70,6 +72,13 @@ class ConnectorSettings(AppSettings):
                 cert_file=StringSetting(min_length=1),
                 signature_method=StringSetting(default='RSA_SHA512', min_length=1),
                 digest_method=StringSetting(default='SHA512', min_length=1),
+            )),
+        response_encryption=NestedSetting(
+            settings=dict(
+                # required=True leads to a strange error as in response_signature above.
+                cert_file=StringSetting(min_length=1),
+                encryption_method=EnumSetting(XmlBlockCipher, default='AES256_GCM'),
+                key_transport=EnumSetting(XmlKeyTransport, default='RSA_OAEP_MGF1P'),
             )),
         response_validity=PositiveIntegerSetting(default=10),
         country_parameter=StringSetting(default='country', min_length=1),
