@@ -114,8 +114,15 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
     :param cipher: Encryption algorithm to use.
     :param key_transport: Key transport algorithm to use.
     """
+    # Create a container without any XML namespace to force namespace declarations in the encrypted node.
+    # The decrypted element may then exist as an independent XML document.
+    container = Element('container')
+    parent = node.getparent()
+    node_index = parent.index(node)
+    container.append(node)
+
     # Create a template for encryption. xmlsec.template functions don't cover all libxmlsec1 features yet.
-    enc_data = SubElement(node.getparent(),
+    enc_data = SubElement(container,
                           '{%s}EncryptedData' % XML_ENC_NAMESPACE,
                           {'Type': xmlsec.EncryptionType.ELEMENT},
                           nsmap={'xmlenc': XML_ENC_NAMESPACE})
@@ -153,6 +160,9 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
 
     # xmlsec library adds unnecessary tail newlines again, so we remove them.
     remove_extra_xml_whitespace(enc_data)
+
+    # Insert the encrypted data in the position of the original node.
+    parent.insert(node_index, enc_data)
 
 
 def remove_extra_xml_whitespace(node: Element) -> None:

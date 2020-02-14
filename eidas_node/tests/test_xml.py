@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import xmlsec
 from django.test import SimpleTestCase
-from lxml.etree import Element, QName, SubElement
+from lxml.etree import Element, ElementTree, QName, SubElement
 
 from eidas_node.constants import XmlBlockCipher, XmlKeyTransport
 from eidas_node.errors import SecurityError
@@ -321,3 +321,27 @@ class TestEncryptXMLNode(SimpleTestCase):
         data = SubElement(root, 'data')
         with self.assertRaisesMessage(SecurityError, 'Invalid certificate, invalid or unsupported encryption method'):
             encrypt_xml_node(data, CERT_FILE, XmlBlockCipher.TRIPLEDES_CBC, XmlKeyTransport.RSA_OAEP_MGF1P)
+
+    def test_encrypt_xml_node_namespaces_declared(self):
+        root = Element(Q_NAMES['saml2p:Response'], nsmap={
+            'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
+            'saml2p': 'urn:oasis:names:tc:SAML:2.0:protocol',  # Not used in encrypted data
+        })
+
+        # Create an encrypted document
+        encrypted_assertion = SubElement(root, Q_NAMES['saml2:EncryptedAssertion'])
+        assertion = SubElement(encrypted_assertion, Q_NAMES['saml2:Assertion'])
+        SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'CZ.NIC'
+        encrypt_xml_node(assertion, CERT_FILE, XmlBlockCipher.AES128_CBC, XmlKeyTransport.RSA_OAEP_MGF1P)
+
+        # Transfer the encrypted data to a document with no namespaces
+        container = Element('container')
+        container.append(encrypted_assertion[0])
+        document = ElementTree(container)
+
+        # If the decrypted element doesn't declare all necessary namespaces, no exception is raised, but
+        # an error such as `namespace error : Namespace prefix saml2 on Assertion is not defined` is printed.
+        # We need to check the namespace maps.
+        self.assertEqual(decrypt_xml(document, KEY_FILE), 1)
+        self.assertEqual(container.nsmap, {})
+        self.assertEqual(container[0].nsmap, {'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion'})
