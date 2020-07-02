@@ -23,13 +23,13 @@ XmlKeyInfo = namedtuple('XmlKeyInfo', 'key_type,key_length')
 
 # Specification: https://www.w3.org/TR/xmlenc-core1/#sec-Alg-Block
 XML_KEY_INFO = {
-    XmlBlockCipher.TRIPLEDES_CBC: XmlKeyInfo(xmlsec.KeyData.DES, 192),
-    XmlBlockCipher.AES128_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 128),
-    XmlBlockCipher.AES192_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 192),
-    XmlBlockCipher.AES256_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 256),
-    XmlBlockCipher.AES128_GCM: XmlKeyInfo(xmlsec.KeyData.AES, 128),
-    XmlBlockCipher.AES192_GCM: XmlKeyInfo(xmlsec.KeyData.AES, 192),
-    XmlBlockCipher.AES256_GCM: XmlKeyInfo(xmlsec.KeyData.AES, 256),
+    XmlBlockCipher.TRIPLEDES_CBC: XmlKeyInfo(xmlsec.constants.KeyDataDes, 192),
+    XmlBlockCipher.AES128_CBC: XmlKeyInfo(xmlsec.constants.KeyDataAes, 128),
+    XmlBlockCipher.AES192_CBC: XmlKeyInfo(xmlsec.constants.KeyDataAes, 192),
+    XmlBlockCipher.AES256_CBC: XmlKeyInfo(xmlsec.constants.KeyDataAes, 256),
+    XmlBlockCipher.AES128_GCM: XmlKeyInfo(xmlsec.constants.KeyDataAes, 128),
+    XmlBlockCipher.AES192_GCM: XmlKeyInfo(xmlsec.constants.KeyDataAes, 192),
+    XmlBlockCipher.AES256_GCM: XmlKeyInfo(xmlsec.constants.KeyDataAes, 256),
 }
 
 
@@ -124,7 +124,7 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
     # Create a template for encryption. xmlsec.template functions don't cover all libxmlsec1 features yet.
     enc_data = SubElement(container,
                           '{%s}EncryptedData' % XML_ENC_NAMESPACE,
-                          {'Type': xmlsec.EncryptionType.ELEMENT},
+                          {'Type': xmlsec.constants.TypeEncElement},
                           nsmap={'xmlenc': XML_ENC_NAMESPACE})
     SubElement(enc_data, '{%s}EncryptionMethod' % XML_ENC_NAMESPACE, {'Algorithm': cipher.value})
     SubElement(enc_data, '{%s}CipherData' % XML_ENC_NAMESPACE)
@@ -149,9 +149,9 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
     # Encrypt with a newly generated key
     key_type, key_length = XML_KEY_INFO[cipher]
     manager = xmlsec.KeysManager()
-    manager.add_key(xmlsec.Key.from_file(cert_file, xmlsec.KeyFormat.CERT_PEM))
+    manager.add_key(xmlsec.Key.from_file(cert_file, xmlsec.constants.KeyDataFormatCertPem))
     ctx = xmlsec.EncryptionContext(manager)
-    ctx.key = xmlsec.Key.generate(key_type, key_length, xmlsec.KeyDataType.SESSION)
+    ctx.key = xmlsec.Key.generate(key_type, key_length, xmlsec.constants.KeyDataTypeSession)
 
     try:
         ctx.encrypt_xml(enc_data, node)
@@ -195,7 +195,8 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str,
     """
     # Prepare signature template for xmlsec to fill it with the signature and additional data
     ctx = xmlsec.SignatureContext()
-    signature = xmlsec.template.create(node, xmlsec.Transform.EXCL_C14N, getattr(xmlsec.Transform, signature_method))
+    signature = xmlsec.template.create(
+        node, xmlsec.constants.TransformExclC14N, getattr(xmlsec.Transform, signature_method))
     key_info = xmlsec.template.ensure_key_info(signature)
     x509_data = xmlsec.template.add_x509_data(key_info)
     xmlsec.template.x509_data_add_certificate(x509_data)
@@ -216,9 +217,9 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str,
     # XML normalization transform performed on the node contents before signing and verification.
     # 1. When enveloped signature method is used, the signature is included as a child of the signed element.
     #    The signature is removed from the document before signing/verification.
-    xmlsec.template.add_transform(ref, xmlsec.Transform.ENVELOPED)
+    xmlsec.template.add_transform(ref, xmlsec.constants.TransformEnveloped)
     # 2. This ensures that changes to irrelevant whitespace, attribute ordering, etc. won't invalidate the signature.
-    xmlsec.template.add_transform(ref, xmlsec.Transform.EXCL_C14N)
+    xmlsec.template.add_transform(ref, xmlsec.constants.TransformExclC14N)
 
     # xmlsec library adds unnecessary newlines to the signature template. They may cause troubles to other
     # XMLSEC implementations, so we remove any unnecessary whitespace to avoid compatibility issues.

@@ -315,7 +315,8 @@ class TestEncryptXMLNode(SimpleTestCase):
             decrypted = dump_xml(document).decode()
             self.assertEqual(original, decrypted)
 
-    @patch.dict('eidas_node.xml.XML_KEY_INFO', {XmlBlockCipher.TRIPLEDES_CBC: XmlKeyInfo(xmlsec.KeyData.AES, 192)})
+    @patch.dict('eidas_node.xml.XML_KEY_INFO',
+                {XmlBlockCipher.TRIPLEDES_CBC: XmlKeyInfo(xmlsec.constants.KeyDataAes, 192)})
     def test_encrypt_xml_node_failure_wrong_key_type(self):
         root = Element('root')
         data = SubElement(root, 'data')
