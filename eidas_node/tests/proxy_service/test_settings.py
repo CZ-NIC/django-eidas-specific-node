@@ -26,7 +26,7 @@ class TestCheckSettings(SimpleTestCase):
 
     def test_check_settings_no_signature(self):
         identity_provider = PROXY_SERVICE_IDENTITY_PROVIDER.copy()
-        del identity_provider['REQUEST_SIGNATURE']
+        identity_provider['REQUEST_SIGNATURE'] = {}
         with override_settings(PROXY_SERVICE_IDENTITY_PROVIDER=identity_provider):
             check_settings()
 

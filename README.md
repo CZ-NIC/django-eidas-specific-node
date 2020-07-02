@@ -12,6 +12,11 @@ Requirements
 - [xmlsec](https://pypi.org/project/xmlsec/)
 - [Apache Ignite Python client](https://pypi.org/project/pyignite/) (optional)
 
+Changes
+-------
+
+See [CHANGELOG.md](./CHANGELOG.md) for changes.
+
 Specific Proxy Service
 ----------------------
 
@@ -73,7 +78,8 @@ A dictionary with following items:
 * `REQUEST_ISSUER` (required): The issuer of the authentication request registered at Identity Provider.
 * `KEY_FILE` (optional, default `None`): The path of a key to decrypt Identity Provider's authentication response.
 * `CERT_FILE` (optional, default `None`): The path of a certificate to verify the signature of Identity Provider's authentication response.
-* `REQUEST_SIGNATURE` (dictionary, optional): Options for signing SAML requests sent to Service Provider:
+* `REQUEST_SIGNATURE` (dictionary, required, use `{}` to disable signing):
+  Options for signing SAML requests sent to Service Provider:
   * `KEY_FILE` (required, string): The path to a signing key.
   * `CERT_FILE`: (required, string): The path to the corresponding certificate.
   * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
@@ -207,12 +213,14 @@ A dictionary with following items:
 * `REQUEST_ISSUER` (required): The expected issuer of the Service Provider's authentication request.
 * `RESPONSE_ISSUER` (required): The issuer of the authentication response registered at Service Provider.
 * `COUNTRY_PARAMETER` (optional, default `country`): The name of a POST parameter containing citizen country code for `/CitizenCountrySelector` and `/ServiceProviderRequest` views.
-* `RESPONSE_SIGNATURE` (dictionary, optional): Options for signing SAML responses returned to Service Provider:
+* `RESPONSE_SIGNATURE` (dictionary, required, use `{}` to disable signing):
+  Options for signing SAML responses returned to Service Provider:
   * `KEY_FILE` (required, string): The path to a signing key.
   * `CERT_FILE`: (required, string): The path to the corresponding certificate.
   * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
   * `DIGEST_METHOD` (optional, string, default `SHA512`): XML digest method.
-* `RESPONSE_ENCRYPTION` (dictionary, optional): Options for encrypting SAML responses returned to Service Provider:
+* `RESPONSE_ENCRYPTION` (dictionary, required, use `{}` to disable encryption):
+  Options for encrypting SAML responses returned to Service Provider:
   * `CERT_FILE`: (required, string): The path to the certificate to encrypt a generated encryption key.
   * `ENCRYPTION_METHOD` (optional, string, default `AES256_GCM`):
     [XML encryption method](https://www.w3.org/TR/xmlenc-core1/#sec-Alg-Block).

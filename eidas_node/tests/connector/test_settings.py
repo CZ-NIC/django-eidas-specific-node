@@ -17,6 +17,7 @@ CONNECTOR_SERVICE_PROVIDER = {
         'SIGNATURE_METHOD': 'RSA_SHA1',
         'DIGEST_METHOD': 'SHA1',
     },
+    'RESPONSE_ENCRYPTION': {},
 }  # type: Dict[str, Any]
 
 
@@ -27,7 +28,7 @@ class TestCheckSettings(SimpleTestCase):
 
     def test_check_settings_no_signature(self):
         service_provider = CONNECTOR_SERVICE_PROVIDER.copy()
-        del service_provider['RESPONSE_SIGNATURE']
+        service_provider['RESPONSE_SIGNATURE'] = {}
         with override_settings(CONNECTOR_SERVICE_PROVIDER=service_provider):
             check_settings()
 

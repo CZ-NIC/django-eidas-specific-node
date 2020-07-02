@@ -112,6 +112,7 @@ CONNECTOR_SERVICE_PROVIDER = {
         'DIGEST_METHOD': 'SHA1',
     },
     'COUNTRY_PARAMETER': 'country_param',
+    'RESPONSE_ENCRYPTION': {},
 }  # type: Dict[str, Any]
 
 CONNECTOR_LIGHT_STORAGE = {
