@@ -1,7 +1,7 @@
 """Abstract Storage for Light Requests and Responses."""
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from eidas_node.models import LightRequest, LightResponse
 
@@ -31,3 +31,20 @@ class LightStorage(ABC):
     @abstractmethod
     def put_light_response(self, uid: str, response: LightResponse) -> None:
         """Store a LightRequest under a unique id."""
+
+
+class AuxiliaryStorage(ABC):
+    """
+    Storage for auxiliary data.
+
+    There is no guarantee of thread safety of the implementations,
+    so a storage instance should not be shared among individual requests.
+    """
+
+    @abstractmethod
+    def pop(self, uid: str) -> Optional[Dict[str, Any]]:
+        """Look up data by a unique id and then remove it."""
+
+    @abstractmethod
+    def put(self, uid: str, data: Dict[str, Any]) -> None:
+        """Store data under a unique id."""

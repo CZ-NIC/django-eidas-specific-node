@@ -9,3 +9,9 @@ UNRELEASED
 * `django-app-settings >=0.7.1` is required.
 * Settings `PROXY_SERVICE_IDENTITY_PROVIDER['REQUEST_SIGNATURE']`, `CONNECTOR_SERVICE_PROVIDER['RESPONSE_SIGNATURE']` and `CONNECTOR_SERVICE_PROVIDER['RESPONSE_ENCRYPTION']` are required.
   However, you can use an empty dict `{}` to disable these features.
+
+### New features
+
+* A workaround to support *the transient name ID format* even though it isn't supported by the Identity Provider.
+  See the `PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK` setting.
+* New setting `PROXY_SERVICE_AUXILIARY_STORAGE`.

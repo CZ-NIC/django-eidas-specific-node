@@ -21,3 +21,14 @@ ENCRYPTION_OPTIONS = {
     'encryption_method': XmlBlockCipher.AES128_CBC,
     'key_transport': XmlKeyTransport.RSA_OAEP_MGF1P,
 }
+
+AUXILIARY_STORAGE = {
+    'BACKEND': 'eidas_node.storage.ignite.AuxiliaryIgniteStorage',
+    'OPTIONS': {
+        'host': 'test.example.net',
+        'port': 1234,
+        'cache_name': 'aux-cache',
+        'prefix': 'aux-',
+        'timeout': 66,
+    }
+}

@@ -48,3 +48,7 @@ class TestCheckSettings(SimpleTestCase):
         del identity_provider['REQUEST_SIGNATURE']['CERT_FILE']
         with override_settings(PROXY_SERVICE_IDENTITY_PROVIDER=identity_provider):
             self.assertRaises(ImproperlyConfigured, check_settings)
+
+    def test_check_settings_transient_name_id_fallback(self):
+        with override_settings(PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True):
+            self.assertRaises(ImproperlyConfigured, check_settings)

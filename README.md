@@ -94,6 +94,29 @@ A dictionary with following items:
   `https://test.example.net/EidasNode/SpecificProxyServiceResponse`).
 * `RESPONSE_ISSUER` (required): The issuer for light responses specified in eIDAS Node configuration.
 
+#### `PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK`
+
+Optional boolean, disabled by default.
+If enabled, `PROXY_SERVICE_AUXILIARY_STORAGE` must be set too.
+If *the transient name ID format* is requested in the request but a different format is provided in the response, a new random transient ID is generated instead of the provided ID.
+
+#### `PROXY_SERVICE_AUXILIARY_STORAGE`
+
+An auxiliary storage to hold some response metadata needed during request processing.
+It is required if `PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK` is enabled.
+
+A dictionary with following items:
+
+* `BACKEND` (optional, default `'eidas_node.storage.ignite.AuxiliaryIgniteStorage'`):
+  The backend class for communication with the light storage.
+* `OPTIONS` (required): A dictionary with configuration of the selected backend.
+  The `AuxiliaryIgniteStorage` backend expects following options:
+  - `host`: Apache Ignite service host.
+  - `port`: Apache Ignite service port.
+  - `cache_name`: The cache to store the data.
+  - `prefix`: The prefix for cache keys (optional).
+  - `timeout`: A timeout for socket operations.
+
 #### `PROXY_SERVICE_LEVELS_OF_ASSURANCE`
 
 An optional mapping of *Authentication Context Classes* (`str`) to *Levels of Assurance* (`eidas_node.constants.LevelOfAssurance`).
