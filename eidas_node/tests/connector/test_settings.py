@@ -50,3 +50,7 @@ class TestCheckSettings(SimpleTestCase):
         del service_provider['RESPONSE_SIGNATURE']['CERT_FILE']
         with override_settings(CONNECTOR_SERVICE_PROVIDER=service_provider):
             self.assertRaises(ImproperlyConfigured, check_settings)
+
+    def test_check_settings_track_country_code(self):
+        with override_settings(CONNECTOR_TRACK_COUNTRY_CODE=True):
+            self.assertRaises(ImproperlyConfigured, check_settings)

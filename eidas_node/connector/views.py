@@ -19,7 +19,7 @@ from eidas_node.constants import TOKEN_ID_PREFIX
 from eidas_node.errors import EidasNodeError, ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.saml import SAMLRequest, SAMLResponse
-from eidas_node.storage import LightStorage
+from eidas_node.storage import LightStorage, get_auxiliary_storage
 from eidas_node.utils import WrappedSeries, import_from_module
 from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
@@ -78,16 +78,23 @@ class ServiceProviderRequestView(TemplateView):
     light_token = None  # type: LightToken
     encoded_token = None  # type: str
     log_id = 0  # type: int
+    auxiliary_data = None  # type: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
         self.log_id = LOG_ID_SERIES.next()
+        self.auxiliary_data = {}
         try:
             self.saml_request = self.get_saml_request(CONNECTOR_SETTINGS.service_provider['country_parameter'],
                                                       CONNECTOR_SETTINGS.service_provider['cert_file'])
             LOGGER.debug('SAML Request: %s', self.saml_request)
             self.light_request = self.create_light_request(CONNECTOR_SETTINGS.service_provider['request_issuer'],
                                                            CONNECTOR_SETTINGS.eidas_node['request_issuer'])
+
+            if CONNECTOR_SETTINGS.track_country_code:
+                self.auxiliary_data['citizen_country'] = self.light_request.citizen_country_code
+                self.auxiliary_data['origin_country'] = self.light_request.origin_country_code
+
             self.adjust_requested_attributes(self.light_request.requested_attributes,
                                              CONNECTOR_SETTINGS.allowed_attributes)
             LOGGER.debug('Light Request: %s', self.light_request)
@@ -102,6 +109,14 @@ class ServiceProviderRequestView(TemplateView):
             self.storage = self.get_light_storage(CONNECTOR_SETTINGS.light_storage['backend'],
                                                   CONNECTOR_SETTINGS.light_storage['options'])
             self.storage.put_light_request(self.light_token.id, self.light_request)
+
+            # Store auxiliary data only if there are any. No data yield an empty dict on retrieval.
+            if self.auxiliary_data:
+                auxiliary_storage = get_auxiliary_storage(
+                    CONNECTOR_SETTINGS.auxiliary_storage['backend'],
+                    CONNECTOR_SETTINGS.auxiliary_storage['options'])
+                auxiliary_storage.put(self.light_request.id, self.auxiliary_data)
+
         except (EidasNodeError, MultiValueDictKeyError) as e:
             LOGGER.exception('[#%r] Bad service provider request: %s', self.log_id, e)
             self.error = _('Bad service provider request.')
@@ -144,7 +159,9 @@ class ServiceProviderRequestView(TemplateView):
             raise SecurityError('Invalid SAML request issuer: {!r}'.format(request.issuer))
         # Use our issuer specified in the generic eIDAS Node configuration.
         request.issuer = light_issuer
-        LOGGER.info('[#%r] Created light request: id=%r, issuer=%r', self.log_id, request.id, request.issuer)
+        LOGGER.info('[#%r] Created light request: id=%r, issuer=%r, citizen_country=%r, origin_country=%r.',
+                    self.log_id, request.id, request.issuer, request.citizen_country_code,
+                    request.origin_country_code)
         return request
 
     def adjust_requested_attributes(self, attributes: Dict[str, List[str]], allowed_attributes: Set[str]) -> None:
@@ -211,6 +228,7 @@ class ConnectorResponseView(TemplateView):
     light_response = None  # type: LightResponse
     saml_response = None  # type: SAMLResponse
     log_id = 0  # type: int
+    auxiliary_data = None  # type: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -227,7 +245,24 @@ class ConnectorResponseView(TemplateView):
             self.storage = self.get_light_storage(CONNECTOR_SETTINGS.light_storage['backend'],
                                                   CONNECTOR_SETTINGS.light_storage['options'])
             self.light_response = self.get_light_response()
+
+            # Load auxiliary data if the storage is defined. Use an empty dict as a default value.
+            request_id = self.light_response.in_response_to_id
+            if request_id and CONNECTOR_SETTINGS.auxiliary_storage:
+                auxiliary_storage = get_auxiliary_storage(
+                    CONNECTOR_SETTINGS.auxiliary_storage['backend'],
+                    CONNECTOR_SETTINGS.auxiliary_storage['options'])
+                self.auxiliary_data = auxiliary_storage.pop(request_id) or {}
+            else:
+                self.auxiliary_data = {}
+
+            LOGGER.info('[#%r] Got light response: id=%r, issuer=%r, in_response_to=%r, citizen_country=%r,'
+                        ' origin_country=%r, status=%s, substatus=%s.',
+                        self.log_id, self.light_response.id, self.light_response.issuer, request_id,
+                        self.auxiliary_data.get('citizen_country'), self.auxiliary_data.get('origin_country'),
+                        self.light_response.status.status_code, self.light_response.status.sub_status_code)
             LOGGER.debug('Light Response: %s', self.light_response)
+
             self.saml_response = self.create_saml_response(CONNECTOR_SETTINGS.service_provider['response_issuer'],
                                                            CONNECTOR_SETTINGS.service_provider['request_issuer'],
                                                            CONNECTOR_SETTINGS.service_provider['endpoint'],
@@ -235,6 +270,7 @@ class ConnectorResponseView(TemplateView):
                                                            CONNECTOR_SETTINGS.service_provider['response_validity'],
                                                            CONNECTOR_SETTINGS.service_provider['response_encryption'])
             LOGGER.debug('SAML Response: %s', self.saml_response)
+
         except EidasNodeError as e:
             LOGGER.exception('[#%r] Bad connector response: %s', self.log_id, e)
             self.error = _('Bad connector response.')
@@ -287,8 +323,6 @@ class ConnectorResponseView(TemplateView):
         response = self.storage.pop_light_response(self.light_token.id)
         if response is None:
             raise SecurityError('Response not found in light storage.')
-        LOGGER.info('[#%r] Got light response: id=%r, issuer=%r, in_response_to=%r',
-                    self.log_id, response.id, response.issuer, response.in_response_to_id)
         return response
 
     def create_saml_response(self, issuer: str, audience: Optional[str], destination: Optional[str],

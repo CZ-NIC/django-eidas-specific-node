@@ -1,7 +1,7 @@
 """Settings of eidas_node.connector."""
 
-from appsettings import (AppSettings, DictSetting, IterableSetting, NestedDictSetting, PositiveIntegerSetting,
-                         StringSetting)
+from appsettings import (AppSettings, BooleanSetting, DictSetting, IterableSetting, NestedDictSetting,
+                         PositiveIntegerSetting, StringSetting)
 from django.core.exceptions import ImproperlyConfigured
 
 from eidas_node.attributes import ATTRIBUTE_MAP
@@ -98,6 +98,11 @@ class ConnectorSettings(AppSettings):
     ), required=True)
     allowed_attributes = IterableSetting(default=set(ATTRIBUTE_MAP))
     selector_countries = IterableSetting(default=DEFAULT_COUNTRIES, min_length=1)
+    track_country_code = BooleanSetting(default=False)
+    auxiliary_storage = NestedDictSetting(settings=dict(
+        backend=StringSetting(default='eidas_node.storage.ignite.AuxiliaryIgniteStorage', min_length=1),
+        options=DictSetting(required=True),
+    ))
 
     class Meta:
         """Metadata."""
@@ -116,3 +121,8 @@ def check_settings():
     if bool(signature.get('key_file')) != bool(signature.get('cert_file')):
         raise ImproperlyConfigured('Both CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.KEY_FILE and '
                                    'CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.CERT_FILE must be set.')
+
+    auxiliary_required = CONNECTOR_SETTINGS.track_country_code
+    if auxiliary_required and not CONNECTOR_SETTINGS.auxiliary_storage:
+        raise ImproperlyConfigured('CONNECTOR_AUXILIARY_STORAGE is required '
+                                   'if CONNECTOR_TRACK_COUNTRY_CODE is enabled.')

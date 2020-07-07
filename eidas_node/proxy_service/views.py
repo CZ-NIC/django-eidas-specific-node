@@ -63,6 +63,14 @@ class ProxyServiceRequestView(TemplateView):
             if PROXY_SERVICE_SETTINGS.transient_name_id_fallback and self.light_request.name_id_format is not None:
                 self.auxiliary_data['name_id_format'] = self.light_request.name_id_format.value
 
+            if PROXY_SERVICE_SETTINGS.track_country_code:
+                self.auxiliary_data['citizen_country'] = self.light_request.citizen_country_code
+                self.auxiliary_data['origin_country'] = self.light_request.origin_country_code
+
+            LOGGER.info("Received Light Request: id=%r, citizen_country=%r, origin_country=%r.",
+                        self.light_request.id, self.light_request.citizen_country_code,
+                        self.light_request.origin_country_code)
+
             self.saml_request = self.create_saml_request(PROXY_SERVICE_SETTINGS.identity_provider['request_issuer'],
                                                          PROXY_SERVICE_SETTINGS.identity_provider['request_signature'])
             LOGGER.debug('SAML Request: %s', self.saml_request)
@@ -204,6 +212,13 @@ class IdentityProviderResponseView(TemplateView):
                 PROXY_SERVICE_SETTINGS.eidas_node['response_issuer'],
                 PROXY_SERVICE_SETTINGS.levels_of_assurance)
 
+            LOGGER.info('[#%r] Created light response: id=%r, issuer=%r, in_response_to=%r, '
+                        'citizen_country=%r, origin_country=%r, status=%s, substatus=%s.',
+                        self.log_id, self.light_response.id, self.light_response.issuer,
+                        self.light_response.in_response_to_id, self.auxiliary_data.get('citizen_country'),
+                        self.auxiliary_data.get('origin_country'), self.light_response.status.status_code,
+                        self.light_response.status.sub_status_code)
+
             self.rewrite_name_id()
 
             LOGGER.debug('Light Response: %s', self.light_response)
@@ -284,8 +299,6 @@ class IdentityProviderResponseView(TemplateView):
         response = self.saml_response.create_light_response(auth_class_map)
         # Use our issuer specified in the generic eIDAS Node configuration.
         response.issuer = issuer
-        LOGGER.info('[#%r] Created light response: id=%r, issuer=%r, in_response_to=%r',
-                    self.log_id, response.id, response.issuer, response.in_response_to_id)
         return response
 
     def create_light_token(self, issuer: str, hash_algorithm: str, secret: str) -> Tuple[LightToken, str]:

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import BinaryIO, Dict, List, Optional, Tuple, cast
 from unittest.mock import MagicMock, call, patch
 
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from django.test.testcases import SimpleTestCase
 from django.urls import reverse
 from django.utils.datastructures import MultiValueDictKeyError
@@ -15,7 +15,8 @@ from eidas_node.errors import ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.saml import Q_NAMES, SAMLRequest
 from eidas_node.storage.ignite import IgniteStorage
-from eidas_node.tests.constants import CERT_FILE, DATA_DIR, ENCRYPTION_OPTIONS, SIGNATURE_OPTIONS, WRONG_CERT_FILE
+from eidas_node.tests.constants import (AUXILIARY_STORAGE, CERT_FILE, DATA_DIR, ENCRYPTION_OPTIONS, SIGNATURE_OPTIONS,
+                                        WRONG_CERT_FILE)
 from eidas_node.tests.test_models import LIGHT_REQUEST_DICT
 from eidas_node.tests.test_saml import LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
@@ -304,6 +305,33 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         self.assertNotIn('token', response.context)
         self.assertNotIn('token_parameter', response.context)
 
+    @freeze_time('2017-12-11 14:12:05')
+    @override_settings(CONNECTOR_TRACK_COUNTRY_CODE=True,
+                       CONNECTOR_AUXILIARY_STORAGE=AUXILIARY_STORAGE)
+    @patch('eidas_node.xml.uuid4', return_value='0uuid4')
+    def test_post_remember_country_codes(self, uuid_mock):
+        self.maxDiff = None
+        saml_request_xml, saml_request_encoded = self.load_saml_request(signed=True)
+        light_request = LightRequest(**LIGHT_REQUEST_DICT)
+        light_request.issuer = 'https://example.net/EidasNode/ConnectorMetadata'
+        self.cache_mock.get_and_remove.return_value = dump_xml(light_request.export_xml()).decode('utf-8')
+
+        response = self.client.post(self.url, {'SAMLRequest': saml_request_encoded,
+                                               'RelayState': 'relay123',
+                                               'country_param': 'ca'})
+        self.assertEqual(response.status_code, 200)
+        self.assertSequenceEqual(
+            self.client_mock.mock_calls[-3:],
+            [
+                call.connect('test.example.net', 1234),
+                call.get_cache('aux-cache'),
+                call.get_cache().put(
+                    'aux-test-saml-request-id',
+                    '{"citizen_country": "CA", "origin_country": "CA"}'
+                ),
+            ]
+        )
+
 
 class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
     def setUp(self):
@@ -539,3 +567,23 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertNotIn('identity_provider_endpoint', response.context)
         self.assertNotIn('saml_response', response.context)
         self.assertNotIn('relay_state', response.context)
+
+    @freeze_time('2017-12-11 14:12:05')
+    @override_settings(CONNECTOR_AUXILIARY_STORAGE=AUXILIARY_STORAGE)
+    def test_post_load_auxiliary_data(self):
+        self.maxDiff = None
+        light_response = self.get_light_response()
+        self.cache_mock.get_and_remove.side_effect = [
+            dump_xml(light_response.export_xml()).decode('utf-8'),
+            "{}",
+        ]
+
+        token, encoded = self.get_token()
+        response = self.client.post(self.url, {'test_response_token': encoded})
+        self.assertEqual(response.status_code, 200)
+        self.maxDiff = None
+        self.assertSequenceEqual(self.client_mock.mock_calls[-3:], [
+            call.connect('test.example.net', 1234),
+            call.get_cache('aux-cache'),
+            call.get_cache().get_and_remove('aux-test-saml-request-id')
+        ])

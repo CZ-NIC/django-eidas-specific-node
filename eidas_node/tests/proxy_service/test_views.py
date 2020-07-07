@@ -206,6 +206,31 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
             ]
         )
 
+    @freeze_time('2017-12-11 14:12:05')
+    @override_settings(PROXY_SERVICE_TRACK_COUNTRY_CODE=True,
+                       PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE)
+    def test_post_remember_country_codes(self):
+        request = LightRequest(**LIGHT_REQUEST_DICT)
+        self.cache_mock.get_and_remove.return_value = dump_xml(request.export_xml()).decode('utf-8')
+
+        token, encoded = self.get_token()
+        response = self.client.post(self.url, {'test_token': encoded})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.client_mock.mock_calls,
+            [
+                call.connect('test.example.net', 1234),
+                call.get_cache('test-proxy-service-request-cache'),
+                call.get_cache().get_and_remove('request-token-id'),
+                call.connect('test.example.net', 1234),
+                call.get_cache('aux-cache'),
+                call.get_cache().put(
+                    'aux-test-light-request-id',
+                    '{"citizen_country": "CA", "origin_country": "CA"}'
+                ),
+            ]
+        )
+
 
 class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
     def setUp(self):
