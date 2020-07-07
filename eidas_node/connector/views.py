@@ -186,7 +186,7 @@ class ServiceProviderRequestView(TemplateView):
         :param secret: A secret shared between communication parties.
         :return: A tuple of the token and its encoded form.
         """
-        token = LightToken(id=create_xml_uuid(TOKEN_ID_PREFIX), created=datetime.utcnow(), issuer=issuer)
+        token = LightToken(id=create_xml_uuid(TOKEN_ID_PREFIX), created=datetime.now(), issuer=issuer)
         LOGGER.info('[#%r] Created light token: id=%r, issuer=%r', self.log_id, token.id, token.issuer)
         encoded_token = token.encode(hash_algorithm, secret).decode('ascii')
         LOGGER.info('[#%r] Encoded light token: %r', self.log_id, encoded_token)

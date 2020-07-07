@@ -17,3 +17,7 @@ UNRELEASED
 * The country code of the request may be logged when the corresponding response is received.
   See the `CONNECTOR_TRACK_COUNTRY_CODE` and `PROXY_SERVICE_TRACK_COUNTRY_CODE` settings.
 * New settings `CONNECTOR_AUXILIARY_STORAGE` and `PROXY_SERVICE_AUXILIARY_STORAGE`.
+
+### Bug fixes
+
+* Fixed bug when light token was created with a local creation date but compared with UTC time.
