@@ -3,6 +3,7 @@ import logging
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Tuple
+from uuid import uuid4
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.template.loader import select_template
@@ -11,12 +12,12 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from lxml.etree import XMLSyntaxError
 
-from eidas_node.constants import TOKEN_ID_PREFIX, LevelOfAssurance
+from eidas_node.constants import TOKEN_ID_PREFIX, LevelOfAssurance, NameIdFormat
 from eidas_node.errors import EidasNodeError, ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken
 from eidas_node.proxy_service.settings import PROXY_SERVICE_SETTINGS
 from eidas_node.saml import SAMLRequest, SAMLResponse
-from eidas_node.storage import LightStorage
+from eidas_node.storage import LightStorage, get_auxiliary_storage
 from eidas_node.utils import WrappedSeries, import_from_module
 from eidas_node.xml import create_xml_uuid, dump_xml, parse_xml
 
@@ -39,9 +40,11 @@ class ProxyServiceRequestView(TemplateView):
     light_request = None  # type: LightRequest
     saml_request = None  # type: SAMLRequest
     log_id = 0  # type: int
+    auxiliary_data = None  # type: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
+        self.auxiliary_data = {}
         self.log_id = LOG_ID_SERIES.next()
         try:
             token_settings = PROXY_SERVICE_SETTINGS.request_token
@@ -56,9 +59,21 @@ class ProxyServiceRequestView(TemplateView):
                                                   PROXY_SERVICE_SETTINGS.light_storage['options'])
             self.light_request = self.get_light_request()
             LOGGER.debug('Light Request: %s', self.light_request)
+
+            if PROXY_SERVICE_SETTINGS.transient_name_id_fallback and self.light_request.name_id_format is not None:
+                self.auxiliary_data['name_id_format'] = self.light_request.name_id_format.value
+
             self.saml_request = self.create_saml_request(PROXY_SERVICE_SETTINGS.identity_provider['request_issuer'],
                                                          PROXY_SERVICE_SETTINGS.identity_provider['request_signature'])
             LOGGER.debug('SAML Request: %s', self.saml_request)
+
+            # Store auxiliary data only if there are any. No data yield an empty dict on retrieval.
+            if self.auxiliary_data:
+                auxiliary_storage = get_auxiliary_storage(
+                    PROXY_SERVICE_SETTINGS.auxiliary_storage['backend'],
+                    PROXY_SERVICE_SETTINGS.auxiliary_storage['options'])
+                auxiliary_storage.put(self.light_request.id, self.auxiliary_data)
+
         except EidasNodeError as e:
             LOGGER.exception('[#%r] Bad proxy service request: %s', self.log_id, e)
             self.error = _('Bad proxy service request.')
@@ -162,6 +177,7 @@ class IdentityProviderResponseView(TemplateView):
     light_token = None  # type: LightToken
     encoded_token = None  # type: str
     log_id = 0  # type: int
+    auxiliary_data = None  # type: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -170,12 +186,26 @@ class IdentityProviderResponseView(TemplateView):
             self.saml_response = self.get_saml_response(PROXY_SERVICE_SETTINGS.identity_provider.get('key_file'),
                                                         PROXY_SERVICE_SETTINGS.identity_provider.get('cert_file'))
             LOGGER.debug('SAML Response: %s', self.saml_response)
+
+            # Load auxiliary data if the storage is defined. Use an empty dict as a default value.
+            request_id = self.saml_response.in_response_to_id
+            if request_id and PROXY_SERVICE_SETTINGS.auxiliary_storage:
+                auxiliary_storage = get_auxiliary_storage(
+                    PROXY_SERVICE_SETTINGS.auxiliary_storage['backend'],
+                    PROXY_SERVICE_SETTINGS.auxiliary_storage['options'])
+                self.auxiliary_data = auxiliary_storage.pop(request_id) or {}
+            else:
+                self.auxiliary_data = {}
+
             self.storage = self.get_light_storage(PROXY_SERVICE_SETTINGS.light_storage['backend'],
                                                   PROXY_SERVICE_SETTINGS.light_storage['options'])
             token_settings = PROXY_SERVICE_SETTINGS.response_token
             self.light_response = self.create_light_response(
                 PROXY_SERVICE_SETTINGS.eidas_node['response_issuer'],
                 PROXY_SERVICE_SETTINGS.levels_of_assurance)
+
+            self.rewrite_name_id()
+
             LOGGER.debug('Light Response: %s', self.light_response)
             self.light_token, self.encoded_token = self.create_light_token(
                 token_settings['issuer'],
@@ -189,6 +219,19 @@ class IdentityProviderResponseView(TemplateView):
             return HttpResponseBadRequest(
                 select_template(self.get_template_names()).render(self.get_context_data(), self.request))
         return super().get(request)
+
+    def rewrite_name_id(self):
+        """Rewrite name id if needed."""
+        if (
+            not self.light_response.status.failure
+            and PROXY_SERVICE_SETTINGS.transient_name_id_fallback
+            and self.auxiliary_data.get('name_id_format') == NameIdFormat.TRANSIENT.value
+            and self.light_response.subject_name_id_format != NameIdFormat.TRANSIENT
+        ):
+            random_id = str(uuid4())
+            LOGGER.debug("Rewriting name id to transient id: %r → %r.", self.light_response.subject, random_id)
+            self.light_response.subject_name_id_format = NameIdFormat.TRANSIENT
+            self.light_response.subject = random_id
 
     def get_saml_response(self, key_file: Optional[str], cert_file: Optional[str]) -> SAMLResponse:
         """

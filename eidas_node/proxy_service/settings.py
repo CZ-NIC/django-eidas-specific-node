@@ -1,6 +1,7 @@
 """Settings of eidas_node.proxy_service."""
 
-from appsettings import AppSettings, DictSetting, NestedDictSetting, PositiveIntegerSetting, StringSetting
+from appsettings import (AppSettings, BooleanSetting, DictSetting, NestedDictSetting, PositiveIntegerSetting,
+                         StringSetting)
 from django.core.exceptions import ImproperlyConfigured
 
 from eidas_node.constants import LevelOfAssurance
@@ -48,6 +49,11 @@ class ProxyServiceSettings(AppSettings):
         response_issuer=StringSetting(required=True, min_length=1),
     ), required=True)
     levels_of_assurance = DictSetting(key_type=str, value_type=LevelOfAssurance)
+    transient_name_id_fallback = BooleanSetting(default=False)
+    auxiliary_storage = NestedDictSetting(settings=dict(
+        backend=StringSetting(default='eidas_node.storage.ignite.AuxiliaryIgniteStorage', min_length=1),
+        options=DictSetting(required=True),
+    ))
 
     class Meta:
         """Metadata."""
@@ -66,3 +72,7 @@ def check_settings():
     if bool(signature.get('key_file')) != bool(signature.get('cert_file')):
         raise ImproperlyConfigured('Both PROXY_SERVICE_IDENTITY_PROVIDER.REQUEST_SIGNATURE.KEY_FILE and '
                                    'PROXY_SERVICE_IDENTITY_PROVIDER.REQUEST_SIGNATURE.CERT_FILE must be set.')
+
+    if PROXY_SERVICE_SETTINGS.transient_name_id_fallback and not PROXY_SERVICE_SETTINGS.auxiliary_storage:
+        raise ImproperlyConfigured('PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK is required '
+                                   'if PROXY_SERVICE_AUXILIARY_STORAGE is enabled.')

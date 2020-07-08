@@ -4,18 +4,20 @@ from pathlib import Path
 from typing import BinaryIO, TextIO, Tuple, cast
 from unittest.mock import MagicMock, PropertyMock, call, patch, sentinel
 
-from django.test import RequestFactory, SimpleTestCase
+from django.test import RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
 from freezegun import freeze_time
 from lxml.etree import Element, SubElement
 
+from eidas_node.constants import NameIdFormat
 from eidas_node.errors import ParseError, SecurityError
 from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.proxy_service.views import IdentityProviderResponseView, ProxyServiceRequestView
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES, SAMLResponse
 from eidas_node.storage.ignite import IgniteStorage
-from eidas_node.tests.constants import CERT_FILE, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS, WRONG_CERT_FILE
-from eidas_node.tests.test_models import LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
+from eidas_node.tests.constants import (AUXILIARY_STORAGE, CERT_FILE, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS,
+                                        WRONG_CERT_FILE)
+from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
 from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
 
@@ -179,6 +181,31 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         self.assertNotIn('saml_request', response.context)
         self.assertNotIn('relay_state', response.context)
 
+    @freeze_time('2017-12-11 14:12:05')
+    @override_settings(PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True,
+                       PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE)
+    def test_post_remember_name_id_format(self):
+        request = LightRequest(**LIGHT_REQUEST_DICT)
+        self.cache_mock.get_and_remove.return_value = dump_xml(request.export_xml()).decode('utf-8')
+
+        token, encoded = self.get_token()
+        response = self.client.post(self.url, {'test_token': encoded})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.client_mock.mock_calls,
+            [
+                call.connect('test.example.net', 1234),
+                call.get_cache('test-proxy-service-request-cache'),
+                call.get_cache().get_and_remove('request-token-id'),
+                call.connect('test.example.net', 1234),
+                call.get_cache('aux-cache'),
+                call.get_cache().put(
+                    'aux-test-light-request-id',
+                    '{"name_id_format": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"}'
+                ),
+            ]
+        )
+
 
 class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
     def setUp(self):
@@ -298,6 +325,91 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertEqual(token.encode('sha256', 'test-secret').decode('ascii'), encoded_token)
         self.assertEqual(uuid_mock.mock_calls, [call()])
 
+    @override_settings(PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=False)
+    def test_rewrite_name_id_disabled(self):
+        light_response_data = LIGHT_RESPONSE_DICT.copy()
+        light_response_data['status'] = Status(**light_response_data['status'])
+        light_response_data['subject_name_id_format'] = NameIdFormat.PERSISTENT
+        view = IdentityProviderResponseView()
+        view.light_response = LightResponse(**light_response_data)
+        view.auxiliary_data = {}
+
+        view.rewrite_name_id()
+        self.assertEqual(view.light_response.subject_name_id_format, NameIdFormat.PERSISTENT)
+        self.assertEqual(view.light_response.subject, 'CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9')
+
+    @override_settings(PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE,
+                       PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True)
+    def test_rewrite_name_id_failure(self):
+        light_response_data = FAILED_LIGHT_RESPONSE_DICT.copy()
+        light_response_data['status'] = Status(**light_response_data['status'])
+        light_response_data['subject_name_id_format'] = NameIdFormat.PERSISTENT
+        view = IdentityProviderResponseView()
+        view.light_response = LightResponse(**light_response_data)
+        view.auxiliary_data = {'name_id_format': NameIdFormat.TRANSIENT.value}
+
+        view.rewrite_name_id()
+        self.assertEqual(view.light_response.subject_name_id_format, NameIdFormat.PERSISTENT)
+        self.assertIsNone(view.light_response.subject)
+
+    @override_settings(PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE,
+                       PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True)
+    def test_rewrite_name_id_none(self):
+        light_response_data = LIGHT_RESPONSE_DICT.copy()
+        light_response_data['status'] = Status(**light_response_data['status'])
+        light_response_data['subject_name_id_format'] = NameIdFormat.PERSISTENT
+        view = IdentityProviderResponseView()
+        view.light_response = LightResponse(**light_response_data)
+        view.auxiliary_data = {}
+
+        view.rewrite_name_id()
+        self.assertEqual(view.light_response.subject_name_id_format, NameIdFormat.PERSISTENT)
+        self.assertEqual(view.light_response.subject, 'CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9')
+
+    @override_settings(PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE,
+                       PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True)
+    @patch('eidas_node.proxy_service.views.uuid4', return_value='0uuid4')
+    def test_rewrite_name_id_persistent_to_transient(self, uuid_mock):
+        light_response_data = LIGHT_RESPONSE_DICT.copy()
+        light_response_data['status'] = Status(**light_response_data['status'])
+        light_response_data['subject_name_id_format'] = NameIdFormat.PERSISTENT
+        view = IdentityProviderResponseView()
+        view.light_response = LightResponse(**light_response_data)
+        view.auxiliary_data = {'name_id_format': NameIdFormat.TRANSIENT.value}
+
+        view.rewrite_name_id()
+        self.assertEqual(view.light_response.subject_name_id_format, NameIdFormat.TRANSIENT)
+        self.assertEqual(view.light_response.subject, '0uuid4')
+
+    @override_settings(PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE,
+                       PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True)
+    @patch('eidas_node.proxy_service.views.uuid4', return_value='0uuid4')
+    def test_rewrite_name_id_unspecified_to_transient(self, uuid_mock):
+        light_response_data = LIGHT_RESPONSE_DICT.copy()
+        light_response_data['status'] = Status(**light_response_data['status'])
+        light_response_data['subject_name_id_format'] = NameIdFormat.UNSPECIFIED
+        view = IdentityProviderResponseView()
+        view.light_response = LightResponse(**light_response_data)
+        view.auxiliary_data = {'name_id_format': NameIdFormat.TRANSIENT.value}
+
+        view.rewrite_name_id()
+        self.assertEqual(view.light_response.subject_name_id_format, NameIdFormat.TRANSIENT)
+        self.assertEqual(view.light_response.subject, '0uuid4')
+
+    @override_settings(PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE,
+                       PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True)
+    def test_rewrite_name_id_persistent(self):
+        light_response_data = LIGHT_RESPONSE_DICT.copy()
+        light_response_data['status'] = Status(**light_response_data['status'])
+        light_response_data['subject_name_id_format'] = NameIdFormat.PERSISTENT
+        view = IdentityProviderResponseView()
+        view.light_response = LightResponse(**light_response_data)
+        view.auxiliary_data = {'name_id_format': NameIdFormat.PERSISTENT.value}
+
+        view.rewrite_name_id()
+        self.assertEqual(view.light_response.subject_name_id_format, NameIdFormat.PERSISTENT)
+        self.assertEqual(view.light_response.subject, 'CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9')
+
     @freeze_time('2017-12-11 14:12:05')
     @patch('eidas_node.xml.uuid4', return_value='0uuid4')
     def test_post_success(self, uuid_mock: MagicMock):
@@ -353,3 +465,18 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         self.assertNotIn('eidas_url', response.context)
         self.assertNotIn('token', response.context)
         self.assertNotIn('token_parameter', response.context)
+
+    @override_settings(PROXY_SERVICE_AUXILIARY_STORAGE=AUXILIARY_STORAGE)
+    def test_post_load_auxiliary_data(self):
+        with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
+            saml_request_xml = f.read()
+        self.cache_mock.get_and_remove.return_value = "{}"
+        response = self.client.post(self.url, {'SAMLResponse': b64encode(saml_request_xml).decode('ascii'),
+                                               'RelayState': 'relay123'})
+        self.assertEqual(response.status_code, 200)
+        self.maxDiff = None
+        self.assertSequenceEqual(self.client_mock.mock_calls[:4], [
+            call.connect('test.example.net', 1234),
+            call.get_cache('aux-cache'),
+            call.get_cache().get_and_remove('aux-test-saml-request-id'),
+            call.connect('test.example.net', 1234)])
