@@ -14,4 +14,6 @@ UNRELEASED
 
 * A workaround to support *the transient name ID format* even though it isn't supported by the Identity Provider.
   See the `PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK` setting.
-* New setting `PROXY_SERVICE_AUXILIARY_STORAGE`.
+* The country code of the request may be logged when the corresponding response is received.
+  See the `CONNECTOR_TRACK_COUNTRY_CODE` and `PROXY_SERVICE_TRACK_COUNTRY_CODE` settings.
+* New settings `CONNECTOR_AUXILIARY_STORAGE` and `PROXY_SERVICE_AUXILIARY_STORAGE`.

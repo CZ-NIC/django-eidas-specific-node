@@ -100,10 +100,16 @@ Optional boolean, disabled by default.
 If enabled, `PROXY_SERVICE_AUXILIARY_STORAGE` must be set too.
 If *the transient name ID format* is requested in the request but a different format is provided in the response, a new random transient ID is generated instead of the provided ID.
 
+#### `PROXY_SERVICE_TRACK_COUNTRY_CODE`
+
+Optional boolean, disabled by default.
+If enabled, `PROXY_SERVICE_AUXILIARY_STORAGE` must be set too.
+Once enabled, the country code of the request is logged along with the status of the corresponding request.
+
 #### `PROXY_SERVICE_AUXILIARY_STORAGE`
 
 An auxiliary storage to hold some response metadata needed during request processing.
-It is required if `PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK` is enabled.
+It is required if `PROXY_SERVICE_TRACK_COUNTRY_CODE` or `PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK` is enabled.
 
 A dictionary with following items:
 
@@ -273,6 +279,29 @@ An empty set disables the filter.
 
 A list of pairs with country code and name to be displayed in citizen country selector (`/CitizenCountrySelector`).
 Default is all 28 countries of EU.
+
+#### `CONNECTOR_TRACK_COUNTRY_CODE`
+
+Optional boolean, disabled by default.
+If enabled, `CONNECTOR_AUXILIARY_STORAGE` must be set too.
+Once enabled, the country code of the request is logged along with the status of the corresponding request.
+
+#### `CONNECTOR_AUXILIARY_STORAGE`
+
+An auxiliary storage to hold some response metadata needed during request processing.
+It is required if `CONNECTOR_TRACK_COUNTRY_CODE` is enabled.
+
+A dictionary with following items:
+
+* `BACKEND` (optional, default `'eidas_node.storage.ignite.AuxiliaryIgniteStorage'`):
+  The backend class for communication with the light storage.
+* `OPTIONS` (required): A dictionary with configuration of the selected backend.
+  The `AuxiliaryIgniteStorage` backend expects following options:
+  - `host`: Apache Ignite service host.
+  - `port`: Apache Ignite service port.
+  - `cache_name`: The cache to store the data.
+  - `prefix`: The prefix for cache keys (optional).
+  - `timeout`: A timeout for socket operations.
 
 ### Customization
 

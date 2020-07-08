@@ -108,4 +108,4 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
             uid = self.prefix + uid
 
         LOGGER.debug('Store data to cache: id=%r, data=%s', uid, data)
-        self.get_cache(self.cache_name).put(uid, json.dumps(data))
+        self.get_cache(self.cache_name).put(uid, json.dumps(data, sort_keys=True))

@@ -52,3 +52,7 @@ class TestCheckSettings(SimpleTestCase):
     def test_check_settings_transient_name_id_fallback(self):
         with override_settings(PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK=True):
             self.assertRaises(ImproperlyConfigured, check_settings)
+
+    def test_check_settings_track_country_code(self):
+        with override_settings(PROXY_SERVICE_TRACK_COUNTRY_CODE=True):
+            self.assertRaises(ImproperlyConfigured, check_settings)

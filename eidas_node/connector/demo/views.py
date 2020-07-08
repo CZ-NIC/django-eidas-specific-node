@@ -59,7 +59,7 @@ class DemoServiceProviderRequestView(TemplateView):
             provider_name="Demo Service Provider",
             sp_type=ServiceProviderType.PUBLIC,
             relay_state=request.POST.get('RelayState') or None,
-            origin_country_code=None,
+            origin_country_code='EU',
             citizen_country_code=request.POST.get('Country'),
             name_id_format=preset.id_format,
             requested_attributes={name: [] for name in preset.attributes}

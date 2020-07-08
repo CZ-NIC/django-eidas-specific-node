@@ -50,6 +50,7 @@ class ProxyServiceSettings(AppSettings):
     ), required=True)
     levels_of_assurance = DictSetting(key_type=str, value_type=LevelOfAssurance)
     transient_name_id_fallback = BooleanSetting(default=False)
+    track_country_code = BooleanSetting(default=False)
     auxiliary_storage = NestedDictSetting(settings=dict(
         backend=StringSetting(default='eidas_node.storage.ignite.AuxiliaryIgniteStorage', min_length=1),
         options=DictSetting(required=True),
@@ -73,6 +74,8 @@ def check_settings():
         raise ImproperlyConfigured('Both PROXY_SERVICE_IDENTITY_PROVIDER.REQUEST_SIGNATURE.KEY_FILE and '
                                    'PROXY_SERVICE_IDENTITY_PROVIDER.REQUEST_SIGNATURE.CERT_FILE must be set.')
 
-    if PROXY_SERVICE_SETTINGS.transient_name_id_fallback and not PROXY_SERVICE_SETTINGS.auxiliary_storage:
-        raise ImproperlyConfigured('PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK is required '
-                                   'if PROXY_SERVICE_AUXILIARY_STORAGE is enabled.')
+    auxiliary_required = PROXY_SERVICE_SETTINGS.transient_name_id_fallback or PROXY_SERVICE_SETTINGS.track_country_code
+    if auxiliary_required and not PROXY_SERVICE_SETTINGS.auxiliary_storage:
+        raise ImproperlyConfigured('PROXY_SERVICE_AUXILIARY_STORAGE is required '
+                                   'if PROXY_SERVICE_TRANSIENT_NAME_ID_FALLBACK '
+                                   'or PROXY_SERVICE_TRACK_COUNTRY_CODE is enabled.')
