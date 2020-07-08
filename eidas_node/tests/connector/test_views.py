@@ -229,7 +229,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         }  # type: Dict[str, List[str]]
         self.assertEqual(attributes, expected)
 
-    @freeze_time('2017-12-11 14:12:05')
+    @freeze_time('2017-12-11 14:12:05', tz_offset=2)
     @patch('eidas_node.xml.uuid4', return_value='0uuid4')
     def test_create_light_token(self, uuid_mock: MagicMock):
         view = ServiceProviderRequestView()
@@ -239,7 +239,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         token, encoded_token = view.create_light_token('test-token-issuer', 'sha256', 'test-secret')
         self.assertEqual(token.id, 'T0uuid4')
         self.assertEqual(token.issuer, 'test-token-issuer')
-        self.assertEqual(token.created, datetime(2017, 12, 11, 14, 12, 5))
+        self.assertEqual(token.created, datetime(2017, 12, 11, 16, 12, 5))
         self.assertEqual(token.encode('sha256', 'test-secret').decode('ascii'), encoded_token)
         self.assertEqual(uuid_mock.mock_calls, [call()])
 
