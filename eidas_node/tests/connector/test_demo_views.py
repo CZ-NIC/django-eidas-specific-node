@@ -13,6 +13,8 @@ CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE = {
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
     'COUNTRY_PARAMETER': 'country_param',
+    'RESPONSE_SIGNATURE': {},
+    'RESPONSE_ENCRYPTION': {},
 }  # type: Dict[str, Any]
 
 

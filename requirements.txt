@@ -1,4 +1,4 @@
 django >=2.2,<2.3
-django-app-settings >=0.5
+django-app-settings >=0.7.1
 lxml
 xmlsec
