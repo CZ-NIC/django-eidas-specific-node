@@ -4,6 +4,9 @@ CHANGELOG
 UNRELEASED
 ----------
 
+0.7.0 [2020-07-08]
+------------------
+
 ### Breaking changes
 
 * `django-app-settings >=0.7.1` is required.
