@@ -93,7 +93,7 @@ class ServiceProviderRequestView(TemplateView):
 
             if CONNECTOR_SETTINGS.track_country_code:
                 self.auxiliary_data['citizen_country'] = self.light_request.citizen_country_code
-                self.auxiliary_data['origin_country'] = self.light_request.origin_country_code
+                self.auxiliary_data['origin_country'] = self.light_request.sp_country_code
 
             self.adjust_requested_attributes(self.light_request.requested_attributes,
                                              CONNECTOR_SETTINGS.allowed_attributes)
@@ -161,7 +161,7 @@ class ServiceProviderRequestView(TemplateView):
         request.issuer = light_issuer
         LOGGER.info('[#%r] Created light request: id=%r, issuer=%r, citizen_country=%r, origin_country=%r.',
                     self.log_id, request.id, request.issuer, request.citizen_country_code,
-                    request.origin_country_code)
+                    request.sp_country_code)
         return request
 
     def adjust_requested_attributes(self, attributes: Dict[str, List[str]], allowed_attributes: Set[str]) -> None:

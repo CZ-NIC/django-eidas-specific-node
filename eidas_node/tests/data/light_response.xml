@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8' standalone='yes'?>
-<lightResponse>
+<lightResponse xmlns="http://cef.eidas.eu/LightResponse">
   <id>test-light-response-id</id>
   <inResponseToId>test-light-request-id</inResponseToId>
   <issuer>test-light-response-issuer</issuer>
