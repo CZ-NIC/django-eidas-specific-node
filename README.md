@@ -1,7 +1,7 @@
 eIDAS Specific Node
 ===================
 
-An implementation of **eIDAS-Node 2.3.x** Specific **Connector** and **Proxy Service** for Django.
+Django implementation of member specific **Connector** and **Proxy Service** for [CEF eIDAS Node](https://ec.europa.eu/cefdigital/wiki/display/CEFDIGITAL/eIDAS-Node+Integration+Package) version 2.4 and later.
 
 Requirements
 ------------

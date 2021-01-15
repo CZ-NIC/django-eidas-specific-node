@@ -4,6 +4,14 @@ CHANGELOG
 UNRELEASED
 ----------
 
+### New features
+
+* Alligning with CEF eIDAS Node 2.5
+    * Include namespaces in LightRequest/LightResponse
+    * Add RequesterId to LightRequest
+    * Add Consent to LightResponse
+    * Rename originCountryCode to spCountryCode in LightRequest/LightResponse
+
 0.7.0 [2020-07-08]
 ------------------
 

@@ -19,7 +19,7 @@ from collections import OrderedDict
 from enum import Enum
 from typing import Any, Dict, Iterator, List, Tuple, Type, TypeVar, Union
 
-from lxml.etree import Element, ElementTree, SubElement
+from lxml.etree import Element, ElementTree, QName, SubElement
 
 from eidas_node.errors import ValidationError
 from eidas_node.xml import get_element_path
@@ -118,6 +118,9 @@ class XMLDataModel(DataModel, ABC):
     ROOT_ELEMENT = None  # type: str
     """The name of the root element."""
 
+    ROOT_NS = None  # type: str
+    """Namespace of the root element."""
+
     def export_xml(self) -> Element:
         """
         Export LightRequest as a XML document.
@@ -128,7 +131,8 @@ class XMLDataModel(DataModel, ABC):
         self.validate()
         if not self.ROOT_ELEMENT:
             raise TypeError('XMLDataModel subclasses must define ROOT_ELEMENT class attribute.')
-        root = Element(self.ROOT_ELEMENT)
+        root_nsmap = {} if not self.ROOT_NS else {None: self.ROOT_NS}
+        root = Element(self.ROOT_ELEMENT, nsmap=root_nsmap)
         self.serialize_fields(root)
         return root
 
@@ -167,7 +171,7 @@ class XMLDataModel(DataModel, ABC):
         if hasattr(root, 'getroot'):
             root = root.getroot()
 
-        if root.tag != cls.ROOT_ELEMENT:
+        if QName(root.tag).localname != cls.ROOT_ELEMENT:
             raise ValidationError({get_element_path(root): 'Invalid root element {!r}.'.format(root.tag)})
 
         model = cls()
@@ -188,7 +192,7 @@ def convert_tag_name_to_field_name(tag_name: str) -> str:
     :param tag_name: A tag name ('nameIdFormat').
     :return: A field name ('name_id_format').
     """
-    return re.sub('([A-Z]+)', r'_\1', tag_name).lower()
+    return re.sub('([A-Z]+)', r'_\1', QName(tag_name).localname).lower()
 
 
 def convert_field_name_to_tag_name(field_name: str) -> str:

@@ -65,11 +65,11 @@ class ProxyServiceRequestView(TemplateView):
 
             if PROXY_SERVICE_SETTINGS.track_country_code:
                 self.auxiliary_data['citizen_country'] = self.light_request.citizen_country_code
-                self.auxiliary_data['origin_country'] = self.light_request.origin_country_code
+                self.auxiliary_data['origin_country'] = self.light_request.sp_country_code
 
             LOGGER.info("Received Light Request: id=%r, citizen_country=%r, origin_country=%r.",
                         self.light_request.id, self.light_request.citizen_country_code,
-                        self.light_request.origin_country_code)
+                        self.light_request.sp_country_code)
 
             self.saml_request = self.create_saml_request(PROXY_SERVICE_SETTINGS.identity_provider['request_issuer'],
                                                          PROXY_SERVICE_SETTINGS.identity_provider['request_signature'])
