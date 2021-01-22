@@ -19,7 +19,7 @@ from collections import OrderedDict
 from enum import Enum
 from typing import Any, Dict, Iterator, List, Tuple, Type, TypeVar, Union
 
-from lxml.etree import Element, ElementTree, SubElement
+from lxml.etree import Element, ElementTree, SubElement, QName
 
 from eidas_node.errors import ValidationError
 from eidas_node.xml import get_element_path
@@ -171,7 +171,7 @@ class XMLDataModel(DataModel, ABC):
         if hasattr(root, 'getroot'):
             root = root.getroot()
 
-        if root.tag.rpartition('}')[2] != cls.ROOT_ELEMENT:
+        if QName(root.tag).localname != cls.ROOT_ELEMENT:
             raise ValidationError({get_element_path(root): 'Invalid root element {!r}.'.format(root.tag)})
 
         model = cls()
@@ -192,7 +192,7 @@ def convert_tag_name_to_field_name(tag_name: str) -> str:
     :param tag_name: A tag name ('nameIdFormat').
     :return: A field name ('name_id_format').
     """
-    return re.sub('([A-Z]+)', r'_\1', tag_name.rpartition('}')[2]).lower()
+    return re.sub('([A-Z]+)', r'_\1', QName(tag_name).localname).lower()
 
 
 def convert_field_name_to_tag_name(field_name: str) -> str:

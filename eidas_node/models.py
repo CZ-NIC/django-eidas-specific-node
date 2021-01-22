@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from lxml import etree
-from lxml.etree import Element
+from lxml.etree import Element, QName
 
 from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.datamodels import DataModel, XMLDataModel
@@ -288,17 +288,17 @@ def deserialize_attributes(attributes_elm: Element) -> Dict[str, List[str]]:
     """Deserialize eIDAS attributes."""
     attributes = OrderedDict()  # type: Dict[str, List[str]]
     for attribute in attributes_elm:
-        if attribute.tag.rpartition('}')[2] != 'attribute':
+        if QName(attribute.tag).localname != 'attribute':
             raise ValidationError({get_element_path(attribute): 'Unexpected element {!r}'.format(attribute.tag)})
         if not len(attribute):
             raise ValidationError({get_element_path(attribute): 'Missing attribute.definition element.'})
         definition = attribute[0]
-        if definition.tag.rpartition('}')[2] != 'definition':
+        if QName(definition.tag).localname != 'definition':
             raise ValidationError({get_element_path(definition): 'Unexpected element {!r}'.format(definition.tag)})
 
         values = attributes[definition.text] = []
         for value in attribute[1:]:
-            if value.tag.rpartition('}')[2] != 'value':
+            if QName(value.tag).localname != 'value':
                 raise ValidationError({get_element_path(value): 'Unexpected element {!r}'.format(value.tag)})
             values.append(value.text)
     return attributes
