@@ -8,7 +8,7 @@ test:
 	tox --parallel all $(if $(TESTS),-- $(TESTS),)
 
 isort:
-	isort --recursive $(APP)
+	isort $(APP)
 
 quality:
 	tox -e quality
