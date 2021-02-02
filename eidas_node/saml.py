@@ -120,8 +120,8 @@ class SAMLRequest:
         if light_request.sp_type:
             SubElement(extensions, Q_NAMES['eidas:SPType']).text = light_request.sp_type.value
         # In patched version 2.3.1 of CEF eIDAS Node (according EID-922), origin_country_code is used
-        if light_request.origin_country_code:
-            SubElement(extensions, Q_NAMES['eidas:SPCountry']).text = light_request.origin_country_code
+        if light_request.sp_country_code:
+            SubElement(extensions, Q_NAMES['eidas:SPCountry']).text = light_request.sp_country_code
         # In the version 2.4 of CEF eIDAS Node, citizen_country_code is used
         else:
             assert light_request.citizen_country_code  # mandatory field
@@ -188,7 +188,7 @@ class SAMLRequest:
 
             sp_country = extensions.find('./{}'.format(Q_NAMES['eidas:SPCountry']))
             if sp_country is not None:
-                request.origin_country_code = sp_country.text
+                request.sp_country_code = sp_country.text
 
             requested_attributes = request.requested_attributes
             attributes = extensions.findall(

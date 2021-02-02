@@ -25,7 +25,7 @@ LIGHT_REQUEST_DICT = OrderedDict([
         ('provider_name', 'DEMO-SP-CA'),
         ('sp_type', ServiceProviderType.PUBLIC),
         ('relay_state', 'relay123'),
-        ('origin_country_code', 'CA'),
+        ('sp_country_code', 'CA'),
         ('requested_attributes', OrderedDict([
             ('http://eidas.europa.eu/attributes/legalperson/D-2012-17-EUIdentifier', []),
             ('http://eidas.europa.eu/attributes/legalperson/EORI', []),
@@ -56,7 +56,9 @@ LIGHT_REQUEST_DICT = OrderedDict([
             ('http://eidas.europa.eu/attributes/naturalperson/PlaceOfBirth', []),
             ('http://eidas.europa.eu/attributes/legalperson/LegalAdditionalAttribute', []),
             ('http://eidas.europa.eu/attributes/naturalperson/AdditionalAttribute', []),
-        ]))])
+        ])),
+        ('requester_id', None)
+        ])
 
 LIGHT_RESPONSE_DICT = OrderedDict(
         [('id', 'test-light-response-id'),
@@ -83,7 +85,8 @@ LIGHT_RESPONSE_DICT = OrderedDict(
                'b3N0TmFtZT4NCjxlaWRhczpQb3N0Q29kZT40MDcyMTwvZWlkYXM6UG9zdENvZGU+DQo8ZWlkYXM6Q3ZhZGRyZXNzQXJlYT7EjG'
                'Vza8OhIEthbWVuaWNlLCBEb2xuw60gS2FtZW5pY2U8L2VpZGFzOkN2YWRkcmVzc0FyZWE+DQo=']),
              ('http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier',
-              ['CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9'])]))
+              ['CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9'])])),
+         ('consent', None)
          ])  # type: Dict[str, Any]
 
 FAILED_LIGHT_RESPONSE_DICT = OrderedDict(
@@ -100,7 +103,8 @@ FAILED_LIGHT_RESPONSE_DICT = OrderedDict(
               ('status_code', StatusCode.REQUESTER),
               ('sub_status_code', SubStatusCode.REQUEST_DENIED),
               ('status_message', 'Something went wrong.')])),
-         ('attributes', OrderedDict())
+         ('attributes', OrderedDict()),
+         ('consent', None)
          ])  # type: Dict[str, Any]
 
 
@@ -227,10 +231,10 @@ class TestLightToken(ValidationMixin, SimpleTestCase):
 
 class TestLightRequest(ValidationMixin, SimpleTestCase):
     MODEL = LightRequest
-    OPTIONAL = {'issuer', 'name_id_format', 'provider_name', 'sp_type', 'relay_state', 'origin_country_code'}
+    OPTIONAL = {'issuer', 'name_id_format', 'provider_name', 'sp_type', 'relay_state', 'sp_country_code'}
     VALID_DATA = {
         'citizen_country_code': 'CZ',
-        'origin_country_code': 'CZ',
+        'sp_country_code': 'CZ',
         'id': 'uuid',
         'issuer': 'MyIssuer',
         'level_of_assurance': LevelOfAssurance.LOW,
@@ -242,7 +246,7 @@ class TestLightRequest(ValidationMixin, SimpleTestCase):
     }
     INVALID_DATA = {
         'citizen_country_code': 1,
-        'origin_country_code': 1,
+        'sp_country_code': 1,
         'id': 1,
         'issuer': 1,
         'level_of_assurance': LevelOfAssurance.LOW.value,

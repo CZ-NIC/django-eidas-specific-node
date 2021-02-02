@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8' standalone='yes'?>
-<lightRequest>
+<lightRequest xmlns="http://cef.eidas.eu/LightRequest">
   <citizenCountryCode>CA</citizenCountryCode>
   <id>test-light-request-id</id>
   <issuer>test-light-request-issuer</issuer>
@@ -8,7 +8,7 @@
   <providerName>DEMO-SP-CA</providerName>
   <spType>public</spType>
   <relayState>relay123</relayState>
-  <originCountryCode>CA</originCountryCode>
+  <spCountryCode>CA</spCountryCode>
   <requestedAttributes>
     <attribute>
       <definition>http://eidas.europa.eu/attributes/legalperson/D-2012-17-EUIdentifier</definition>

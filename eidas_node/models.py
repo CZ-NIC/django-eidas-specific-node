@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from lxml import etree
-from lxml.etree import Element
+from lxml.etree import Element, QName
 
 from eidas_node.constants import LevelOfAssurance, NameIdFormat, ServiceProviderType, StatusCode, SubStatusCode
 from eidas_node.datamodels import DataModel, XMLDataModel
@@ -103,8 +103,9 @@ class LightRequest(XMLDataModel):
     """A request sent to/received from the generic part of eIDAS-Node."""
 
     FIELDS = ['citizen_country_code', 'id', 'issuer', 'level_of_assurance', 'name_id_format', 'provider_name',
-              'sp_type', 'relay_state', 'origin_country_code', 'requested_attributes']
+              'sp_type', 'relay_state', 'sp_country_code', 'requested_attributes', 'requester_id']
     ROOT_ELEMENT = 'lightRequest'
+    ROOT_NS = 'http://cef.eidas.eu/LightRequest'
     citizen_country_code = None  # type: str
     """Country code of the requesting citizen. ISO ALPHA-2 format."""
     id = None  # type: str
@@ -121,15 +122,17 @@ class LightRequest(XMLDataModel):
     """Optional element specifying the sector of the SP or the Connector."""
     relay_state = None  # type: Optional[str]
     """Optional state information expected to be returned with the LightResponse pair."""
-    origin_country_code = None  # type: Optional[str]
+    sp_country_code = None  # type: Optional[str]
     """The code of requesting country."""
     requested_attributes = None  # type: Dict[str, List[str]]
     """The list of requested attributes."""
+    requester_id = None  # type: Optional[str]
+    """Identification of service provider"""
 
     def validate(self) -> None:
         """Validate this data model."""
         self.validate_fields(str, 'citizen_country_code', 'id', required=True)
-        self.validate_fields(str, 'issuer', 'provider_name', 'relay_state', 'origin_country_code', required=False)
+        self.validate_fields(str, 'issuer', 'provider_name', 'relay_state', 'sp_country_code', required=False)
         self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=True)
         self.validate_fields(NameIdFormat, 'name_id_format', required=False)
         self.validate_fields(ServiceProviderType, 'sp_type', required=False)
@@ -196,8 +199,9 @@ class LightResponse(XMLDataModel):
     """A response sent to/received from the generic part of eIDAS-Node."""
 
     FIELDS = ['id', 'in_response_to_id', 'issuer', 'ip_address', 'relay_state', 'subject',
-              'subject_name_id_format', 'level_of_assurance', 'status', 'attributes']
+              'subject_name_id_format', 'level_of_assurance', 'status', 'attributes', 'consent']
     ROOT_ELEMENT = 'lightResponse'
+    ROOT_NS = 'http://cef.eidas.eu/LightResponse'
     id = None  # type: str
     """Internal unique ID."""
     in_response_to_id = None  # type: str
@@ -218,6 +222,8 @@ class LightResponse(XMLDataModel):
     """Complex element to provide status information from IdP."""
     attributes = None  # type: Dict[str, List[str]]
     """The list of attributes and their values."""
+    consent = None  # type: Optional[str]
+    """Type of conset specified by user"""
 
     def validate(self) -> None:
         """Validate this data model."""
@@ -282,17 +288,17 @@ def deserialize_attributes(attributes_elm: Element) -> Dict[str, List[str]]:
     """Deserialize eIDAS attributes."""
     attributes = OrderedDict()  # type: Dict[str, List[str]]
     for attribute in attributes_elm:
-        if attribute.tag != 'attribute':
+        if QName(attribute.tag).localname != 'attribute':
             raise ValidationError({get_element_path(attribute): 'Unexpected element {!r}'.format(attribute.tag)})
         if not len(attribute):
             raise ValidationError({get_element_path(attribute): 'Missing attribute.definition element.'})
         definition = attribute[0]
-        if definition.tag != 'definition':
+        if QName(definition.tag).localname != 'definition':
             raise ValidationError({get_element_path(definition): 'Unexpected element {!r}'.format(definition.tag)})
 
         values = attributes[definition.text] = []
         for value in attribute[1:]:
-            if value.tag != 'value':
+            if QName(value.tag).localname != 'value':
                 raise ValidationError({get_element_path(value): 'Unexpected element {!r}'.format(value.tag)})
             values.append(value.text)
     return attributes
