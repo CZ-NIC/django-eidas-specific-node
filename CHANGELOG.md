@@ -4,6 +4,9 @@ CHANGELOG
 UNRELEASED
 ----------
 
+0.8.0 [2021-02-02]
+------------------
+
 ### New features
 
 * Alligning with CEF eIDAS Node 2.5
