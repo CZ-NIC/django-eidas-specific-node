@@ -4,6 +4,13 @@ CHANGELOG
 UNRELEASED
 ----------
 
+0.8.1 [2021-05-10]
+------------------
+
+### Bug fixes
+
+* Fixed responsive design.
+
 0.8.0 [2021-02-02]
 ------------------
 
