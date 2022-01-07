@@ -2,4 +2,4 @@ django >=2.2,<2.3
 django-app-settings >=0.7.1
 lxml
 # https://github.com/CZ-NIC/django-eidas-specific-node/issues/108
-xmlsec ==1.3.3
+xmlsec
