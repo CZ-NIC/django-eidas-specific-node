@@ -1,2 +1,2 @@
 graft eidas_node
-include LICENSE requirements.txt
+include LICENSE README.md requirements.txt
