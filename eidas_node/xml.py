@@ -196,7 +196,7 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str,
     # Prepare signature template for xmlsec to fill it with the signature and additional data
     ctx = xmlsec.SignatureContext()
     signature = xmlsec.template.create(
-        node, xmlsec.constants.TransformExclC14N, getattr(xmlsec.Transform, signature_method))
+        node, xmlsec.constants.TransformExclC14N, getattr(xmlsec.Transform, signature_method))  # type: ignore
     key_info = xmlsec.template.ensure_key_info(signature)
     x509_data = xmlsec.template.add_x509_data(key_info)
     xmlsec.template.x509_data_add_certificate(x509_data)
@@ -212,7 +212,8 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str,
     ctx.register_id(node, XML_ATTRIBUTE_ID, None)
 
     # Add reference to signature with URI attribute pointing to that ID.
-    ref = xmlsec.template.add_reference(signature, getattr(xmlsec.Transform, digest_method), uri="#" + node_id)
+    ref = xmlsec.template.add_reference(signature,
+                                        getattr(xmlsec.Transform, digest_method), uri="#" + node_id)  # type: ignore
 
     # XML normalization transform performed on the node contents before signing and verification.
     # 1. When enveloped signature method is used, the signature is included as a child of the signed element.
