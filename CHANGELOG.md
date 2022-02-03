@@ -4,6 +4,15 @@ CHANGELOG
 UNRELEASED
 ----------
 
+0.9.0 [2022-02-03]
+------------------
+
+### Changes
+
+* Updated XMLsec version
+* Added support for python 3.8 and 3.9
+* Greece selector accepts `EL`
+
 0.8.1 [2021-05-10]
 ------------------
 
