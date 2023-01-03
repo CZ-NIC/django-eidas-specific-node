@@ -40,7 +40,7 @@ class TestCzNiaResponseView(SimpleTestCase):
                 view = CzNiaResponseView()
                 view.request = self.factory.post(self.url,
                                                  {'SAMLResponse': b64encode(saml_response_xml).decode('ascii')})
-                saml_response = view.get_saml_response(None, None)
+                saml_response = view.get_saml_response(None, None, None)
                 self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'),
                                     saml_response_xml.decode('utf-8'))
 
@@ -57,7 +57,7 @@ class TestCzNiaResponseView(SimpleTestCase):
                 view = CzNiaResponseView()
                 view.request = self.factory.post(self.url,
                                                  {'SAMLResponse': b64encode(saml_response_xml).decode('ascii')})
-                saml_response = view.get_saml_response(None, None)
+                saml_response = view.get_saml_response(None, None, None)
                 self.assertXMLEqual(dump_xml(saml_response.document).decode('utf-8'),
                                     saml_response_xml_fixed.decode('utf-8'))
 

@@ -5,14 +5,15 @@ from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
 
 from eidas_node.connector.settings import check_settings
-from eidas_node.tests.constants import CERT_FILE, KEY_FILE
+from eidas_node.tests.constants import CERT_FILE, KEY_LOCATION, KEY_SOURCE
 
 CONNECTOR_SERVICE_PROVIDER: Dict[str, Any] = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
     'RESPONSE_SIGNATURE': {
-        'KEY_FILE': KEY_FILE,
+        'KEY_SOURCE': KEY_SOURCE,
+        'KEY_LOCATION': KEY_LOCATION,
         'CERT_FILE': CERT_FILE,
         'SIGNATURE_METHOD': 'RSA_SHA1',
         'DIGEST_METHOD': 'SHA1',
@@ -35,13 +36,14 @@ class TestCheckSettings(SimpleTestCase):
     def test_check_settings_signature_no_cert_and_no_key(self):
         service_provider = deepcopy(CONNECTOR_SERVICE_PROVIDER)
         del service_provider['RESPONSE_SIGNATURE']['CERT_FILE']
-        del service_provider['RESPONSE_SIGNATURE']['KEY_FILE']
+        del service_provider['RESPONSE_SIGNATURE']['KEY_SOURCE']
+        del service_provider['RESPONSE_SIGNATURE']['KEY_LOCATION']
         with override_settings(CONNECTOR_SERVICE_PROVIDER=service_provider):
             check_settings()
 
     def test_check_settings_signature_cert_and_no_key(self):
         service_provider = deepcopy(CONNECTOR_SERVICE_PROVIDER)
-        del service_provider['RESPONSE_SIGNATURE']['KEY_FILE']
+        del service_provider['RESPONSE_SIGNATURE']['KEY_LOCATION']
         with override_settings(CONNECTOR_SERVICE_PROVIDER=service_provider):
             self.assertRaises(ImproperlyConfigured, check_settings)
 

@@ -10,7 +10,7 @@ from eidas_node.constants import LevelOfAssurance, StatusCode, SubStatusCode, Xm
 from eidas_node.errors import ParseError, SecurityError, ValidationError
 from eidas_node.models import LightRequest, LightResponse, Status
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES, SAMLRequest, SAMLResponse, create_attribute_elm_attributes
-from eidas_node.tests.constants import CERT_FILE, DATA_DIR, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS
+from eidas_node.tests.constants import CERT_FILE, DATA_DIR, KEY_LOCATION, KEY_SOURCE, NIA_CERT_FILE, SIGNATURE_OPTIONS
 from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.xml import SignatureInfo, dump_xml, parse_xml, remove_extra_xml_whitespace
 
@@ -311,7 +311,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
             document_encrypted = f.read()
 
         response = SAMLResponse(parse_xml(document_encrypted))
-        self.assertEqual(response.decrypt(KEY_FILE), 1)
+        self.assertEqual(response.decrypt(KEY_SOURCE, KEY_LOCATION), 1)
         self.assertXMLEqual(dump_xml(response.document).decode('utf-8'), document_decrypted.decode('utf-8'))
 
     def test_create_light_response_not_encrypted(self):
@@ -699,7 +699,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
 
         response = SAMLResponse(tree)
         response.verify_response(NIA_CERT_FILE)
-        response.decrypt(KEY_FILE)
+        response.decrypt(KEY_SOURCE, KEY_LOCATION)
         self.assertTrue(response.verify_assertion(NIA_CERT_FILE))
 
     def test_encrypt_assertion_no_assertion(self):
@@ -729,7 +729,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         self.assertEqual(root[1].tag, Q_NAMES['saml2:EncryptedAssertion'])
         self.assertEqual(root[1][0].tag, Q_NAMES['xmlenc:EncryptedData'])
         # Make sure we can decrypt the result.
-        self.assertEqual(response.decrypt(KEY_FILE), 1)
+        self.assertEqual(response.decrypt(KEY_SOURCE, KEY_LOCATION), 1)
 
     def test_encrypt_assertion_with_encrypted_assertion_elm(self):
         root = Element(Q_NAMES['saml2p:Response'])
@@ -751,7 +751,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         # <Assertion> replaced with <EncryptedData>.
         self.assertEqual(root[1][0].tag, Q_NAMES['xmlenc:EncryptedData'])
         # Make sure we can decrypt the result.
-        self.assertEqual(response.decrypt(KEY_FILE), 1)
+        self.assertEqual(response.decrypt(KEY_SOURCE, KEY_LOCATION), 1)
 
 
 class TestCreateAttributeElmAttributes(SimpleTestCase):

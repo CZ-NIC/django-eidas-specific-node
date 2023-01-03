@@ -4,6 +4,7 @@ CHANGELOG
 UNRELEASED
 ----------
 
+* Setting `KEY_FILE` changed to two setgins `KEY_SOURCE` ("file" or "engine") and `KEY_LOCATION` (path to file or engine spec.)
 * Fixed for current versions of tox, mypy, flaky8
 * Fixed tests for xmlsec1>1.2.34
 * Dropped support of python <=3.7

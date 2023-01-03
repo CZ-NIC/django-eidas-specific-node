@@ -1,7 +1,7 @@
 """Django settings for unitests."""
 from typing import Any, Dict, List
 
-from eidas_node.tests.constants import CERT_FILE, KEY_FILE
+from eidas_node.tests.constants import CERT_FILE, KEY_LOCATION, KEY_SOURCE
 from eidas_node.tests.warnings import setup_warnings_filter
 
 setup_warnings_filter()
@@ -59,13 +59,15 @@ PROXY_SERVICE_IDENTITY_PROVIDER: Dict[str, Any] = {
     'ENDPOINT': 'https://test.example.net/identity-provider-endpoint',
     'REQUEST_ISSUER': 'https://test.example.net/saml/idp.xml',
     'REQUEST_SIGNATURE': {
-        'KEY_FILE': KEY_FILE,
+        'KEY_SOURCE': KEY_SOURCE,
+        'KEY_LOCATION': KEY_LOCATION,
         'CERT_FILE': CERT_FILE,
         'SIGNATURE_METHOD': 'RSA_SHA1',
         'DIGEST_METHOD': 'SHA1',
     },
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
-    'KEY_FILE': KEY_FILE,
+    'KEY_SOURCE': 'file',
+    'KEY_LOCATION': KEY_LOCATION,
 }
 
 PROXY_SERVICE_LIGHT_STORAGE: Dict[str, Any] = {
@@ -106,7 +108,8 @@ CONNECTOR_SERVICE_PROVIDER: Dict[str, Any] = {
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
     'RESPONSE_SIGNATURE': {
-        'KEY_FILE': KEY_FILE,
+        'KEY_SOURCE': KEY_SOURCE,
+        'KEY_LOCATION': KEY_LOCATION,
         'CERT_FILE': CERT_FILE,
         'SIGNATURE_METHOD': 'RSA_SHA1',
         'DIGEST_METHOD': 'SHA1',

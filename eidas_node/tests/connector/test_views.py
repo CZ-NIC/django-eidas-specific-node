@@ -421,7 +421,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
     def test_create_saml_response_not_signed_not_encrypted(self):
         token, encoded = self.get_token()
         signature_options_list: Tuple[Optional[Dict[str, str]], ...] = \
-            (None, {}, {'key_file': '...'}, {'cert_file': '...'})
+            (None, {}, {'key_location': '...'}, {'cert_file': '...'})
         for signature_options in signature_options_list:
             light_response = self.get_light_response()
 

@@ -83,7 +83,7 @@ def create_xml_uuid(prefix: str = '_') -> str:
     return prefix + str(uuid4())
 
 
-def decrypt_xml(tree: ElementTree, key_file: str) -> int:
+def decrypt_xml(tree: ElementTree, key_source: str, key_location: str) -> int:
     """
     Decrypt a XML document.
 
@@ -94,7 +94,14 @@ def decrypt_xml(tree: ElementTree, key_file: str) -> int:
     encrypted_elements = tree.findall(".//{%s}EncryptedData" % XML_ENC_NAMESPACE)
     if encrypted_elements:
         manager = xmlsec.KeysManager()
-        manager.add_key(xmlsec.Key.from_file(key_file, xmlsec.constants.KeyDataFormatPem))
+        if key_source == "file":
+            key = xmlsec.Key.from_file(key_location, xmlsec.constants.KeyDataFormatPem)
+        elif key_source == "engine":  # pragma: no cover
+            key = xmlsec.Key.from_engine(engine_and_key_id=key_location)
+        else:
+            raise RuntimeError(f"Unknown key source type '{key_source}'")
+
+        manager.add_key(key)
         enc_ctx = xmlsec.EncryptionContext(manager)
         for elm in encrypted_elements:
             enc_ctx.decrypt(elm)
@@ -182,13 +189,15 @@ def remove_newlines_in_xml_text(node: Element) -> None:
             elm.text = elm.text.replace('\n', '')
 
 
-def sign_xml_node(node: Element, key_file: str, cert_file: str,
+def sign_xml_node(node: Element, key_source: str, key_location: str, cert_file: str,
                   signature_method: str, digest_method: str, position: int = 0) -> None:
     """
     Sign a XML element and insert the signature as a child element.
 
     :param node: The XML element to sign
-    :param key_file: The path to a key file.
+    :param key_source: Source type of the key ('file' or 'engine')
+    :param key_location: The path to a key on filesystem or engine spec
+           e.g. "pkcs11;pkcs11:token=XmlsecToken;object=XmlsecKey;pin-value=password"
     :param cert_file: The path to a certificate file.
     :param signature_method: XMLSEC signature method, e.g., 'RSA_SHA1', 'RSA_SHA256', 'RSA_SHA512'.
     :param digest_method: XMLSEC digest method, e.g., 'SHA1', 'SHA256', 'SHA512'.
@@ -234,7 +243,12 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str,
 
     # Insert the signature as a child element.
     node.insert(position, signature)
-    ctx.key = xmlsec.Key.from_file(key_file, xmlsec.constants.KeyDataFormatPem)
+    if key_source == "file":
+        ctx.key = xmlsec.Key.from_file(key_location, xmlsec.constants.KeyDataFormatPem)
+    elif key_source == "engine":  # pragma: no cover
+        ctx.key = xmlsec.Key.from_engine(engine_and_key_id=key_location)
+    else:
+        raise RuntimeError(f"Unknown key source type '{key_source}'")
     ctx.key.load_cert_from_file(cert_file, xmlsec.constants.KeyDataFormatPem)
     ctx.sign(signature)
 

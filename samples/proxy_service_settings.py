@@ -65,7 +65,8 @@ PROXY_SERVICE_LIGHT_STORAGE = {
 PROXY_SERVICE_IDENTITY_PROVIDER = {
     'ENDPOINT': 'https://tnia.eidentita.cz/fpsts/saml2/basic',
     'REQUEST_ISSUER': 'http://eidasproxyservice.example.net/saml/idp.xml',
-    'KEY_FILE': '/etc/eidas-proxy-service/key.pem',
+    'KEY_SOURCE': 'file',
+    'KEY_LOCATION': '/etc/eidas-proxy-service/key.pem',
 }
 
 PROXY_SERVICE_EIDAS_NODE = {

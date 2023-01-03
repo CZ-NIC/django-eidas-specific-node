@@ -144,8 +144,8 @@ class ProxyServiceRequestView(TemplateView):
         Create a SAML request from a light request.
 
         :param issuer: Issuer of the SAML request.
-        :param signature_options: Optional options to create a signed request: `key_file`, `cert_file`.
-        `signature_method`, abd `digest_method`.
+        :param signature_options: Optional options to create a signed request: `key_source`, `key_location`,
+            `cert_file`, `signature_method` abd `digest_method`.
         :return: A SAML request.
         """
         assert self.light_request is not None
@@ -157,7 +157,8 @@ class ProxyServiceRequestView(TemplateView):
         saml_request = SAMLRequest.from_light_request(self.light_request, destination, datetime.utcnow())
         LOGGER.info('[#%r] Created SAML request: id=%r, issuer=%r', self.log_id, saml_request.id, saml_request.issuer)
 
-        if signature_options and signature_options.get('key_file') and signature_options.get('cert_file'):
+        if signature_options and signature_options.get('key_source') and signature_options.get('key_location') \
+           and signature_options.get('cert_file'):
             saml_request.sign_request(**signature_options)
         return saml_request
 
@@ -196,7 +197,8 @@ class IdentityProviderResponseView(TemplateView):
         """Handle a HTTP POST request."""
         self.log_id = LOG_ID_SERIES.next()
         try:
-            self.saml_response = self.get_saml_response(PROXY_SERVICE_SETTINGS.identity_provider.get('key_file'),
+            self.saml_response = self.get_saml_response(PROXY_SERVICE_SETTINGS.identity_provider.get('key_source'),
+                                                        PROXY_SERVICE_SETTINGS.identity_provider.get('key_location'),
                                                         PROXY_SERVICE_SETTINGS.identity_provider.get('cert_file'))
             LOGGER.debug('SAML Response: %s', self.saml_response)
 
@@ -255,11 +257,13 @@ class IdentityProviderResponseView(TemplateView):
             self.light_response.subject_name_id_format = NameIdFormat.TRANSIENT
             self.light_response.subject = random_id
 
-    def get_saml_response(self, key_file: Optional[str], cert_file: Optional[str]) -> SAMLResponse:
+    def get_saml_response(self, key_source: Optional[str], key_location: Optional[str],
+                          cert_file: Optional[str]) -> SAMLResponse:
         """
         Extract and decrypt a SAML response from POST data.
 
-        :param key_file: An optional path to a key to decrypt the response.
+        :param key_source: An optional source ('file' or 'engine') to a key to decrypt the response.
+        :param key_location: An optional path to a key to decrypt the response.
         :param cert_file: An optional path to a certificate to verify the response.
         :return: A SAML response.
         """
@@ -278,8 +282,8 @@ class IdentityProviderResponseView(TemplateView):
 
         if cert_file:
             response.verify_response(cert_file)
-        if key_file:
-            response.decrypt(key_file)
+        if key_source and key_location:
+            response.decrypt(key_source, key_location)
         if cert_file:
             response.verify_assertion(cert_file)
         return response

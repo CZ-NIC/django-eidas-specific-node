@@ -76,11 +76,13 @@ A dictionary with following items:
 
 * `ENDPOINT` (required): The URL where the Identity Provider expects authentication requests.
 * `REQUEST_ISSUER` (required): The issuer of the authentication request registered at Identity Provider.
-* `KEY_FILE` (optional, default `None`): The path of a key to decrypt Identity Provider's authentication response.
+* `KEY_SOURCE` (optional, default `None`): The source ('file' or 'engine') of a key to decrypt Identity Provider's authentication response.
+* `KEY_LOCATION` (optional, default `None`): The path of a key to decrypt Identity Provider's authentication response.
 * `CERT_FILE` (optional, default `None`): The path of a certificate to verify the signature of Identity Provider's authentication response.
 * `REQUEST_SIGNATURE` (dictionary, required, use `{}` to disable signing):
   Options for signing SAML requests sent to Service Provider:
-  * `KEY_FILE` (required, string): The path to a signing key.
+  * `KEY_SOURCE` (required, string): The source ('file' or 'engine') of a signing key.
+  * `KEY_LOCATION` (required, string): The path to a signing key.
   * `CERT_FILE`: (required, string): The path to the corresponding certificate.
   * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
   * `DIGEST_METHOD` (optional, string, default `SHA512`): XML digest method.
@@ -244,7 +246,8 @@ A dictionary with following items:
 * `COUNTRY_PARAMETER` (optional, default `country`): The name of a POST parameter containing citizen country code for `/CitizenCountrySelector` and `/ServiceProviderRequest` views.
 * `RESPONSE_SIGNATURE` (dictionary, required, use `{}` to disable signing):
   Options for signing SAML responses returned to Service Provider:
-  * `KEY_FILE` (required, string): The path to a signing key.
+  * `KEY_SOURCE` (required, string): The source ('file' or 'engine') to a signing key.
+  * `KEY_LOCATION` (required, string): The path to a signing key.
   * `CERT_FILE`: (required, string): The path to the corresponding certificate.
   * `SIGNATURE_METHOD` (optional, string, default `RSA_SHA512`): XML signature method.
   * `DIGEST_METHOD` (optional, string, default `SHA512`): XML digest method.

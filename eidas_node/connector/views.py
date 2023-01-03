@@ -341,7 +341,8 @@ class ConnectorResponseView(TemplateView):
         :param issuer: Issuer of the SAML response.
         :param audience: The audience of the SAML response (the issuer of the SAML request).
         :param destination: Service provider's endpoint.
-        :param signature_options: Optional options to create a signed response: `key_file`, `cert_file`.
+        :param signature_options: Optional options to create a signed response:
+            `key_source`, `key_location`, `cert_file`.
         `signature_method`, and `digest_method`.
         :param validity: The validity of the response in minutes.
         :param encryption_options: Optional options to encrypt an assertion: `cert_file`, `encryption_method`,
@@ -357,7 +358,8 @@ class ConnectorResponseView(TemplateView):
         LOGGER.info('[#%r] Created SAML response: id=%r, issuer=%r, in_response_to_id=%r',
                     self.log_id, response.id, response.issuer, response.in_response_to_id)
 
-        sign = signature_options and signature_options.get('key_file') and signature_options.get('cert_file')
+        sign = signature_options and signature_options.get('key_source') and signature_options.get('key_location') \
+            and signature_options.get('cert_file')
         if sign:
             response.sign_assertion(**cast(Dict[str, Any], signature_options))
         if encryption_options and encryption_options.get('cert_file'):

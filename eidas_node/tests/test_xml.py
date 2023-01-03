@@ -10,7 +10,8 @@ from lxml.etree import Element, ElementTree, QName, SubElement
 from eidas_node.constants import XmlBlockCipher, XmlKeyTransport
 from eidas_node.errors import SecurityError
 from eidas_node.saml import EIDAS_NAMESPACES, Q_NAMES
-from eidas_node.tests.constants import CERT_FILE, DATA_DIR, KEY_FILE, NIA_CERT_FILE, SIGNATURE_OPTIONS, WRONG_KEY_FILE
+from eidas_node.tests.constants import (CERT_FILE, DATA_DIR, KEY_LOCATION, KEY_SOURCE, NIA_CERT_FILE, SIGNATURE_OPTIONS,
+                                        WRONG_KEY_LOCATION)
 from eidas_node.xml import (XML_SIG_NAMESPACE, XmlKeyInfo, create_xml_uuid, decrypt_xml, dump_xml, encrypt_xml_node,
                             get_element_path, is_xml_id_valid, parse_xml, remove_extra_xml_whitespace,
                             remove_newlines_in_xml_text, sign_xml_node, verify_xml_signatures)
@@ -74,7 +75,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response.xml').open('rb')) as f:
             document = parse_xml(f.read())
         expected = dump_xml(document).decode('utf-8')
-        self.assertEqual(decrypt_xml(document, KEY_FILE), 0)
+        self.assertEqual(decrypt_xml(document, KEY_SOURCE, KEY_LOCATION), 0)
         actual = dump_xml(document).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -85,7 +86,7 @@ class TestDecryptXML(SimpleTestCase):
         with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
             document_encrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        self.assertEqual(decrypt_xml(document_encrypted, KEY_FILE), 1)
+        self.assertEqual(decrypt_xml(document_encrypted, KEY_SOURCE, KEY_LOCATION), 1)
         actual = dump_xml(document_encrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
 
@@ -93,16 +94,21 @@ class TestDecryptXML(SimpleTestCase):
         self.maxDiff = None
         with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
             document_encrypted = parse_xml(f.read())
-        self.assertRaises(xmlsec.Error, decrypt_xml, document_encrypted, WRONG_KEY_FILE)
+        self.assertRaises(xmlsec.Error, decrypt_xml, document_encrypted, KEY_SOURCE, WRONG_KEY_LOCATION)
 
     def test_decrypt_xml_with_document_decrypted(self):
         self.maxDiff = None
         with cast(BinaryIO, (DATA_DIR / 'saml_response_decrypted.xml').open('rb')) as f:
             document_decrypted = parse_xml(f.read())
         expected = dump_xml(document_decrypted).decode('utf-8')
-        self.assertEqual(decrypt_xml(document_decrypted, KEY_FILE), 0)
+        self.assertEqual(decrypt_xml(document_decrypted, KEY_SOURCE, KEY_LOCATION), 0)
         actual = dump_xml(document_decrypted).decode('utf-8')
         self.assertXMLEqual(expected, actual)
+
+    def test_wrong_key_source(self):
+        with cast(BinaryIO, (DATA_DIR / 'saml_response_encrypted.xml').open('rb')) as f:
+            document_encrypted = parse_xml(f.read())
+        self.assertRaises(RuntimeError, decrypt_xml, document_encrypted, 'non-existent-source', KEY_LOCATION)
 
 
 class TestRemoveExtraWhitespace(SimpleTestCase):
@@ -243,6 +249,15 @@ class TestSignXMLNode(SimpleTestCase):
         with cast(TextIO, (DATA_DIR / filename).open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
 
+    @patch.dict('eidas_node.tests.constants.SIGNATURE_OPTIONS',
+                {
+                    'key_source': 'non-existent-source',
+                })
+    def test_wrong_key_source(self):
+        root = Element(Q_NAMES['saml2p:Response'], {'ID': 'id-0uuid4'}, nsmap=self.USED_NAMESPACES)
+        with self.assertRaises(RuntimeError):
+            sign_xml_node(root, position=0, **SIGNATURE_OPTIONS)
+
 
 class TestVerifyXMLSignatures(SimpleTestCase):
     def test_verify_xml_signatures_no_signatures(self):
@@ -323,7 +338,7 @@ class TestEncryptXMLNode(SimpleTestCase):
             self.assertEqual(enc_data[0].get('Algorithm'), cipher.value)
 
             # Verify that the original and decrypted document match.
-            self.assertEqual(decrypt_xml(document, KEY_FILE), 1)
+            self.assertEqual(decrypt_xml(document, KEY_SOURCE, KEY_LOCATION), 1)
             decrypted = dump_xml(document).decode()
             self.assertEqual(original, decrypted)
 
@@ -355,6 +370,6 @@ class TestEncryptXMLNode(SimpleTestCase):
         # If the decrypted element doesn't declare all necessary namespaces, no exception is raised, but
         # an error such as `namespace error : Namespace prefix saml2 on Assertion is not defined` is printed.
         # We need to check the namespace maps.
-        self.assertEqual(decrypt_xml(document, KEY_FILE), 1)
+        self.assertEqual(decrypt_xml(document, KEY_SOURCE, KEY_LOCATION), 1)
         self.assertEqual(container.nsmap, {})
         self.assertEqual(container[0].nsmap, {'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion'})

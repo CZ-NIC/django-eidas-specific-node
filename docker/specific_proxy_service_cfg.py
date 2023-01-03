@@ -69,10 +69,12 @@ PROXY_SERVICE_RESPONSE_TOKEN: Dict[str, str] = {
 PROXY_SERVICE_IDENTITY_PROVIDER: Dict[str, str] = {
     'ENDPOINT': 'https://tnia.eidentita.cz/fpsts/saml2/basic',
     'REQUEST_ISSUER': 'http://localhost.localdomain:8000/saml/idp.xml',
-    'KEY_FILE': str(DATA_DIR / 'key.pem'),
+    'KEY_SOURCE': 'file',
+    'KEY_LOCATION': str(DATA_DIR / 'key.pem'),
     'CERT_FILE': str(DATA_DIR / 'nia-test-cert.pem'),
     'REQUEST_SIGNATURE': {
-        'KEY_FILE': str(DATA_DIR / 'key.pem'),
+        'KEY_SOURCE': 'file',
+        'KEY_LOCATION': str(DATA_DIR / 'key.pem'),
         'CERT_FILE': str(DATA_DIR / 'cert.pem'),
     },
 }

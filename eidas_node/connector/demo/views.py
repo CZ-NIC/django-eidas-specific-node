@@ -69,7 +69,8 @@ class DemoServiceProviderRequestView(TemplateView):
             light_request.citizen_country_code = COUNTRY_PLACEHOLDER
         self.saml_request = SAMLRequest.from_light_request(light_request, '/dest', datetime.utcnow())
         signature_options = CONNECTOR_SETTINGS.service_provider['response_signature']
-        if signature_options and signature_options.get('key_file') and signature_options.get('cert_file'):
+        if signature_options and signature_options.get('key_source') and signature_options.get('key_location') \
+           and signature_options.get('cert_file'):
             self.saml_request.sign_request(**signature_options)
         return self.get(request)
 

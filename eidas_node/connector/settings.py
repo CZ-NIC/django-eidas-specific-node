@@ -69,7 +69,8 @@ class ConnectorSettings(AppSettings):
             settings=dict(
                 # required=True leads to a strange error:
                 # "RESPONSE_SIGNATURE setting is missing required item 'RESPONSE_SIGNATURE'"
-                key_file=StringSetting(min_length=1),
+                key_source=StringSetting(min_length=1),
+                key_location=StringSetting(min_length=1),
                 cert_file=StringSetting(min_length=1),
                 signature_method=StringSetting(default='RSA_SHA512', min_length=1),
                 digest_method=StringSetting(default='SHA512', min_length=1),
@@ -118,8 +119,10 @@ def check_settings():
     ConnectorSettings.check()
     signature = CONNECTOR_SETTINGS.service_provider['response_signature']
     # If one of the files is set, the other must be set as well
-    if bool(signature.get('key_file')) != bool(signature.get('cert_file')):
-        raise ImproperlyConfigured('Both CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.KEY_FILE and '
+    if not (bool(signature.get('key_source')) == bool(signature.get('key_location'))
+            == bool(signature.get('cert_file'))):
+        raise ImproperlyConfigured('CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.KEY_SOURCE, '
+                                   'CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.KEY_LOCATION and '
                                    'CONNECTOR_SERVICE_PROVIDER.RESPONSE_SIGNATURE.CERT_FILE must be set.')
 
     auxiliary_required = CONNECTOR_SETTINGS.track_country_code

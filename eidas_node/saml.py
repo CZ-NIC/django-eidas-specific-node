@@ -205,7 +205,8 @@ class SAMLRequest:
 
         return request
 
-    def sign_request(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> None:
+    def sign_request(self, key_source: str, key_location: str, cert_file: str, signature_method: str,
+                     digest_method: str) -> None:
         """
         Sign the whole SAML request.
 
@@ -214,7 +215,7 @@ class SAMLRequest:
         if self.request_signature is not None:
             raise SecurityError('Request signature already exists.')
 
-        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method,
+        sign_xml_node(self.document.getroot(), key_source, key_location, cert_file, signature_method, digest_method,
                       int(self._issuer_element is not None))
 
     def verify_request(self, cert_file: str) -> None:
@@ -405,11 +406,12 @@ class SAMLResponse:
 
         return cls(ElementTree(root), light_response.relay_state)
 
-    def decrypt(self, key_file: str) -> int:
+    def decrypt(self, key_source: str, key_location: str) -> int:
         """Decrypt encrypted SAML response."""
-        return decrypt_xml(self.document, key_file)
+        return decrypt_xml(self.document, key_source, key_location)
 
-    def sign_assertion(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> bool:
+    def sign_assertion(self, key_source: str, key_location: str, cert_file: str, signature_method: str,
+                       digest_method: str) -> bool:
         """
         Sign the SAML assertion.
 
@@ -428,7 +430,7 @@ class SAMLResponse:
             # Signing assertion would invalidate the response signature.
             raise SecurityError('Cannot sign assertion because response signature is already present.')
 
-        sign_xml_node(assertion, key_file, cert_file, signature_method, digest_method,
+        sign_xml_node(assertion, key_source, key_location, cert_file, signature_method, digest_method,
                       int(self._assertion_issuer_element is not None))
         return True
 
@@ -455,7 +457,8 @@ class SAMLResponse:
         encrypt_xml_node(assertion, cert_file, cipher, key_transport)
         return True
 
-    def sign_response(self, key_file: str, cert_file: str, signature_method: str, digest_method: str) -> None:
+    def sign_response(self, key_source: str, key_location: str, cert_file: str, signature_method: str,
+                      digest_method: str) -> None:
         """
         Sign the whole SAML response.
 
@@ -464,7 +467,7 @@ class SAMLResponse:
         if self.response_signature is not None:
             raise SecurityError('The response signature is already present.')
 
-        sign_xml_node(self.document.getroot(), key_file, cert_file, signature_method, digest_method,
+        sign_xml_node(self.document.getroot(), key_source, key_location, cert_file, signature_method, digest_method,
                       int(self._response_issuer_element is not None))
 
     def _verify_and_remove_signature(self, signature: Optional[Element], cert_file: str) -> None:
