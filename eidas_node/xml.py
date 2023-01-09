@@ -51,7 +51,7 @@ def dump_xml(xml: etree.ElementTree, pretty_print: bool = True, encoding: str = 
 
 def get_element_path(elm: etree.Element) -> str:
     """Create an element path from the root element."""
-    path = []  # type: List[str]
+    path: List[str] = []
     while elm is not None:
         q_name = etree.QName(elm.tag)
         tag = q_name.localname

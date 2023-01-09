@@ -8,14 +8,14 @@ from django.urls import reverse
 from eidas_node.tests.constants import DATA_DIR
 from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
 
-CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE = {
+CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE: Dict[str, Any] = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
     'COUNTRY_PARAMETER': 'country_param',
     'RESPONSE_SIGNATURE': {},
     'RESPONSE_ENCRYPTION': {},
-}  # type: Dict[str, Any]
+}
 
 
 class TestDemoServiceProviderRequestView(SimpleTestCase):

@@ -14,11 +14,11 @@ from eidas_node.utils import datetime_iso_format_milliseconds
 from eidas_node.xml import (XML_ENC_NAMESPACE, XML_SIG_NAMESPACE, decrypt_xml, dump_xml, encrypt_xml_node,
                             get_element_path, is_xml_id_valid, sign_xml_node, verify_xml_signatures)
 
-EIDAS_NAMESPACES = {
+EIDAS_NAMESPACES: Dict[str, str] = {
     'saml2': 'urn:oasis:names:tc:SAML:2.0:assertion',
     'saml2p': 'urn:oasis:names:tc:SAML:2.0:protocol',
     'eidas': 'http://eidas.europa.eu/saml-extensions',
-}  # type: Dict[str, str]
+}
 """XML namespaces in SAML requests/responses."""
 
 KNOWN_NAMESPACES = {
@@ -27,7 +27,7 @@ KNOWN_NAMESPACES = {
 }
 KNOWN_NAMESPACES.update(EIDAS_NAMESPACES)
 
-KNOWN_TAGS = {
+KNOWN_TAGS: Dict[str, Set[str]] = {
     'saml2': {'Issuer', 'AuthnContextClassRef', 'EncryptedAssertion', 'Assertion', 'Subject', 'NameID',
               'AuthnStatement', 'AttributeStatement', 'Attribute', 'AttributeValue', 'SubjectLocality',
               'AuthnContext', 'AuthnContextClassRef', 'SubjectConfirmation', 'SubjectConfirmationData',
@@ -37,12 +37,12 @@ KNOWN_TAGS = {
     'eidas': {'SPType', 'SPCountry', 'RequestedAttributes', 'RequestedAttribute', 'AttributeValue'},
     'xmlenc': {'EncryptedData'},
     'ds': {'Signature'}
-}  # type: Dict[str, Set[str]]
+}
 """Recognized XML tags in SAML requests."""
 
-Q_NAMES = {
+Q_NAMES: Dict[str, QName] = {
     '{}:{}'.format(ns, tag): QName(KNOWN_NAMESPACES[ns], tag) for ns, tags in KNOWN_TAGS.items() for tag in tags
-}  # type: Dict[str, QName]
+}
 """Qualified names of recognized XML tags in SAML requests."""
 
 SAMLRequestType = TypeVar('SAMLRequestType', bound='SAMLRequest')
@@ -52,11 +52,11 @@ SAMLResponseType = TypeVar('SAMLResponseType', bound='SAMLResponse')
 class SAMLRequest:
     """SAML Request and its conversion from/to LightRequest."""
 
-    document = None  # type: ElementTree
+    document: ElementTree = None
     """SAML document as an element tree."""
-    citizen_country_code = None  # type: Optional[str]
+    citizen_country_code: Optional[str] = None
     """Country code of the requesting citizen."""
-    relay_state = None  # type: Optional[str]
+    relay_state: Optional[str] = None
     """Relay state associated with the request."""
 
     def __init__(self, document: ElementTree,
@@ -246,8 +246,8 @@ class SAMLResponse:
     :param relay_state: Optional relay state to return to the requesting party.
     """
 
-    document = None  # type: ElementTree
-    relay_state = None  # type: Optional[str]
+    document: ElementTree = None
+    relay_state: Optional[str] = None
 
     def __init__(self, document: ElementTree, relay_state: Optional[str] = None):
         self.document = document
@@ -492,7 +492,7 @@ class SAMLResponse:
         self._verify_and_remove_signature(self.assertion_signature, cert_file)
         return True
 
-    def create_light_response(self, auth_class_map: Dict[str, LevelOfAssurance] = None) -> LightResponse:
+    def create_light_response(self, auth_class_map: Optional[Dict[str, LevelOfAssurance]] = None) -> LightResponse:
         """Convert SAML response to light response."""
         response = LightResponse(attributes=OrderedDict())
         root = self.document.getroot()

@@ -1,7 +1,7 @@
 from base64 import b64decode, b64encode
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, TextIO, Tuple, cast
+from typing import BinaryIO, Optional, TextIO, Tuple, cast
 from unittest.mock import MagicMock, PropertyMock, call, patch, sentinel
 
 from django.test import RequestFactory, SimpleTestCase, override_settings
@@ -21,7 +21,7 @@ from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUE
 from eidas_node.tests.test_storage import IgniteMockMixin
 from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
 
-DATA_DIR = Path(__file__).parent.parent / 'data'  # type: Path
+DATA_DIR: Path = Path(__file__).parent.parent / 'data'
 
 
 class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
@@ -30,7 +30,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         self.url = reverse('proxy-service-request')
         self.addCleanup(self.mock_ignite_cache())
 
-    def get_token(self, issuer: str = None) -> Tuple[LightToken, str]:
+    def get_token(self, issuer: Optional[str] = None) -> Tuple[LightToken, str]:
         token = LightToken(id='request-token-id',
                            issuer=issuer or 'request-token-issuer',
                            created=datetime(2017, 12, 11, 14, 12, 5, 148000))

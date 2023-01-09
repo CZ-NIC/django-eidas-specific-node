@@ -11,7 +11,7 @@ EIDAS_LEGAL_PERSON_PREFIX = 'http://eidas.europa.eu/attributes/legalperson/'
 EIDAS_ATTRIBUTE_NAME_FORMAT = 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri'
 
 # eIDAS SAML Attribute Profile v1.2, Section 2.2 Attributes for Natural Persons
-EIDAS_NATURAL_PERSON_ATTRIBUTES = [
+EIDAS_NATURAL_PERSON_ATTRIBUTES: List[Attribute] = [
     Attribute(EIDAS_NATURAL_PERSON_PREFIX + name, EIDAS_ATTRIBUTE_NAME_FORMAT, friendly, required)
     for name, friendly, required in [
         ('PersonIdentifier', 'PersonIdentifier', True),
@@ -22,10 +22,10 @@ EIDAS_NATURAL_PERSON_ATTRIBUTES = [
         ('PlaceOfBirth', 'PlaceOfBirth', False),
         ('CurrentAddress', 'CurrentAddress', False),
         ('Gender', 'Gender', False),
-    ]]  # type: List[Attribute]
+    ]]
 
 # eIDAS SAML Attribute Profile v1.2, Section 2.3 Attributes for Legal Persons
-EIDAS_LEGAL_PERSON_ATTRIBUTES = [
+EIDAS_LEGAL_PERSON_ATTRIBUTES: List[Attribute] = [
     Attribute(EIDAS_LEGAL_PERSON_PREFIX + name, EIDAS_ATTRIBUTE_NAME_FORMAT, friendly, False)
     for name, friendly in [
         ('LegalPersonIdentifier', 'LegalPersonIdentifier'),
@@ -39,10 +39,10 @@ EIDAS_LEGAL_PERSON_ATTRIBUTES = [
         ('SEED', 'SEED'),
         ('SIC', 'SIC'),
         ('D-2012-17-EUIdentifier', 'D-2012-17-EUIdentifier'),
-    ]]  # type: List[Attribute]
+    ]]
 
-ATTRIBUTE_MAP = {
+ATTRIBUTE_MAP: Dict[str, Attribute] = {
     item.name_uri: item for item in chain(EIDAS_NATURAL_PERSON_ATTRIBUTES, EIDAS_LEGAL_PERSON_ATTRIBUTES)
-}  # type: Dict[str, Attribute]
+}
 
-MANDATORY_ATTRIBUTE_NAMES = {name for name, attribute in ATTRIBUTE_MAP.items() if attribute.required}  # type: Set[str]
+MANDATORY_ATTRIBUTE_NAMES: Set[str] = {name for name, attribute in ATTRIBUTE_MAP.items() if attribute.required}

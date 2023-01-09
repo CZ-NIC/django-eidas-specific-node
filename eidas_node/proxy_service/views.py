@@ -34,13 +34,13 @@ class ProxyServiceRequestView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/proxy_service/proxy_service_request.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    light_token = None  # type: LightToken
-    light_request = None  # type: LightRequest
-    saml_request = None  # type: SAMLRequest
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: LightStorage
+    light_token: LightToken
+    light_request: LightRequest
+    saml_request: SAMLRequest
+    log_id: int = 0
+    auxiliary_data: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -178,14 +178,14 @@ class IdentityProviderResponseView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/proxy_service/identity_provider_response.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    saml_response = None  # type: SAMLResponse
-    light_response = None  # type: LightResponse
-    light_token = None  # type: LightToken
-    encoded_token = None  # type: str
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: LightStorage
+    saml_response: SAMLResponse
+    light_response: LightResponse
+    light_token: LightToken
+    encoded_token: str
+    log_id: int = 0
+    auxiliary_data: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -288,7 +288,7 @@ class IdentityProviderResponseView(TemplateView):
         return import_from_module(backend)(**options)
 
     def create_light_response(self, issuer: str,
-                              auth_class_map: Dict[str, LevelOfAssurance] = None) -> LightResponse:
+                              auth_class_map: Optional[Dict[str, LevelOfAssurance]] = None) -> LightResponse:
         """
         Create a light response from SAML response.
 

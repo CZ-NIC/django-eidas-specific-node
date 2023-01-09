@@ -39,26 +39,26 @@ TEMPLATES = [
 ]
 
 # eIDAS Connector
-CONNECTOR_REQUEST_TOKEN = {
+CONNECTOR_REQUEST_TOKEN: Dict[str, Any] = {
     'HASH_ALGORITHM': 'sha256',
     'SECRET': 'mySecretConnectorRequest',
     'ISSUER': 'specificCommunicationDefinitionConnectorRequest',
-}  # type: Dict[str, Any]
+}
 
-CONNECTOR_RESPONSE_TOKEN = {
+CONNECTOR_RESPONSE_TOKEN: Dict[str, str] = {
     'HASH_ALGORITHM': 'sha256',
     'SECRET': 'mySecretConnectorResponse',
     'ISSUER': 'specificCommunicationDefinitionConnectorResponse',
     'LIFETIME': 10,  # minutes
-}  # type: Dict[str, str]
+}
 
-CONNECTOR_SERVICE_PROVIDER = {
+CONNECTOR_SERVICE_PROVIDER: Dict[str, str] = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'REQUEST_ISSUER',
     'RESPONSE_ISSUER': 'RESPONSE_ISSUER',
-}  # type: Dict[str, str]
+}
 
-CONNECTOR_LIGHT_STORAGE = {
+CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
     'BACKEND': 'eidas_node.storage.ignite.IgniteStorage',
     'OPTIONS': {
         'host': 'ignite.example.net',
@@ -66,12 +66,12 @@ CONNECTOR_LIGHT_STORAGE = {
         'request_cache_name': 'specificNodeConnectorRequestCache',
         'response_cache_name': 'nodeSpecificConnectorResponseCache',
     }
-}  # type: Dict[str, Any]
+}
 
-CONNECTOR_EIDAS_NODE = {
+CONNECTOR_EIDAS_NODE: Dict[str, str] = {
     'CONNECTOR_REQUEST_URL': 'http://eidasnode.example.net/EidasNode/SpecificConnectorRequest',
     'REQUEST_ISSUER': 'connector-request-issuer',
-}  # type: Dict[str, str]
+}
 
 # Logging
 LOGGING = {

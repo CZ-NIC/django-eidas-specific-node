@@ -32,10 +32,10 @@ class CountrySelectorView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/connector/country_selector.html'
-    error = None  # type: Optional[str]
-    saml_request = None  # type: Optional[str]
-    relay_state = None  # type: Optional[str]
-    citizen_country = None  # type: Optional[str]
+    error: Optional[str] = None
+    saml_request: Optional[str] = None
+    relay_state: Optional[str] = None
+    citizen_country: Optional[str] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -71,14 +71,14 @@ class ServiceProviderRequestView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/connector/service_provider_request.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    saml_request = None  # type: SAMLRequest
-    light_request = None  # type: LightRequest
-    light_token = None  # type: LightToken
-    encoded_token = None  # type: str
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: LightStorage
+    saml_request: SAMLRequest
+    light_request: LightRequest
+    light_token: LightToken
+    encoded_token: str
+    log_id: int = 0
+    auxiliary_data: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -222,13 +222,13 @@ class ConnectorResponseView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/connector/connector_response.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    light_token = None  # type: LightToken
-    light_response = None  # type: LightResponse
-    saml_response = None  # type: SAMLResponse
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: LightStorage
+    light_token: LightToken
+    light_response: LightResponse
+    saml_response: SAMLResponse
+    log_id: int = 0
+    auxiliary_data: Dict[str, Any]
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -327,7 +327,7 @@ class ConnectorResponseView(TemplateView):
 
     def create_saml_response(self, issuer: str, audience: Optional[str], destination: Optional[str],
                              signature_options: Optional[Dict[str, str]], validity: int,
-                             encryption_options: Dict[str, Any] = None) -> SAMLResponse:
+                             encryption_options: Optional[Dict[str, Any]] = None) -> SAMLResponse:
         """
         Create a SAML response from a light response.
 

@@ -7,8 +7,8 @@ The declaration of a data model is as simple as:
 
     class User(DataModel):
         FIELDS = ['name', 'age']
-        name = None  # type: str
-        age = None  # type: int
+        name: str = None
+        age: int = None
 
         def validate(self) -> None:
             ...
@@ -17,7 +17,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from enum import Enum
-from typing import Any, Dict, Iterator, List, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, TypeVar, Union
 
 from lxml.etree import Element, ElementTree, QName, SubElement
 
@@ -33,11 +33,11 @@ class DataModel(ABC):
     :raise TypeError: On unexpected keyword argument or if a value for a field without a default value is not provided.
     """
 
-    FIELDS = None  # type: List[str]
+    FIELDS: List[str]
     """Names of data fields."""
 
     def __init__(self, **data: Any) -> None:
-        if self.FIELDS is None:
+        if not hasattr(self, 'FIELDS'):
             raise TypeError('DataModel subclasses must define FIELDS class attribute.')
         fields = set(self.FIELDS)
         for name, value in data.items():
@@ -59,7 +59,7 @@ class DataModel(ABC):
 
     def get_data_as_dict(self) -> Dict[str, Any]:
         """Return the names and values of fields in the declared order."""
-        result = OrderedDict()  # type: Dict[str, Any]
+        result: Dict[str, Any] = OrderedDict()
         for name in self.FIELDS:
             value = getattr(self, name)
             result[name] = value.get_data_as_dict() if isinstance(value, DataModel) else value
@@ -115,10 +115,10 @@ T = TypeVar('T', bound='XMLDataModel')
 class XMLDataModel(DataModel, ABC):
     """Data model with XML serialization and deserialization."""
 
-    ROOT_ELEMENT = None  # type: str
+    ROOT_ELEMENT: Optional[str] = None
     """The name of the root element."""
 
-    ROOT_NS = None  # type: str
+    ROOT_NS: Optional[str] = None
     """Namespace of the root element."""
 
     def export_xml(self) -> Element:

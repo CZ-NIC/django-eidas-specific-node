@@ -14,7 +14,7 @@ from eidas_node.models import (LightRequest, LightResponse, LightToken, Status, 
                                serialize_attributes)
 from eidas_node.xml import dump_xml, parse_xml
 
-DATA_DIR = Path(__file__).parent / 'data'  # type: Path
+DATA_DIR: Path = Path(__file__).parent / 'data'
 
 LIGHT_REQUEST_DICT = OrderedDict([
         ('citizen_country_code', 'CA'),
@@ -60,7 +60,7 @@ LIGHT_REQUEST_DICT = OrderedDict([
         ('requester_id', None)
         ])
 
-LIGHT_RESPONSE_DICT = OrderedDict(
+LIGHT_RESPONSE_DICT: Dict[str, Any] = OrderedDict(
         [('id', 'test-light-response-id'),
          ('in_response_to_id', 'test-light-request-id'),
          ('issuer', 'test-light-response-issuer'),
@@ -87,9 +87,9 @@ LIGHT_RESPONSE_DICT = OrderedDict(
              ('http://eidas.europa.eu/attributes/naturalperson/PersonIdentifier',
               ['CZ/CZ/ff70c9dd-6a05-4068-aaa2-b57be4f328e9'])])),
          ('consent', None)
-         ])  # type: Dict[str, Any]
+         ])
 
-FAILED_LIGHT_RESPONSE_DICT = OrderedDict(
+FAILED_LIGHT_RESPONSE_DICT: Dict[str, Any] = OrderedDict(
         [('id', 'test-light-response-id'),
          ('in_response_to_id', 'test-light-request-id'),
          ('issuer', 'test-light-response-issuer'),
@@ -105,18 +105,18 @@ FAILED_LIGHT_RESPONSE_DICT = OrderedDict(
               ('status_message', 'Something went wrong.')])),
          ('attributes', OrderedDict()),
          ('consent', None)
-         ])  # type: Dict[str, Any]
+         ])
 
 
 class ValidationMixin:
     # Model to validate
-    MODEL = None  # type: type
+    MODEL: type
     # Optional fields - can be None
-    OPTIONAL = set()  # type: Set[str]
+    OPTIONAL: Set[str] = set()
     # Example of valid data
-    VALID_DATA = None  # type: Dict[str, Any]
+    VALID_DATA: Dict[str, Any]
     # Invalid data for basic type checks. Extra checks must have own test method.
-    INVALID_DATA = None  # type: Dict[str, Any]
+    INVALID_DATA: Dict[str, Any]
 
     def test_valid(self):
         self.MODEL(**self.VALID_DATA).validate()
@@ -143,12 +143,12 @@ class ValidationMixin:
 
     def assert_attributes_valid(self, field_name: str) -> None:
         t = cast(SimpleTestCase, self)
-        invalid_attributes = (
+        invalid_attributes: tuple = (
             {b'attr1': []},
             {'attr1': None},
             {'attr1': [None]},
             {'attr1': ['value1', None]},
-        )  # type: tuple
+        )
         data = self.VALID_DATA.copy()
         for i, invalid in enumerate(invalid_attributes):
             with t.subTest(i=i):

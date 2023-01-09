@@ -28,7 +28,7 @@ class IgniteStorage(LightStorage):
         self.request_cache_name = request_cache_name
         self.response_cache_name = response_cache_name
         self.timeout = timeout
-        self._client = None  # type: Optional[Client]
+        self._client: Optional[Client] = None
 
     def get_cache(self, cache_name: str) -> Cache:
         """Get an Ignite Cache."""
@@ -47,7 +47,7 @@ class IgniteStorage(LightStorage):
         """Look up a LightResponse by a unique id and then remove it."""
         data = self.get_cache(self.response_cache_name).get_and_remove(uid)
         LOGGER.debug('Got Light Response from cache: id=%r, data=%s', uid, data)
-        return LightResponse().load_xml(parse_xml(data)) if data is not None else None
+        return LightResponse.load_xml(parse_xml(data)) if data is not None else None
 
     def put_light_request(self, uid: str, request: LightRequest) -> None:
         """Store a LightRequest under a unique id."""
@@ -74,13 +74,13 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
 
     def __init__(self,
                  host: str, port: int, cache_name: str,
-                 timeout: int = 30, prefix: str = None):
+                 timeout: int = 30, prefix: Optional[str] = None):
         self.host = host
         self.port = port
         self.cache_name = cache_name
         self.timeout = timeout
         self.prefix = prefix
-        self._client = None  # type: Optional[Client]
+        self._client: Optional[Client] = None
 
     def get_cache(self, cache_name: str) -> Cache:
         """Get an Ignite Cache."""

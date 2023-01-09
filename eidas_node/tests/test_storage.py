@@ -11,9 +11,9 @@ from eidas_node.xml import parse_xml
 
 
 class IgniteMockMixin:
-    cache_mock = None  # type:  MagicMock
-    client_mock = None  # type:  MagicMock
-    client_class_mock = None  # type:  MagicMock
+    cache_mock:  MagicMock
+    client_mock:  MagicMock
+    client_class_mock:  MagicMock
 
     def mock_ignite_cache(self) -> Callable[[], None]:
         """Mock Apache Ignite cache and return a callback to stop the patcher."""

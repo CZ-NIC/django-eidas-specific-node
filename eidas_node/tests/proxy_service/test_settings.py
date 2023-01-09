@@ -7,7 +7,7 @@ from django.test import SimpleTestCase, override_settings
 from eidas_node.proxy_service.settings import check_settings
 from eidas_node.tests.constants import CERT_FILE, KEY_FILE
 
-PROXY_SERVICE_IDENTITY_PROVIDER = {
+PROXY_SERVICE_IDENTITY_PROVIDER: Dict[str, Any] = {
     'ENDPOINT': 'https://test.example.net/identity-provider-endpoint',
     'REQUEST_ISSUER': 'https://test.example.net/saml/idp.xml',
     'REQUEST_SIGNATURE': {
@@ -16,7 +16,7 @@ PROXY_SERVICE_IDENTITY_PROVIDER = {
         'SIGNATURE_METHOD': 'RSA_SHA1',
         'DIGEST_METHOD': 'SHA1',
     },
-}  # type: Dict[str, Any]
+}
 
 
 class TestCheckSettings(SimpleTestCase):

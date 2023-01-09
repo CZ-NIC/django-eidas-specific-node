@@ -1,5 +1,4 @@
 django >=2.2,<2.3
 django-app-settings >=0.7.1
 lxml
-# https://github.com/CZ-NIC/django-eidas-specific-node/issues/108
-xmlsec
+xmlsec @ git+https://github.com/tdivis/python-xmlsec@164-pkcs11-support#egg=xmlsec

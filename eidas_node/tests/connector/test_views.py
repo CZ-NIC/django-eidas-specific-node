@@ -185,7 +185,7 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
 
     def test_adjust_requested_attributes(self):
         view = ServiceProviderRequestView()
-        attributes = {}  # type: Dict[str, List[str]]
+        attributes: Dict[str, List[str]] = {}
         view.adjust_requested_attributes(attributes, set())
         self.assertEqual(attributes, {
             EIDAS_NATURAL_PERSON_PREFIX + i: []
@@ -193,40 +193,40 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
 
     def test_adjust_requested_attributes_without_filter(self):
         view = ServiceProviderRequestView()
-        attributes = {'unknown': []}  # type: Dict[str, List[str]]
+        attributes: Dict[str, List[str]] = {'unknown': []}
         view.adjust_requested_attributes(attributes, set())
-        expected = {
+        expected: Dict[str, List[str]] = {
             EIDAS_NATURAL_PERSON_PREFIX + i: []
             for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth')
-        }  # type: Dict[str, List[str]]
+        }
         expected['unknown'] = []
         self.assertEqual(attributes, expected)
 
     def test_adjust_requested_attributes_with_filter(self):
         view = ServiceProviderRequestView()
         allowed = {EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress'}
-        attributes = {
+        attributes: Dict[str, List[str]] = {
             'unknown': [],
             EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress': [],
-        }  # type: Dict[str, List[str]]
+        }
         view.adjust_requested_attributes(attributes, allowed)
-        expected = {
+        expected: Dict[str, List[str]] = {
             EIDAS_NATURAL_PERSON_PREFIX + i: []
             for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth', 'CurrentAddress')
-        }  # type: Dict[str, List[str]]
+        }
         self.assertEqual(attributes, expected)
 
     def test_adjust_requested_attributes_with_filter_nothing_unssuported(self):
         view = ServiceProviderRequestView()
         allowed = {EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress'}
-        attributes = {
+        attributes: Dict[str, List[str]] = {
             EIDAS_NATURAL_PERSON_PREFIX + 'CurrentAddress': [],
-        }  # type: Dict[str, List[str]]
+        }
         view.adjust_requested_attributes(attributes, allowed)
-        expected = {
+        expected: Dict[str, List[str]] = {
             EIDAS_NATURAL_PERSON_PREFIX + i: []
             for i in ('PersonIdentifier', 'CurrentFamilyName', 'CurrentGivenName', 'DateOfBirth', 'CurrentAddress')
-        }  # type: Dict[str, List[str]]
+        }
         self.assertEqual(attributes, expected)
 
     @freeze_time('2017-12-11 14:12:05', tz_offset=2)
@@ -339,7 +339,7 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
         self.url = reverse('connector-response')
         self.addCleanup(self.mock_ignite_cache())
 
-    def get_token(self, issuer: str = None) -> Tuple[LightToken, str]:
+    def get_token(self, issuer: Optional[str] = None) -> Tuple[LightToken, str]:
         token = LightToken(id='response-token-id',
                            issuer=issuer or 'response-token-issuer',
                            created=datetime(2017, 12, 11, 14, 12, 5, 148000))
@@ -419,7 +419,9 @@ class TestConnectorResponseView(IgniteMockMixin, SimpleTestCase):
     @freeze_time('2017-12-11 14:12:05')
     def test_create_saml_response_not_signed_not_encrypted(self):
         token, encoded = self.get_token()
-        for signature_options in None, {}, {'key_file': '...'}, {'cert_file': '...'}:  # type: Optional[dict]
+        signature_options_list: Tuple[Optional[Dict[str, str]], ...] = \
+            (None, {}, {'key_file': '...'}, {'cert_file': '...'})
+        for signature_options in signature_options_list:
             light_response = self.get_light_response()
 
             view = ConnectorResponseView()
