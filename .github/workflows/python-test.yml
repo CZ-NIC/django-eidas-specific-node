@@ -23,6 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install libxml2-dev libxmlsec1-dev libxmlsec1-openssl
+        sudo dpkg -l | grep xmlsec
         python -m pip install --upgrade pip
         pip install tox wheel
     - name: Run tests
