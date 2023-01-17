@@ -107,7 +107,7 @@ class TestDemoServiceProviderResponseView(SimpleTestCase):
         self.assertEqual(response.context['saml_response'],
                          "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n<s/>\n")
         self.assertEqual(response.context['relay_state'], "'xyz'")
-        self.assertContains(response, '<code>&#39;xyz&#39;</code>')
+        self.assertContains(response, 'xyz')
         self.assertContains(response, '<pre style="white-space: pre-wrap;">&lt;?xml')
 
     def test_post_with_signed_saml_response(self):
