@@ -25,6 +25,7 @@ jobs:
         sudo apt-get install libxml2-dev libxmlsec1-dev libxmlsec1-openssl
         sudo dpkg -l | grep libxml
         sudo dpkg -l | grep openssl
+        sudo cat /etc/lsb-release
         python -m pip install --upgrade pip
         pip install tox wheel
     - name: Run tests
