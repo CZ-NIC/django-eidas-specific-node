@@ -51,7 +51,7 @@ def dump_xml(xml: etree.ElementTree, pretty_print: bool = True, encoding: str = 
 
 def get_element_path(elm: etree.Element) -> str:
     """Create an element path from the root element."""
-    path = []  # type: List[str]
+    path: List[str] = []
     while elm is not None:
         q_name = etree.QName(elm.tag)
         tag = q_name.localname
@@ -128,20 +128,21 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
                           nsmap={'xmlenc': XML_ENC_NAMESPACE})
     SubElement(enc_data, '{%s}EncryptionMethod' % XML_ENC_NAMESPACE, {'Algorithm': cipher.value})
     SubElement(enc_data, '{%s}CipherData' % XML_ENC_NAMESPACE)
-    xmlsec.template.encrypted_data_ensure_cipher_value(enc_data)
+    # typing: we have to ignore all xmlsec.template until #247 is fixed
+    xmlsec.template.encrypted_data_ensure_cipher_value(enc_data)  # type: ignore[attr-defined]
 
     # Info about the generated encryption key.
-    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_data, ns='ds')
+    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_data, ns='ds')  # type: ignore[attr-defined]
     enc_key = SubElement(key_info, '{%s}EncryptedKey' % XML_ENC_NAMESPACE)
     SubElement(enc_key, '{%s}EncryptionMethod' % XML_ENC_NAMESPACE, {'Algorithm': key_transport.value})
     SubElement(enc_key, '{%s}CipherData' % XML_ENC_NAMESPACE)
-    xmlsec.template.encrypted_data_ensure_cipher_value(enc_key)
+    xmlsec.template.encrypted_data_ensure_cipher_value(enc_key)  # type: ignore[attr-defined]
 
     # Info about the certificate.
-    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_key, ns='ds')
-    x509_data = xmlsec.template.add_x509_data(key_info)
-    xmlsec.template.x509_data_add_certificate(x509_data)
-    xmlsec.template.x509_data_add_issuer_serial(x509_data)
+    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_key, ns='ds')  # type: ignore[attr-defined]
+    x509_data = xmlsec.template.add_x509_data(key_info)  # type: ignore[attr-defined]
+    xmlsec.template.x509_data_add_certificate(x509_data)  # type: ignore[attr-defined]
+    xmlsec.template.x509_data_add_issuer_serial(x509_data)  # type: ignore[attr-defined]
 
     # xmlsec library adds unnecessary newlines to the signature template.
     remove_extra_xml_whitespace(enc_data)
@@ -195,12 +196,12 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str,
     """
     # Prepare signature template for xmlsec to fill it with the signature and additional data
     ctx = xmlsec.SignatureContext()
-    signature = xmlsec.template.create(
+    signature = xmlsec.template.create(  # type: ignore[attr-defined]
         node, xmlsec.constants.TransformExclC14N, getattr(xmlsec.Transform, signature_method))  # type: ignore
-    key_info = xmlsec.template.ensure_key_info(signature)
-    x509_data = xmlsec.template.add_x509_data(key_info)
-    xmlsec.template.x509_data_add_certificate(x509_data)
-    xmlsec.template.x509_data_add_issuer_serial(x509_data)
+    key_info = xmlsec.template.ensure_key_info(signature)  # type: ignore[attr-defined]
+    x509_data = xmlsec.template.add_x509_data(key_info)  # type: ignore[attr-defined]
+    xmlsec.template.x509_data_add_certificate(x509_data)  # type: ignore[attr-defined]
+    xmlsec.template.x509_data_add_issuer_serial(x509_data)  # type: ignore[attr-defined]
 
     # Ensure the target node has an ID attribute and get its value.
     node_id = node.get(XML_ATTRIBUTE_ID)
@@ -212,15 +213,15 @@ def sign_xml_node(node: Element, key_file: str, cert_file: str,
     ctx.register_id(node, XML_ATTRIBUTE_ID, None)
 
     # Add reference to signature with URI attribute pointing to that ID.
-    ref = xmlsec.template.add_reference(signature,
+    ref = xmlsec.template.add_reference(signature,  # type: ignore[attr-defined]
                                         getattr(xmlsec.Transform, digest_method), uri="#" + node_id)  # type: ignore
 
     # XML normalization transform performed on the node contents before signing and verification.
     # 1. When enveloped signature method is used, the signature is included as a child of the signed element.
     #    The signature is removed from the document before signing/verification.
-    xmlsec.template.add_transform(ref, xmlsec.constants.TransformEnveloped)
+    xmlsec.template.add_transform(ref, xmlsec.constants.TransformEnveloped)  # type: ignore[attr-defined]
     # 2. This ensures that changes to irrelevant whitespace, attribute ordering, etc. won't invalidate the signature.
-    xmlsec.template.add_transform(ref, xmlsec.constants.TransformExclC14N)
+    xmlsec.template.add_transform(ref, xmlsec.constants.TransformExclC14N)  # type: ignore[attr-defined]
 
     # xmlsec library adds unnecessary newlines to the signature template. They may cause troubles to other
     # XMLSEC implementations, so we remove any unnecessary whitespace to avoid compatibility issues.

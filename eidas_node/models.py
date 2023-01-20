@@ -4,7 +4,7 @@ import hmac
 from base64 import b64decode, b64encode
 from collections import OrderedDict
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, cast
 
 from lxml import etree
 from lxml.etree import Element, QName
@@ -24,11 +24,11 @@ class LightToken(DataModel):
     """
 
     FIELDS = ['id', 'issuer', 'created']
-    id = None  # type: str
+    id: str
     """A unique identifier to reference the real data object (LightRequest/LightResponse)."""
-    issuer = None  # type: str
+    issuer: str
     """A simple text string that helps identify (debug) which component is sending the redirect."""
-    created = None  # type: datetime
+    created: datetime
     """A timestamp showing when the LightToken was created."""
 
     def validate(self) -> None:
@@ -49,7 +49,9 @@ class LightToken(DataModel):
         :raise ValidationError: If token data are invalid.
         """
         self.validate()
-        data = '|'.join((self.id, self.issuer, create_eidas_timestamp(self.created), secret))
+        assert self.id is not None
+        assert self.issuer is not None
+        data = '|'.join((self.id, self.issuer, create_eidas_timestamp(cast(datetime, self.created)), secret))
         algorithm = hashlib.new(hash_algorithm)
         algorithm.update(data.encode('utf-8'))
         return algorithm.digest()
@@ -64,7 +66,9 @@ class LightToken(DataModel):
         :raise ValidationError: If token data are invalid.
         """
         digest = b64encode(self.digest(hash_algorithm, secret)).decode('ascii')
-        data = '|'.join((self.issuer, self.id, create_eidas_timestamp(self.created), digest))
+        assert self.id is not None
+        assert self.issuer is not None
+        data = '|'.join((self.issuer, self.id, create_eidas_timestamp(cast(datetime, self.created)), digest))
         return b64encode(data.encode('utf-8'))
 
     @classmethod
@@ -106,27 +110,27 @@ class LightRequest(XMLDataModel):
               'sp_type', 'relay_state', 'sp_country_code', 'requested_attributes', 'requester_id']
     ROOT_ELEMENT = 'lightRequest'
     ROOT_NS = 'http://cef.eidas.eu/LightRequest'
-    citizen_country_code = None  # type: str
+    citizen_country_code: Optional[str] = None
     """Country code of the requesting citizen. ISO ALPHA-2 format."""
-    id = None  # type: str
+    id: Optional[str] = None
     """Internal unique ID that will be used to correlate the response."""
-    issuer = None  # type: Optional[str]
+    issuer: Optional[str] = None
     """Issuer of the LightRequest or originating SP - not used in version 2.0."""
-    level_of_assurance = None  # type: LevelOfAssurance
+    level_of_assurance: Optional[LevelOfAssurance] = None
     """Level of assurance required to fulfil the request"""
-    name_id_format = None  # type: Optional[NameIdFormat]
+    name_id_format: Optional[NameIdFormat] = None
     """Optional instruction to the IdP that identifier format is requested (if supported)."""
-    provider_name = None  # type: Optional[str]
+    provider_name: Optional[str] = None
     """Free format text identifier of service provider initiating the request."""
-    sp_type = None  # type: Optional[ServiceProviderType]
+    sp_type: Optional[ServiceProviderType] = None
     """Optional element specifying the sector of the SP or the Connector."""
-    relay_state = None  # type: Optional[str]
+    relay_state: Optional[str] = None
     """Optional state information expected to be returned with the LightResponse pair."""
-    sp_country_code = None  # type: Optional[str]
+    sp_country_code: Optional[str] = None
     """The code of requesting country."""
-    requested_attributes = None  # type: Dict[str, List[str]]
+    requested_attributes: Optional[Dict[str, List[str]]] = None
     """The list of requested attributes."""
-    requester_id = None  # type: Optional[str]
+    requester_id: Optional[str] = None
     """Identification of service provider"""
 
     def validate(self) -> None:
@@ -164,13 +168,13 @@ class Status(XMLDataModel):
 
     FIELDS = ['failure', 'status_code', 'sub_status_code', 'status_message']
     ROOT_ELEMENT = 'status'
-    failure = None  # type: bool
+    failure: bool = False
     """Whether the authentication request has failed."""
-    status_code = None  # type: Optional[StatusCode]
+    status_code: Optional[StatusCode] = None
     """SAML2 defined status code."""
-    sub_status_code = None  # type: Optional[SubStatusCode]
+    sub_status_code: Optional[SubStatusCode] = None
     """SAML2 defined sub status code used in case of failure."""
-    status_message = None  # type: Optional[str]
+    status_message: Optional[str] = None
     """An optional status message."""
 
     def validate(self) -> None:
@@ -202,35 +206,35 @@ class LightResponse(XMLDataModel):
               'subject_name_id_format', 'level_of_assurance', 'status', 'attributes', 'consent']
     ROOT_ELEMENT = 'lightResponse'
     ROOT_NS = 'http://cef.eidas.eu/LightResponse'
-    id = None  # type: str
+    id: Optional[str] = None
     """Internal unique ID."""
-    in_response_to_id = None  # type: str
+    in_response_to_id: Optional[str] = None
     """The original unique ID of the Request this Response is issued for."""
-    issuer = None  # type: Optional[str]
+    issuer: Optional[str] = None
     """Issuer of the LightRequest or originating SP - not used in version 2.0."""
-    ip_address = None  # type: Optional[str]
+    ip_address: Optional[str] = None
     """Optional IP address of the user agent as seen on IdP"""
-    relay_state = None  # type: Optional[str]
+    relay_state: Optional[str] = None
     """Optional state information to return to the Consumer."""
-    subject = None  # type: str
+    subject: Optional[str] = None
     """Subject of the Assertion for the eIDAS SAML Response."""
-    subject_name_id_format = None  # type: NameIdFormat
+    subject_name_id_format: Optional[NameIdFormat] = None
     """Format of the identifier attribute."""
-    level_of_assurance = None  # type: LevelOfAssurance
+    level_of_assurance: Optional[LevelOfAssurance] = None
     """Level of assurance required to fulfil the request"""
-    status = None  # type: Status
+    status: Optional[Status] = None
     """Complex element to provide status information from IdP."""
-    attributes = None  # type: Dict[str, List[str]]
+    attributes: Optional[Dict[str, List[str]]] = None
     """The list of attributes and their values."""
-    consent = None  # type: Optional[str]
+    consent: Optional[str] = None
     """Type of conset specified by user"""
 
     def validate(self) -> None:
         """Validate this data model."""
         self.validate_fields(Status, 'status', required=True)
-        self.status.validate()
+        cast(Status, self.status).validate()
         validate_attributes(self, 'attributes')
-        if self.status.failure:
+        if cast(Status, self.status).failure:
             self.validate_fields(str, 'id', 'in_response_to_id', required=True)
             self.validate_fields(str, 'subject', 'issuer', 'ip_address', 'relay_state', required=False)
             self.validate_fields(NameIdFormat, 'subject_name_id_format', required=False)
@@ -265,7 +269,7 @@ class LightResponse(XMLDataModel):
 def validate_attributes(model: DataModel, field_name: str) -> None:
     """Validate eIDAS attributes."""
     model.validate_fields(dict, field_name, required=True)
-    attributes = getattr(model, field_name)  # type: Dict[str, List[str]]
+    attributes: Dict[str, List[str]] = getattr(model, field_name)
     for key, values in attributes.items():
         if not isinstance(key, str) or not key.strip():
             raise ValidationError({field_name: 'All keys must be strings.'})
@@ -286,7 +290,7 @@ def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Op
 
 def deserialize_attributes(attributes_elm: Element) -> Dict[str, List[str]]:
     """Deserialize eIDAS attributes."""
-    attributes = OrderedDict()  # type: Dict[str, List[str]]
+    attributes: Dict[str, List[str]] = OrderedDict()
     for attribute in attributes_elm:
         if QName(attribute.tag).localname != 'attribute':
             raise ValidationError({get_element_path(attribute): 'Unexpected element {!r}'.format(attribute.tag)})

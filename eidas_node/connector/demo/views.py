@@ -43,7 +43,7 @@ class DemoServiceProviderRequestView(TemplateView):
     """Demo Service Provider's view to create and send a SAML Request to Specific Connector."""
 
     template_name = 'eidas_node/connector/demo/service_provider_request.html'
-    saml_request = None  # type: SAMLRequest
+    saml_request: Optional[SAMLRequest] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -100,8 +100,8 @@ class DemoServiceProviderResponseView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/connector/demo/service_provider_response.html'
-    saml_response = None  # type: str
-    relay_state = None  # type: Optional[str]
+    saml_response: Optional[str] = None
+    relay_state: Optional[str] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""

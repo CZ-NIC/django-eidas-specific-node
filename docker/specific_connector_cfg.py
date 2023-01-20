@@ -41,20 +41,20 @@ TEMPLATES = [
 ]
 
 # eIDAS Proxy Service
-CONNECTOR_REQUEST_TOKEN = {
+CONNECTOR_REQUEST_TOKEN: Dict[str, Any] = {
     'HASH_ALGORITHM': 'sha256',
     'SECRET': 'mySecretConnectorRequest',
     'ISSUER': 'specificCommunicationDefinitionConnectorRequest',
-}  # type: Dict[str, Any]
+}
 
-CONNECTOR_RESPONSE_TOKEN = {
+CONNECTOR_RESPONSE_TOKEN: Dict[str, str] = {
     'HASH_ALGORITHM': 'sha256',
     'SECRET': 'mySecretConnectorResponse',
     'ISSUER': 'specificCommunicationDefinitionConnectorResponse',
     'LIFETIME': 10,  # minutes
-}  # type: Dict[str, str]
+}
 
-CONNECTOR_SERVICE_PROVIDER = {
+CONNECTOR_SERVICE_PROVIDER: Dict[str, str] = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'REQUEST_ISSUER',
     'RESPONSE_ISSUER': 'RESPONSE_ISSUER',
@@ -62,9 +62,9 @@ CONNECTOR_SERVICE_PROVIDER = {
         'KEY_FILE': KEY_FILE,
         'CERT_FILE': CERT_FILE,
     },
-}  # type: Dict[str, str]
+}
 
-CONNECTOR_LIGHT_STORAGE = {
+CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
     'BACKEND': 'eidas_node.storage.ignite.IgniteStorage',
     'OPTIONS': {
         'host': 'pokuston-m-01.office.nic.cz',
@@ -72,12 +72,12 @@ CONNECTOR_LIGHT_STORAGE = {
         'request_cache_name': 'specificNodeConnectorRequestCache',
         'response_cache_name': 'nodeSpecificConnectorResponseCache',
     }
-}  # type: Dict[str, Any]
+}
 
-CONNECTOR_EIDAS_NODE = {
+CONNECTOR_EIDAS_NODE: Dict[str, str] = {
     'CONNECTOR_REQUEST_URL': 'http://pokuston.office.nic.cz:8888/EidasNode/SpecificConnectorRequest',
     'REQUEST_ISSUER': 'connector-request-issuer',
-}  # type: Dict[str, str]
+}
 
 # If your test country is not in eidas_node.connector.settings.DEFAULT_COUNTRIES, you can add it like this:
 CONNECTOR_SELECTOR_COUNTRIES = [('CA', 'Test Country')] + DEFAULT_COUNTRIES

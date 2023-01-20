@@ -1,8 +1,8 @@
 from base64 import b64decode, b64encode
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, TextIO, Tuple, cast
-from unittest.mock import MagicMock, PropertyMock, call, patch, sentinel
+from typing import BinaryIO, Optional, TextIO, Tuple, cast
+from unittest.mock import MagicMock, call, patch, sentinel
 
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
@@ -21,7 +21,7 @@ from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUE
 from eidas_node.tests.test_storage import IgniteMockMixin
 from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
 
-DATA_DIR = Path(__file__).parent.parent / 'data'  # type: Path
+DATA_DIR: Path = Path(__file__).parent.parent / 'data'
 
 
 class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
@@ -30,7 +30,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         self.url = reverse('proxy-service-request')
         self.addCleanup(self.mock_ignite_cache())
 
-    def get_token(self, issuer: str = None) -> Tuple[LightToken, str]:
+    def get_token(self, issuer: Optional[str] = None) -> Tuple[LightToken, str]:
         token = LightToken(id='request-token-id',
                            issuer=issuer or 'request-token-issuer',
                            created=datetime(2017, 12, 11, 14, 12, 5, 148000))
@@ -328,11 +328,10 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
     def test_create_light_response_auth_class_alias(self):
         view = IdentityProviderResponseView()
 
-        with patch.object(IdentityProviderResponseView, 'saml_response', new_callable=PropertyMock) as response_mock:
+        with patch.object(IdentityProviderResponseView, 'saml_response') as response_mock:
             view.create_light_response('test-light-response-issuer', sentinel.auth_class_map)
 
-        self.assertSequenceEqual(response_mock.mock_calls,
-                                 [call(), call().create_light_response(sentinel.auth_class_map)])
+        response_mock.create_light_response.assert_called_once_with(sentinel.auth_class_map)
 
     @freeze_time('2017-12-11 14:12:05', tz_offset=2)
     @patch('eidas_node.xml.uuid4', return_value='0uuid4')

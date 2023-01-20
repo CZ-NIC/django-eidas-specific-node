@@ -53,20 +53,20 @@ USE_L10N = True
 USE_TZ = True
 
 # eIDAS Proxy Service
-PROXY_SERVICE_REQUEST_TOKEN = {
+PROXY_SERVICE_REQUEST_TOKEN: Dict[str, Any] = {
     'HASH_ALGORITHM': 'sha256',
     'SECRET': 'mySecretProxyserviceRequest',
     'ISSUER': 'specificCommunicationDefinitionProxyserviceRequest',
     'LIFETIME': 0,  # minutes
-}  # type: Dict[str, Any]
+}
 
-PROXY_SERVICE_RESPONSE_TOKEN = {
+PROXY_SERVICE_RESPONSE_TOKEN: Dict[str, str] = {
     'HASH_ALGORITHM': 'sha256',
     'SECRET': 'mySecretProxyserviceResponse',
     'ISSUER': 'specificCommunicationDefinitionProxyserviceResponse',
-}  # type: Dict[str, str]
+}
 
-PROXY_SERVICE_IDENTITY_PROVIDER = {
+PROXY_SERVICE_IDENTITY_PROVIDER: Dict[str, str] = {
     'ENDPOINT': 'https://tnia.eidentita.cz/fpsts/saml2/basic',
     'REQUEST_ISSUER': 'http://localhost.localdomain:8000/saml/idp.xml',
     'KEY_FILE': str(DATA_DIR / 'key.pem'),
@@ -75,9 +75,9 @@ PROXY_SERVICE_IDENTITY_PROVIDER = {
         'KEY_FILE': str(DATA_DIR / 'key.pem'),
         'CERT_FILE': str(DATA_DIR / 'cert.pem'),
     },
-}  # type: Dict[str, str]
+}
 
-PROXY_SERVICE_LIGHT_STORAGE = {
+PROXY_SERVICE_LIGHT_STORAGE: Dict[str, Any] = {
     'BACKEND': 'eidas_node.storage.ignite.IgniteStorage',
     'OPTIONS': {
         'host': 'pokuston-m-01.office.nic.cz',
@@ -85,12 +85,12 @@ PROXY_SERVICE_LIGHT_STORAGE = {
         'request_cache_name': 'nodeSpecificProxyserviceRequestCache',
         'response_cache_name': 'specificNodeProxyserviceResponseCache',
     }
-}  # type: Dict[str, Any]
+}
 
-PROXY_SERVICE_EIDAS_NODE = {
+PROXY_SERVICE_EIDAS_NODE: Dict[str, str] = {
     'PROXY_SERVICE_RESPONSE_URL': 'http://pokuston.office.nic.cz:8888/EidasNode/SpecificProxyServiceResponse',
     'RESPONSE_ISSUER': 'specific-proxy-service',
-}  # type: Dict[str, str]
+}
 
 # Logging
 LOGGING = {

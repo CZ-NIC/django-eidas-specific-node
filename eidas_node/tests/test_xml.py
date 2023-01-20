@@ -289,7 +289,7 @@ class TestVerifyXMLSignatures(SimpleTestCase):
 
 class TestEncryptXMLNode(SimpleTestCase):
     def test_encrypt_xml_node(self):
-        supported_ciphers = set(XmlBlockCipher)  # type: Set[XmlBlockCipher]
+        supported_ciphers: Set[XmlBlockCipher] = set(XmlBlockCipher)
         if LIBXMLSEC_VERSION < (1, 2, 27):  # pragma: no cover
             supported_ciphers -= {XmlBlockCipher.AES128_GCM, XmlBlockCipher.AES192_GCM, XmlBlockCipher.AES256_GCM}
 

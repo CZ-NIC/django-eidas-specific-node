@@ -28,7 +28,7 @@ class IgniteStorage(LightStorage):
         self.request_cache_name = request_cache_name
         self.response_cache_name = response_cache_name
         self.timeout = timeout
-        self._client = None  # type: Optional[Client]
+        self._client: Optional[Client] = None
 
     def get_cache(self, cache_name: str) -> Cache:
         """Get an Ignite Cache."""
@@ -74,13 +74,13 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
 
     def __init__(self,
                  host: str, port: int, cache_name: str,
-                 timeout: int = 30, prefix: str = None):
+                 timeout: int = 30, prefix: Optional[str] = None):
         self.host = host
         self.port = port
         self.cache_name = cache_name
         self.timeout = timeout
         self.prefix = prefix
-        self._client = None  # type: Optional[Client]
+        self._client: Optional[Client] = None
 
     def get_cache(self, cache_name: str) -> Cache:
         """Get an Ignite Cache."""

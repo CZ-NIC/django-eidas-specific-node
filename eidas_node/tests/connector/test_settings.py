@@ -7,7 +7,7 @@ from django.test import SimpleTestCase, override_settings
 from eidas_node.connector.settings import check_settings
 from eidas_node.tests.constants import CERT_FILE, KEY_FILE
 
-CONNECTOR_SERVICE_PROVIDER = {
+CONNECTOR_SERVICE_PROVIDER: Dict[str, Any] = {
     'ENDPOINT': '/DemoServiceProviderResponse',
     'REQUEST_ISSUER': 'test-saml-request-issuer',
     'RESPONSE_ISSUER': 'test-saml-response-issuer',
@@ -18,7 +18,7 @@ CONNECTOR_SERVICE_PROVIDER = {
         'DIGEST_METHOD': 'SHA1',
     },
     'RESPONSE_ENCRYPTION': {},
-}  # type: Dict[str, Any]
+}
 
 
 class TestCheckSettings(SimpleTestCase):

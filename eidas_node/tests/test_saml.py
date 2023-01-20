@@ -374,8 +374,8 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
             response = SAMLResponse(parse_xml(f), 'relay123')
 
         expected = self.create_light_response(False)
-        expected.status.status_code = StatusCode.REQUESTER
-        expected.status.sub_status_code = SubStatusCode.VERSION_MISMATCH
+        cast(Status, expected.status).status_code = StatusCode.REQUESTER
+        cast(Status, expected.status).sub_status_code = SubStatusCode.VERSION_MISMATCH
         self.assertEqual(response.create_light_response(), expected)
 
     def test_create_light_response_with_unsupported_sub_status(self):
@@ -383,7 +383,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
             response = SAMLResponse(parse_xml(f), 'relay123')
 
         expected = self.create_light_response(False)
-        expected.status.sub_status_code = None
+        cast(Status, expected.status).sub_status_code = None
         self.assertEqual(response.create_light_response(), expected)
 
     def test_create_light_response_no_auth_statement(self):
@@ -413,9 +413,9 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         response = saml.create_light_response()
         self.assertEqual(response.id, 'id')
         self.assertEqual(response.in_response_to_id, 'id0')
-        self.assertTrue(response.status.failure)
-        self.assertEqual(response.status.status_code, StatusCode.RESPONDER)
-        self.assertIn('saml2:AuthnContextClassRef:unrecognized', response.status.status_message)
+        self.assertTrue(cast(Status, response.status).failure)
+        self.assertEqual(cast(Status, response.status).status_code, StatusCode.RESPONDER)
+        self.assertIn('saml2:AuthnContextClassRef:unrecognized', cast(Status, response.status).status_message)
         self.assertIsNone(response.level_of_assurance)
 
     def test_create_light_response_unrecognized_auth_context_class_alias(self):
@@ -430,8 +430,8 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
 
         self.assertEqual(response.id, 'id')
         self.assertEqual(response.in_response_to_id, 'id0')
-        self.assertFalse(response.status.failure)
-        self.assertIsNone(response.status.status_code)
+        self.assertFalse(cast(Status, response.status).failure)
+        self.assertIsNone(cast(Status, response.status).status_code)
         self.assertEqual(response.level_of_assurance, LevelOfAssurance.LOW)
 
     def test_create_light_response_auth_context_class_alias_not_used(self):
@@ -446,8 +446,8 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
 
         self.assertEqual(response.id, 'id')
         self.assertEqual(response.in_response_to_id, 'id0')
-        self.assertFalse(response.status.failure)
-        self.assertIsNone(response.status.status_code)
+        self.assertFalse(cast(Status, response.status).failure)
+        self.assertIsNone(cast(Status, response.status).status_code)
         self.assertEqual(response.level_of_assurance, LevelOfAssurance.HIGH)  # Not overridden
 
     def test_str(self):

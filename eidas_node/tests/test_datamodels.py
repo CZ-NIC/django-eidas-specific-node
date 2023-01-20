@@ -13,8 +13,8 @@ from eidas_node.xml import dump_xml, parse_xml
 
 class MyName(DataModel):  # pragma: no cover
     FIELDS = ['first_name', 'last_name']
-    first_name = None  # type: str
-    last_name = None  # type: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
     def validate(self) -> None:
         pass
@@ -22,8 +22,8 @@ class MyName(DataModel):  # pragma: no cover
 
 class MyUser(DataModel):  # pragma: no cover
     FIELDS = ['name', 'age']
-    name = None  # type: MyName
-    age = None  # type: int
+    name: Optional[MyName] = None
+    age: Optional[int] = None
 
     def validate(self) -> None:
         pass
@@ -65,7 +65,7 @@ class TestDataModel(SimpleTestCase):
             def validate(self) -> None:
                 pass
 
-        self.assertRaisesMessage(TypeError, "missing keyword argument 'age'", ModelWithoutDefaultValue)
+        self.assertRaisesMessage(ValidationError, "missing keyword argument 'age'", ModelWithoutDefaultValue)
 
         model = ModelWithoutDefaultValue(age=18)
         self.assertEqual(getattr(model, 'age'), 18)
@@ -80,8 +80,8 @@ class TestDataModel(SimpleTestCase):
 
         class MyName2(DataModel):  # pragma: no cover
             FIELDS = ['first_name', 'last_name']
-            first_name = None  # type: str
-            last_name = None  # type: str
+            first_name: Optional[str] = None
+            last_name: Optional[str] = None
 
             def validate(self) -> None:
                 pass
@@ -169,8 +169,8 @@ class Department(Enum):
 class XMLName(XMLDataModel):  # pragma: no cover
     ROOT_ELEMENT = 'name'
     FIELDS = ['first_name', 'last_name']
-    first_name = None  # type: str
-    last_name = None  # type: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
     def validate(self) -> None:
         pass
@@ -185,10 +185,10 @@ class XMLName(XMLDataModel):  # pragma: no cover
 class XMLUser(XMLDataModel):  # pragma: no cover
     ROOT_ELEMENT = 'xmlUser'
     FIELDS = ['name', 'superuser', 'department', 'nickname']
-    name = None  # type: MyName
-    superuser = None  # type: bool
-    department = None  # type: Department
-    nickname = None  # type: Optional[str]
+    name: Optional[MyName] = None
+    superuser: Optional[bool] = None
+    department: Optional[Department] = None
+    nickname: Optional[str] = None
 
     def validate(self) -> None:
         pass

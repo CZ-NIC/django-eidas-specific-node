@@ -32,10 +32,10 @@ class CountrySelectorView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/connector/country_selector.html'
-    error = None  # type: Optional[str]
-    saml_request = None  # type: Optional[str]
-    relay_state = None  # type: Optional[str]
-    citizen_country = None  # type: Optional[str]
+    error: Optional[str] = None
+    saml_request: Optional[str] = None
+    relay_state: Optional[str] = None
+    citizen_country: Optional[str] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -71,14 +71,14 @@ class ServiceProviderRequestView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/connector/service_provider_request.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    saml_request = None  # type: SAMLRequest
-    light_request = None  # type: LightRequest
-    light_token = None  # type: LightToken
-    encoded_token = None  # type: str
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: Optional[LightStorage] = None
+    saml_request: Optional[SAMLRequest] = None
+    light_request: Optional[LightRequest] = None
+    light_token: Optional[LightToken] = None
+    encoded_token: Optional[str] = None
+    log_id: int = 0
+    auxiliary_data: Optional[Dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -95,6 +95,7 @@ class ServiceProviderRequestView(TemplateView):
                 self.auxiliary_data['citizen_country'] = self.light_request.citizen_country_code
                 self.auxiliary_data['origin_country'] = self.light_request.sp_country_code
 
+            assert self.light_request.requested_attributes is not None
             self.adjust_requested_attributes(self.light_request.requested_attributes,
                                              CONNECTOR_SETTINGS.allowed_attributes)
             LOGGER.debug('Light Request: %s', self.light_request)
@@ -115,6 +116,7 @@ class ServiceProviderRequestView(TemplateView):
                 auxiliary_storage = get_auxiliary_storage(
                     CONNECTOR_SETTINGS.auxiliary_storage['backend'],
                     CONNECTOR_SETTINGS.auxiliary_storage['options'])
+                assert self.light_request.id is not None
                 auxiliary_storage.put(self.light_request.id, self.auxiliary_data)
 
         except (EidasNodeError, MultiValueDictKeyError) as e:
@@ -153,6 +155,7 @@ class ServiceProviderRequestView(TemplateView):
         :param light_issuer: The issuer of the light request.
         :return: A light request.
         """
+        assert self.saml_request is not None
         request = self.saml_request.create_light_request()
         # Verify the original issuer of the request.
         if not request.issuer or not hmac.compare_digest(request.issuer, saml_issuer):
@@ -222,13 +225,13 @@ class ConnectorResponseView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/connector/connector_response.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    light_token = None  # type: LightToken
-    light_response = None  # type: LightResponse
-    saml_response = None  # type: SAMLResponse
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: Optional[LightStorage] = None
+    light_token: Optional[LightToken] = None
+    light_response: Optional[LightResponse] = None
+    saml_response: Optional[SAMLResponse] = None
+    log_id: int = 0
+    auxiliary_data: Optional[Dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -256,6 +259,8 @@ class ConnectorResponseView(TemplateView):
             else:
                 self.auxiliary_data = {}
 
+            assert self.light_response is not None
+            assert self.light_response.status is not None
             LOGGER.info('[#%r] Got light response: id=%r, issuer=%r, in_response_to=%r, citizen_country=%r,'
                         ' origin_country=%r, status=%s, substatus=%s.',
                         self.log_id, self.light_response.id, self.light_response.issuer, request_id,
@@ -320,6 +325,8 @@ class ConnectorResponseView(TemplateView):
         :return: A light response.
         :raise SecurityError: If the response is not found.
         """
+        assert self.storage is not None
+        assert self.light_token is not None
         response = self.storage.pop_light_response(self.light_token.id)
         if response is None:
             raise SecurityError('Response not found in light storage.')
@@ -327,7 +334,7 @@ class ConnectorResponseView(TemplateView):
 
     def create_saml_response(self, issuer: str, audience: Optional[str], destination: Optional[str],
                              signature_options: Optional[Dict[str, str]], validity: int,
-                             encryption_options: Dict[str, Any] = None) -> SAMLResponse:
+                             encryption_options: Optional[Dict[str, Any]] = None) -> SAMLResponse:
         """
         Create a SAML response from a light response.
 
@@ -342,6 +349,7 @@ class ConnectorResponseView(TemplateView):
         :return: A SAML response.
         """
         # Replace the original issuer with our issuer registered at the Identity Provider.
+        assert self.light_response is not None
         self.light_response.issuer = issuer
         response = SAMLResponse.from_light_response(
             self.light_response, audience, destination, datetime.utcnow(), timedelta(minutes=validity))

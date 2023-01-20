@@ -2,7 +2,7 @@
 import logging
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 from uuid import uuid4
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
@@ -14,7 +14,7 @@ from lxml.etree import XMLSyntaxError
 
 from eidas_node.constants import TOKEN_ID_PREFIX, LevelOfAssurance, NameIdFormat
 from eidas_node.errors import EidasNodeError, ParseError, SecurityError
-from eidas_node.models import LightRequest, LightResponse, LightToken
+from eidas_node.models import LightRequest, LightResponse, LightToken, Status
 from eidas_node.proxy_service.settings import PROXY_SERVICE_SETTINGS
 from eidas_node.saml import SAMLRequest, SAMLResponse
 from eidas_node.storage import LightStorage, get_auxiliary_storage
@@ -34,13 +34,13 @@ class ProxyServiceRequestView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/proxy_service/proxy_service_request.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    light_token = None  # type: LightToken
-    light_request = None  # type: LightRequest
-    saml_request = None  # type: SAMLRequest
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: Optional[LightStorage] = None
+    light_token: Optional[LightToken] = None
+    light_request: Optional[LightRequest] = None
+    saml_request: Optional[SAMLRequest] = None
+    log_id: int = 0
+    auxiliary_data: Optional[Dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -80,6 +80,7 @@ class ProxyServiceRequestView(TemplateView):
                 auxiliary_storage = get_auxiliary_storage(
                     PROXY_SERVICE_SETTINGS.auxiliary_storage['backend'],
                     PROXY_SERVICE_SETTINGS.auxiliary_storage['options'])
+                assert self.light_request.id is not None
                 auxiliary_storage.put(self.light_request.id, self.auxiliary_data)
 
         except EidasNodeError as e:
@@ -131,6 +132,8 @@ class ProxyServiceRequestView(TemplateView):
         :return: A light request.
         :raise SecurityError: If the request is not found.
         """
+        assert self.storage is not None
+        assert self.light_token is not None
         request = self.storage.pop_light_request(self.light_token.id)
         if request is None:
             raise SecurityError('Request not found in light storage.')
@@ -145,6 +148,8 @@ class ProxyServiceRequestView(TemplateView):
         `signature_method`, abd `digest_method`.
         :return: A SAML request.
         """
+        assert self.light_request is not None
+
         # Replace the original issuer with our issuer registered at the Identity Provider.
         self.light_request.issuer = issuer
 
@@ -178,14 +183,14 @@ class IdentityProviderResponseView(TemplateView):
 
     http_method_names = ['post']
     template_name = 'eidas_node/proxy_service/identity_provider_response.html'
-    error = None  # type: Optional[str]
-    storage = None  # type: LightStorage
-    saml_response = None  # type: SAMLResponse
-    light_response = None  # type: LightResponse
-    light_token = None  # type: LightToken
-    encoded_token = None  # type: str
-    log_id = 0  # type: int
-    auxiliary_data = None  # type: Dict[str, Any]
+    error: Optional[str] = None
+    storage: Optional[LightStorage] = None
+    saml_response: Optional[SAMLResponse] = None
+    light_response: Optional[LightResponse] = None
+    light_token: Optional[LightToken] = None
+    encoded_token: Optional[str] = None
+    log_id: int = 0
+    auxiliary_data: Optional[Dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -216,8 +221,8 @@ class IdentityProviderResponseView(TemplateView):
                         'citizen_country=%r, origin_country=%r, status=%s, substatus=%s.',
                         self.log_id, self.light_response.id, self.light_response.issuer,
                         self.light_response.in_response_to_id, self.auxiliary_data.get('citizen_country'),
-                        self.auxiliary_data.get('origin_country'), self.light_response.status.status_code,
-                        self.light_response.status.sub_status_code)
+                        self.auxiliary_data.get('origin_country'), cast(Status, self.light_response.status).status_code,
+                        cast(Status, self.light_response.status).sub_status_code)
 
             self.rewrite_name_id()
 
@@ -237,8 +242,10 @@ class IdentityProviderResponseView(TemplateView):
 
     def rewrite_name_id(self):
         """Rewrite name id if needed."""
+        assert self.light_response is not None
+        assert self.auxiliary_data is not None
         if (
-            not self.light_response.status.failure
+            not cast(Status, self.light_response.status).failure
             and PROXY_SERVICE_SETTINGS.transient_name_id_fallback
             and self.auxiliary_data.get('name_id_format') == NameIdFormat.TRANSIENT.value
             and self.light_response.subject_name_id_format != NameIdFormat.TRANSIENT
@@ -288,7 +295,7 @@ class IdentityProviderResponseView(TemplateView):
         return import_from_module(backend)(**options)
 
     def create_light_response(self, issuer: str,
-                              auth_class_map: Dict[str, LevelOfAssurance] = None) -> LightResponse:
+                              auth_class_map: Optional[Dict[str, LevelOfAssurance]] = None) -> LightResponse:
         """
         Create a light response from SAML response.
 
@@ -296,6 +303,7 @@ class IdentityProviderResponseView(TemplateView):
         :param auth_class_map: Mapping of non-LoA auth classes to LevelOfAssurance.
         :return: A light response.
         """
+        assert self.saml_response is not None
         response = self.saml_response.create_light_response(auth_class_map)
         # Use our issuer specified in the generic eIDAS Node configuration.
         response.issuer = issuer
