@@ -206,7 +206,11 @@ class TestSignXMLNode(SimpleTestCase):
         SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
         sign_xml_node(root, position=0, **SIGNATURE_OPTIONS)
 
-        with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
+        if LIBXMLSEC_VERSION < (1, 2, 35):  # pragma: no cover
+            filename = 'signed_response.xml'
+        else:  # pragma: no cover
+            filename = 'signed_response_1.2.35.xml'
+        with cast(TextIO, (DATA_DIR / filename).open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
 
     def test_sign_xml_node_with_id(self):
@@ -216,7 +220,11 @@ class TestSignXMLNode(SimpleTestCase):
         SubElement(assertion, Q_NAMES['saml2:Issuer']).text = 'Test Issuer'
         sign_xml_node(root, position=0, **SIGNATURE_OPTIONS)
 
-        with cast(TextIO, (DATA_DIR / 'signed_response.xml').open('r')) as f:
+        if LIBXMLSEC_VERSION < (1, 2, 35):  # pragma: no cover
+            filename = 'signed_response.xml'
+        else:  # pragma: no cover
+            filename = 'signed_response_1.2.35.xml'
+        with cast(TextIO, (DATA_DIR / filename).open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
 
     @patch('eidas_node.xml.create_xml_uuid', return_value='id-0uuid4')
@@ -228,7 +236,11 @@ class TestSignXMLNode(SimpleTestCase):
         sign_xml_node(assertion, position=0, **SIGNATURE_OPTIONS)
         sign_xml_node(root, position=0, **SIGNATURE_OPTIONS)
 
-        with cast(TextIO, (DATA_DIR / 'signed_response_and_assertion.xml').open('r')) as f:
+        if LIBXMLSEC_VERSION < (1, 2, 35):  # pragma: no cover
+            filename = 'signed_response_and_assertion.xml'
+        else:  # pragma: no cover
+            filename = 'signed_response_and_assertion.xml_1.2.35.xml'
+        with cast(TextIO, (DATA_DIR / filename).open('r')) as f:
             self.assertXMLEqual(dump_xml(root).decode('utf-8'), f.read())
 
 
