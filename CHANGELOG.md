@@ -4,6 +4,10 @@ CHANGELOG
 UNRELEASED
 ----------
 
+* Fixed for current versions of tox, mypy, flaky8
+* Fixed tests for xmlsec1>1.2.34
+* Dropped support of python <=3.7
+
 0.9.0 [2022-02-03]
 ------------------
 
