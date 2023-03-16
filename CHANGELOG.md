@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-UNRELEASED
+0.10.0 [2023-03-16]
 ----------
 
 * Setting `KEY_FILE` changed to two setgins `KEY_SOURCE` ("file" or "engine") and `KEY_LOCATION` (path to file or engine spec.)
