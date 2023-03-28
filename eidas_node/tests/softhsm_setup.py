@@ -198,7 +198,6 @@ log.level = DEBUG
                 "engine_id = pkcs11",
                 # dynamic_path,
                 "MODULE_PATH = %s" % component_path['P11_MODULE'],
-                "PIN = secret1",
                 "init = 0",
             ]))
 
