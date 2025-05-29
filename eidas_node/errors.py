@@ -1,19 +1,17 @@
 """Errors of eidas_node."""
 
-from typing import Dict
 
 class EidasNodeError(Exception):
     """Base error of eidas_node package."""
 
 
 class ValidationError(EidasNodeError):
-    """
-    Error for validation failures.
+    """Error for validation failures.
 
     :param errors: A dictionary of field names (keys) and error messages (values).
     """
 
-    def __init__(self, errors: Dict[str, str]):
+    def __init__(self, errors: dict[str, str]):
         self.errors = errors
 
     def __str__(self) -> str:
@@ -24,8 +22,7 @@ class ValidationError(EidasNodeError):
 
 
 class ParseError(EidasNodeError):
-    """
-    Error for parsing and decoding failures.
+    """Error for parsing and decoding failures.
 
     :param error: An error message.
     """
@@ -41,8 +38,7 @@ class ParseError(EidasNodeError):
 
 
 class SecurityError(EidasNodeError):
-    """
-    Error for signature and encryption failures.
+    """Error for signature and encryption failures.
 
     :param error: An error message.
     """

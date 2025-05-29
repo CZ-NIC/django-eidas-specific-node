@@ -4,7 +4,7 @@ import hmac
 import logging
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Optional, cast
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.template.loader import select_template
@@ -65,8 +65,7 @@ class CountrySelectorView(TemplateView):
 
 
 class ServiceProviderRequestView(TemplateView):
-    """
-    Forward a service provider's request to an identity provider.
+    """Forward a service provider's request to an identity provider.
 
     eIDAS Generic Connector expect the service provider's request as a light request.
     """
@@ -80,7 +79,7 @@ class ServiceProviderRequestView(TemplateView):
     light_token: Optional[LightToken] = None
     encoded_token: Optional[str] = None
     log_id: int = 0
-    auxiliary_data: Optional[Dict[str, Any]] = None
+    auxiliary_data: Optional[dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -136,8 +135,7 @@ class ServiceProviderRequestView(TemplateView):
         return super().get(request)
 
     def get_saml_request(self, country_parameter: str, cert_file: Optional[str]) -> SAMLRequest:
-        """
-        Extract and decrypt a SAML request from POST data.
+        """Extract and decrypt a SAML request from POST data.
 
         :param country_parameter: A parameter containing citizen country code.
         :param cert_file: The path of a certificate to verify the signature.
@@ -158,8 +156,7 @@ class ServiceProviderRequestView(TemplateView):
         return request
 
     def create_light_request(self, saml_issuer: str, light_issuer: str) -> LightRequest:
-        """
-        Create a light request from a SAML request.
+        """Create a light request from a SAML request.
 
         :param saml_issuer: The expected issuer of the SAML request.
         :param light_issuer: The issuer of the light request.
@@ -182,7 +179,7 @@ class ServiceProviderRequestView(TemplateView):
         )
         return request
 
-    def adjust_requested_attributes(self, attributes: Dict[str, List[str]], allowed_attributes: Set[str]) -> None:
+    def adjust_requested_attributes(self, attributes: dict[str, list[str]], allowed_attributes: set[str]) -> None:
         """Adjust requested attributes of the incoming authorization request."""
         if allowed_attributes:
             # If allowed attributes are specified, filter out the rest.
@@ -195,9 +192,8 @@ class ServiceProviderRequestView(TemplateView):
         for missing in MANDATORY_ATTRIBUTE_NAMES - set(attributes):
             attributes[missing] = []
 
-    def create_light_token(self, issuer: str, hash_algorithm: str, secret: str) -> Tuple[LightToken, str]:
-        """
-        Create and encode a light token according to token settings.
+    def create_light_token(self, issuer: str, hash_algorithm: str, secret: str) -> tuple[LightToken, str]:
+        """Create and encode a light token according to token settings.
 
         :param issuer: Token issuer.
         :param hash_algorithm: A hashlib hash algorithm.
@@ -210,9 +206,8 @@ class ServiceProviderRequestView(TemplateView):
         LOGGER.info("[#%r] Encoded light token: %r", self.log_id, encoded_token)
         return token, encoded_token
 
-    def get_light_storage(self, backend: str, options: Dict[str, Any]) -> LightStorage:
-        """
-        Create a light storage instance.
+    def get_light_storage(self, backend: str, options: dict[str, Any]) -> LightStorage:
+        """Create a light storage instance.
 
         :param backend: A fully qualified name of the backend class.
         :param options: The options to pass to the backend.
@@ -232,8 +227,7 @@ class ServiceProviderRequestView(TemplateView):
 
 
 class ConnectorResponseView(TemplateView):
-    """
-    Forward identity provider's response to a service provider.
+    """Forward identity provider's response to a service provider.
 
     eIDAS Generic Connector provides the identity provider's response as a light response.
     """
@@ -246,7 +240,7 @@ class ConnectorResponseView(TemplateView):
     light_response: Optional[LightResponse] = None
     saml_response: Optional[SAMLResponse] = None
     log_id: int = 0
-    auxiliary_data: Optional[Dict[str, Any]] = None
+    auxiliary_data: Optional[dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -313,8 +307,7 @@ class ConnectorResponseView(TemplateView):
     def get_light_token(
         self, parameter_name: str, issuer: str, hash_algorithm: str, secret: str, lifetime: Optional[int] = None
     ) -> LightToken:
-        """
-        Retrieve and verify a light token according to token settings.
+        """Retrieve and verify a light token according to token settings.
 
         :param parameter_name: The name of HTTP POST parameter to get the token from.
         :param issuer: Token issuer.
@@ -336,9 +329,8 @@ class ConnectorResponseView(TemplateView):
             raise SecurityError("Token has expired.")
         return token
 
-    def get_light_storage(self, backend: str, options: Dict[str, Any]) -> LightStorage:
-        """
-        Create a light storage instance.
+    def get_light_storage(self, backend: str, options: dict[str, Any]) -> LightStorage:
+        """Create a light storage instance.
 
         :param backend: A fully qualified name of the backend class.
         :param options: The options to pass to the backend.
@@ -347,8 +339,7 @@ class ConnectorResponseView(TemplateView):
         return import_from_module(backend)(**options)
 
     def get_light_response(self) -> LightResponse:
-        """
-        Get a light response.
+        """Get a light response.
 
         :return: A light response.
         :raise SecurityError: If the response is not found.
@@ -365,12 +356,11 @@ class ConnectorResponseView(TemplateView):
         issuer: str,
         audience: Optional[str],
         destination: Optional[str],
-        signature_options: Optional[Dict[str, str]],
+        signature_options: Optional[dict[str, str]],
         validity: int,
-        encryption_options: Optional[Dict[str, Any]] = None,
+        encryption_options: Optional[dict[str, Any]] = None,
     ) -> SAMLResponse:
-        """
-        Create a SAML response from a light response.
+        """Create a SAML response from a light response.
 
         :param issuer: Issuer of the SAML response.
         :param audience: The audience of the SAML response (the issuer of the SAML request).
@@ -405,7 +395,7 @@ class ConnectorResponseView(TemplateView):
             and signature_options.get("cert_file")
         )
         if sign:
-            response.sign_assertion(**cast(Dict[str, Any], signature_options))
+            response.sign_assertion(**cast(dict[str, Any], signature_options))
         if encryption_options and encryption_options.get("cert_file"):
             response.encrypt_assertion(
                 encryption_options["cert_file"],
@@ -413,7 +403,7 @@ class ConnectorResponseView(TemplateView):
                 encryption_options["key_transport"],
             )
         if sign:
-            response.sign_response(**cast(Dict[str, Any], signature_options))
+            response.sign_response(**cast(dict[str, Any], signature_options))
         return response
 
     def get_context_data(self, **kwargs) -> dict:

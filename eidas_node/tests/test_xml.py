@@ -1,6 +1,6 @@
 import re
 from io import BytesIO
-from typing import BinaryIO, Optional, Set, TextIO, cast
+from typing import BinaryIO, Optional, TextIO, cast
 from unittest.mock import Mock, patch
 
 import xmlsec
@@ -336,7 +336,7 @@ class TestVerifyXMLSignatures(SimpleTestCase):
 
 class TestEncryptXMLNode(SimpleTestCase):
     def test_encrypt_xml_node(self):
-        supported_ciphers: Set[XmlBlockCipher] = set(XmlBlockCipher)
+        supported_ciphers: set[XmlBlockCipher] = set(XmlBlockCipher)
         if LIBXMLSEC_VERSION < (1, 2, 27):  # pragma: no cover
             supported_ciphers -= {XmlBlockCipher.AES128_GCM, XmlBlockCipher.AES192_GCM, XmlBlockCipher.AES256_GCM}
 

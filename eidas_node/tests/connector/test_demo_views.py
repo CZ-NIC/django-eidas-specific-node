@@ -1,5 +1,5 @@
 from base64 import b64encode
-from typing import Any, Dict, TextIO, cast
+from typing import Any, TextIO, cast
 
 from django.test import override_settings
 from django.test.testcases import SimpleTestCase
@@ -8,7 +8,7 @@ from django.urls import reverse
 from eidas_node.tests.constants import DATA_DIR
 from eidas_node.xml import dump_xml, parse_xml, remove_extra_xml_whitespace
 
-CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE: Dict[str, Any] = {
+CONNECTOR_SERVICE_PROVIDER_WITHOUT_SIGNATURE: dict[str, Any] = {
     "ENDPOINT": "/DemoServiceProviderResponse",
     "REQUEST_ISSUER": "test-saml-request-issuer",
     "RESPONSE_ISSUER": "test-saml-response-issuer",

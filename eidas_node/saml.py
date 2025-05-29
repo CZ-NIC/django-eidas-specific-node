@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set, Type, TypeVar, cast
+from typing import Optional, TypeVar, cast
 
 from lxml import etree
 from lxml.etree import Element, ElementTree, QName, SubElement
@@ -24,7 +24,7 @@ from eidas_node.xml import (
     verify_xml_signatures,
 )
 
-EIDAS_NAMESPACES: Dict[str, str] = {
+EIDAS_NAMESPACES: dict[str, str] = {
     "saml2": "urn:oasis:names:tc:SAML:2.0:assertion",
     "saml2p": "urn:oasis:names:tc:SAML:2.0:protocol",
     "eidas": "http://eidas.europa.eu/saml-extensions",
@@ -37,7 +37,7 @@ KNOWN_NAMESPACES = {
 }
 KNOWN_NAMESPACES.update(EIDAS_NAMESPACES)
 
-KNOWN_TAGS: Dict[str, Set[str]] = {
+KNOWN_TAGS: dict[str, set[str]] = {
     "saml2": {
         "Issuer",
         "AuthnContextClassRef",
@@ -51,7 +51,6 @@ KNOWN_TAGS: Dict[str, Set[str]] = {
         "AttributeValue",
         "SubjectLocality",
         "AuthnContext",
-        "AuthnContextClassRef",
         "SubjectConfirmation",
         "SubjectConfirmationData",
         "Conditions",
@@ -74,7 +73,7 @@ KNOWN_TAGS: Dict[str, Set[str]] = {
 }
 """Recognized XML tags in SAML requests."""
 
-Q_NAMES: Dict[str, QName] = {
+Q_NAMES: dict[str, QName] = {
     "{}:{}".format(ns, tag): QName(KNOWN_NAMESPACES[ns], tag) for ns, tags in KNOWN_TAGS.items() for tag in tags
 }
 """Qualified names of recognized XML tags in SAML requests."""
@@ -117,10 +116,9 @@ class SAMLRequest:
 
     @classmethod
     def from_light_request(
-        cls: Type[SAMLRequestType], light_request: LightRequest, destination: str, issued: datetime
+        cls: type[SAMLRequestType], light_request: LightRequest, destination: str, issued: datetime
     ) -> SAMLRequestType:
-        """
-        Convert Light Request to SAML Request.
+        """Convert Light Request to SAML Request.
 
         :param light_request: The light request to convert.
         :param destination: A URI reference indicating the address to which this request has been sent.
@@ -165,7 +163,7 @@ class SAMLRequest:
             assert light_request.citizen_country_code  # mandatory field
             SubElement(extensions, Q_NAMES["eidas:SPCountry"]).text = light_request.citizen_country_code
         attributes = SubElement(extensions, Q_NAMES["eidas:RequestedAttributes"])
-        for name, values in cast(Dict[str, List[str]], light_request.requested_attributes).items():
+        for name, values in cast(dict[str, list[str]], light_request.requested_attributes).items():
             attribute = SubElement(
                 attributes, Q_NAMES["eidas:RequestedAttribute"], create_attribute_elm_attributes(name, True)
             )
@@ -198,8 +196,7 @@ class SAMLRequest:
         return self.document.getroot().find("./{}".format(Q_NAMES["ds:Signature"]))
 
     def create_light_request(self) -> LightRequest:
-        """
-        Convert SAML Request to Light Request.
+        """Convert SAML Request to Light Request.
 
         :return: A Light Request.
         :raise ValidationError: If the SAML Request cannot be parsed correctly.
@@ -246,7 +243,7 @@ class SAMLRequest:
                 name = attribute.attrib.get("Name")
                 if not name:
                     raise ValidationError({get_element_path(attribute): "Missing attribute 'Name'"})
-                values = cast(Dict[str, List[str]], requested_attributes)[name] = []
+                values = cast(dict[str, list[str]], requested_attributes)[name] = []
                 for value in attribute.findall("./{}".format(Q_NAMES["eidas:AttributeValue"])):
                     values.append(value.text)
 
@@ -255,8 +252,7 @@ class SAMLRequest:
     def sign_request(
         self, key_source: str, key_location: str, cert_file: str, signature_method: str, digest_method: str
     ) -> None:
-        """
-        Sign the whole SAML request.
+        """Sign the whole SAML request.
 
         :raise SecurityError: If the signature already exists.
         """
@@ -297,8 +293,7 @@ class SAMLRequest:
 
 
 class SAMLResponse:
-    """
-    SAML Response and its conversion from/to LightResponse.
+    """SAML Response and its conversion from/to LightResponse.
 
     :param document: A SAML response as XML document.
     :param relay_state: Optional relay state to return to the requesting party.
@@ -359,7 +354,7 @@ class SAMLResponse:
 
     @classmethod
     def from_light_response(
-        cls: Type[SAMLResponseType],
+        cls: type[SAMLResponseType],
         light_response: LightResponse,
         audience: Optional[str],
         destination: Optional[str],
@@ -450,7 +445,7 @@ class SAMLResponse:
             # 5.5 AssertionType <saml2:Advice> optional, skipped
             # 5.6 AssertionType <saml2:AttributeStatement>
             attributes_elm = SubElement(assertion_elm, Q_NAMES["saml2:AttributeStatement"])
-            for name, values in cast(Dict[str, List[str]], light_response.attributes).items():
+            for name, values in cast(dict[str, list[str]], light_response.attributes).items():
                 attribute = SubElement(
                     attributes_elm, Q_NAMES["saml2:Attribute"], create_attribute_elm_attributes(name, None)
                 )
@@ -474,8 +469,7 @@ class SAMLResponse:
     def sign_assertion(
         self, key_source: str, key_location: str, cert_file: str, signature_method: str, digest_method: str
     ) -> bool:
-        """
-        Sign the SAML assertion.
+        """Sign the SAML assertion.
 
         :return: `True` if the assertion element is present and has been signed, `False` otherwise.
         :raise SecurityError: If the assertion or response signature is already present.
@@ -504,8 +498,7 @@ class SAMLResponse:
         return True
 
     def encrypt_assertion(self, cert_file: str, cipher: XmlBlockCipher, key_transport: XmlKeyTransport) -> bool:
-        """
-        Encrypt the SAML assertion.
+        """Encrypt the SAML assertion.
 
         :param cert_file: A path to the certificate file.
         :param cipher: Encryption algorithm to use.
@@ -529,8 +522,7 @@ class SAMLResponse:
     def sign_response(
         self, key_source: str, key_location: str, cert_file: str, signature_method: str, digest_method: str
     ) -> None:
-        """
-        Sign the whole SAML response.
+        """Sign the whole SAML response.
 
         :raise SecurityError: If the response signature is already present.
         """
@@ -576,7 +568,7 @@ class SAMLResponse:
         self._verify_and_remove_signature(self.assertion_signature, cert_file)
         return True
 
-    def create_light_response(self, auth_class_map: Optional[Dict[str, LevelOfAssurance]] = None) -> LightResponse:
+    def create_light_response(self, auth_class_map: Optional[dict[str, LevelOfAssurance]] = None) -> LightResponse:
         """Convert SAML response to light response."""
         response = LightResponse(attributes=OrderedDict())
         root = self.document.getroot()
@@ -632,7 +624,7 @@ class SAMLResponse:
         return response
 
     def _parse_assertion(
-        self, response: LightResponse, assertion: Element, auth_class_map: Optional[Dict[str, LevelOfAssurance]]
+        self, response: LightResponse, assertion: Element, auth_class_map: Optional[dict[str, LevelOfAssurance]]
     ) -> None:
         attributes = response.attributes = OrderedDict()
         name_id_elm = assertion.find("./{}/{}".format(Q_NAMES["saml2:Subject"], Q_NAMES["saml2:NameID"]))

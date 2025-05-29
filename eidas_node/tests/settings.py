@@ -1,6 +1,6 @@
 """Django settings for unitests."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from eidas_node.tests.constants import CERT_FILE, KEY_LOCATION, KEY_SOURCE
 from eidas_node.tests.warnings import setup_warnings_filter
@@ -10,7 +10,7 @@ setup_warnings_filter()
 
 SECRET_KEY = "SECRET"
 
-INSTALLED_APPS: List[str] = [
+INSTALLED_APPS: list[str] = [
     "django.contrib.staticfiles",
     "eidas_node.connector.apps.ConnectorConfig",
     "eidas_node.proxy_service.apps.ProxyServiceConfig",
@@ -43,20 +43,20 @@ USE_L10N = True
 USE_TZ = True
 
 # eIDAS Proxy Service
-PROXY_SERVICE_REQUEST_TOKEN: Dict[str, Any] = {
+PROXY_SERVICE_REQUEST_TOKEN: dict[str, Any] = {
     "SECRET": "request-token-secret",
     "ISSUER": "request-token-issuer",
     "PARAMETER_NAME": "test_token",
     "LIFETIME": 10,  # minutes
 }
 
-PROXY_SERVICE_RESPONSE_TOKEN: Dict[str, str] = {
+PROXY_SERVICE_RESPONSE_TOKEN: dict[str, str] = {
     "SECRET": "response-token-secret",
     "ISSUER": "response-token-issuer",
     "PARAMETER_NAME": "test_token",
 }
 
-PROXY_SERVICE_IDENTITY_PROVIDER: Dict[str, Any] = {
+PROXY_SERVICE_IDENTITY_PROVIDER: dict[str, Any] = {
     "ENDPOINT": "https://test.example.net/identity-provider-endpoint",
     "REQUEST_ISSUER": "https://test.example.net/saml/idp.xml",
     "REQUEST_SIGNATURE": {
@@ -71,7 +71,7 @@ PROXY_SERVICE_IDENTITY_PROVIDER: Dict[str, Any] = {
     "KEY_LOCATION": KEY_LOCATION,
 }
 
-PROXY_SERVICE_LIGHT_STORAGE: Dict[str, Any] = {
+PROXY_SERVICE_LIGHT_STORAGE: dict[str, Any] = {
     "OPTIONS": {
         "host": "test.example.net",
         "port": 1234,
@@ -81,21 +81,21 @@ PROXY_SERVICE_LIGHT_STORAGE: Dict[str, Any] = {
     }
 }
 
-PROXY_SERVICE_EIDAS_NODE: Dict[str, str] = {
+PROXY_SERVICE_EIDAS_NODE: dict[str, str] = {
     "PROXY_SERVICE_RESPONSE_URL": "https://test.example.net/SpecificProxyServiceResponse",
     "REQUEST_ISSUER": "test-light-request-issuer",
     "RESPONSE_ISSUER": "https://test.example.net/node-proxy-service-response",
 }
 
 # eIDAS Connector
-CONNECTOR_REQUEST_TOKEN: Dict[str, Any] = {
+CONNECTOR_REQUEST_TOKEN: dict[str, Any] = {
     "HASH_ALGORITHM": "sha256",
     "SECRET": "request-token-secret",
     "ISSUER": "request-token-issuer",
     "PARAMETER_NAME": "test_request_token",
 }
 
-CONNECTOR_RESPONSE_TOKEN: Dict[str, Any] = {
+CONNECTOR_RESPONSE_TOKEN: dict[str, Any] = {
     "HASH_ALGORITHM": "sha256",
     "SECRET": "response-token-secret",
     "ISSUER": "response-token-issuer",
@@ -103,7 +103,7 @@ CONNECTOR_RESPONSE_TOKEN: Dict[str, Any] = {
     "LIFETIME": 10,  # minutes
 }
 
-CONNECTOR_SERVICE_PROVIDER: Dict[str, Any] = {
+CONNECTOR_SERVICE_PROVIDER: dict[str, Any] = {
     "ENDPOINT": "/DemoServiceProviderResponse",
     "CERT_FILE": CERT_FILE,
     "REQUEST_ISSUER": "test-saml-request-issuer",
@@ -119,7 +119,7 @@ CONNECTOR_SERVICE_PROVIDER: Dict[str, Any] = {
     "RESPONSE_ENCRYPTION": {},
 }
 
-CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
+CONNECTOR_LIGHT_STORAGE: dict[str, Any] = {
     "BACKEND": "eidas_node.storage.ignite.IgniteStorage",
     "OPTIONS": {
         "host": "test.example.net",
@@ -130,7 +130,7 @@ CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
     },
 }
 
-CONNECTOR_EIDAS_NODE: Dict[str, str] = {
+CONNECTOR_EIDAS_NODE: dict[str, str] = {
     "CONNECTOR_REQUEST_URL": "http://test.example.net/SpecificConnectorRequest",
     "REQUEST_ISSUER": "test-connector-request-issuer",
 }

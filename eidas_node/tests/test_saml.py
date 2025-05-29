@@ -31,7 +31,7 @@ LIGHT_REQUEST_DICT.update({"id": "test-saml-request-id", "issuer": "test-saml-re
 
 class ValidationErrorMixin:
     def assert_validation_error(self, path: str, message: str, *args, **kwargs) -> Any:
-        message = str(dict([(path, message)]))
+        message = str({path: message})
         return cast(SimpleTestCase, self).assertRaisesMessage(ValidationError, message, *args, **kwargs)
 
 
@@ -727,7 +727,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
 
     def test_encrypt_assertion_no_assertion(self):
         root = Element(Q_NAMES["saml2p:Response"])
-        response = SAMLResponse((ElementTree(root)))
+        response = SAMLResponse(ElementTree(root))
         # Nothing to encrypt.
         self.assertFalse(
             response.encrypt_assertion(CERT_FILE, XmlBlockCipher.AES256_CBC, XmlKeyTransport.RSA_OAEP_MGF1P)
@@ -739,7 +739,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         assertion = SubElement(root, Q_NAMES["saml2:Assertion"])
         SubElement(assertion, Q_NAMES["saml2:Issuer"]).text = "CZ.NIC"
         third_child = SubElement(root, "ThirdChild")
-        response = SAMLResponse((ElementTree(root)))
+        response = SAMLResponse(ElementTree(root))
 
         # Encryption happened.
         self.assertTrue(
@@ -761,7 +761,7 @@ class TestSAMLResponse(ValidationErrorMixin, SimpleTestCase):
         assertion = SubElement(encrypted_assertion, Q_NAMES["saml2:Assertion"])
         SubElement(assertion, Q_NAMES["saml2:Issuer"]).text = "CZ.NIC"
         third_child = SubElement(root, "ThirdChild")
-        response = SAMLResponse((ElementTree(root)))
+        response = SAMLResponse(ElementTree(root))
 
         # Encryption happened.
         self.assertTrue(

@@ -1,5 +1,4 @@
-"""
-Development settings for eidas_node.proxy_service Django app.
+"""Development settings for eidas_node.proxy_service Django app.
 
 DO NOT USE IN PRODUCTION!
 

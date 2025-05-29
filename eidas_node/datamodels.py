@@ -1,5 +1,4 @@
-"""
-Lightweight data models.
+"""Lightweight data models.
 
 The declaration of a data model is as simple as:
 
@@ -17,8 +16,9 @@ The declaration of a data model is as simple as:
 import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from collections.abc import Iterator
 from enum import Enum
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 from lxml.etree import Element, ElementTree, QName, SubElement
 
@@ -27,14 +27,13 @@ from eidas_node.xml import get_element_path
 
 
 class DataModel(ABC):
-    """
-    A simple model holding data fields.
+    """A simple model holding data fields.
 
     :param data: Initial data for model fields.
     :raise TypeError: On unexpected keyword argument or if a value for a field without a default value is not provided.
     """
 
-    FIELDS: List[str]
+    FIELDS: list[str]
     """Names of data fields."""
 
     def __init__(self, **data: Any) -> None:
@@ -61,13 +60,13 @@ class DataModel(ABC):
                     }
                 )
 
-    def get_data_as_tuple(self) -> Tuple[Any, ...]:
+    def get_data_as_tuple(self) -> tuple[Any, ...]:
         """Return the values of fields in the declared order."""
         return tuple(value.get_data_as_tuple() if isinstance(value, DataModel) else value for value in self)
 
-    def get_data_as_dict(self) -> Dict[str, Any]:
+    def get_data_as_dict(self) -> dict[str, Any]:
         """Return the names and values of fields in the declared order."""
-        result: Dict[str, Any] = OrderedDict()
+        result: dict[str, Any] = OrderedDict()
         for name in self.FIELDS:
             value = getattr(self, name)
             result[name] = value.get_data_as_dict() if isinstance(value, DataModel) else value
@@ -77,9 +76,8 @@ class DataModel(ABC):
     def validate(self) -> None:
         """Validate this data model."""
 
-    def validate_fields(self, required_type: Type, *fields: str, required: bool = True) -> None:
-        """
-        Validate fields.
+    def validate_fields(self, required_type: type, *fields: str, required: bool = True) -> None:
+        """Validate fields.
 
         :param required_type: The required type of the field.
         :param fields: The fields to validate.
@@ -131,8 +129,7 @@ class XMLDataModel(DataModel, ABC):
     """Namespace of the root element."""
 
     def export_xml(self) -> Element:
-        """
-        Export LightRequest as a XML document.
+        """Export LightRequest as a XML document.
 
         :return: A XML document.
         :raise ValidationError: If the model validation fails.
@@ -166,9 +163,8 @@ class XMLDataModel(DataModel, ABC):
                     SubElement(parent_element, tag).text = value
 
     @classmethod
-    def load_xml(cls: Type[T], root: Union[Element, ElementTree]) -> T:
-        """
-        Load Light Request from a XML document.
+    def load_xml(cls: type[T], root: Union[Element, ElementTree]) -> T:
+        """Load Light Request from a XML document.
 
         :param root: The XML document to load.
         :raise ValidationError: If the XML document does not have a valid schema.
@@ -195,8 +191,7 @@ class XMLDataModel(DataModel, ABC):
 
 
 def convert_tag_name_to_field_name(tag_name: str) -> str:
-    """
-    Convert a XML tag name to a field name.
+    """Convert a XML tag name to a field name.
 
     :param tag_name: A tag name ('nameIdFormat').
     :return: A field name ('name_id_format').
@@ -205,8 +200,7 @@ def convert_tag_name_to_field_name(tag_name: str) -> str:
 
 
 def convert_field_name_to_tag_name(field_name: str) -> str:
-    """
-    Convert a field name to a XML tag name.
+    """Convert a field name to a XML tag name.
 
     :param field_name: A field name ('name_id_format').
     :return: A XML tag name ('nameIdFormat').

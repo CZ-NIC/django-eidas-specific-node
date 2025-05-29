@@ -2,7 +2,7 @@ from base64 import b64decode
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, BinaryIO, Dict, Set, cast
+from typing import Any, BinaryIO, cast
 from unittest import mock
 
 from django.test import SimpleTestCase
@@ -79,7 +79,7 @@ LIGHT_REQUEST_DICT = OrderedDict(
     ]
 )
 
-LIGHT_RESPONSE_DICT: Dict[str, Any] = OrderedDict(
+LIGHT_RESPONSE_DICT: dict[str, Any] = OrderedDict(
     [
         ("id", "test-light-response-id"),
         ("in_response_to_id", "test-light-request-id"),
@@ -128,7 +128,7 @@ LIGHT_RESPONSE_DICT: Dict[str, Any] = OrderedDict(
     ]
 )
 
-FAILED_LIGHT_RESPONSE_DICT: Dict[str, Any] = OrderedDict(
+FAILED_LIGHT_RESPONSE_DICT: dict[str, Any] = OrderedDict(
     [
         ("id", "test-light-response-id"),
         ("in_response_to_id", "test-light-request-id"),
@@ -159,11 +159,11 @@ class ValidationMixin:
     # Model to validate
     MODEL: type
     # Optional fields - can be None
-    OPTIONAL: Set[str] = set()
+    OPTIONAL: set[str] = set()
     # Example of valid data
-    VALID_DATA: Dict[str, Any]
+    VALID_DATA: dict[str, Any]
     # Invalid data for basic type checks. Extra checks must have own test method.
-    INVALID_DATA: Dict[str, Any]
+    INVALID_DATA: dict[str, Any]
 
     def test_valid(self):
         self.MODEL(**self.VALID_DATA).validate()

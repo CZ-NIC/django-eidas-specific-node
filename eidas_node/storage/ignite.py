@@ -1,7 +1,7 @@
 """Storage for Light Requests and Responses backed by Apache Ignite."""
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pyignite import Client
 from pyignite.cache import Cache
@@ -13,8 +13,7 @@ from eidas_node.xml import dump_xml, parse_xml
 
 
 class IgniteStorage(LightStorage):
-    """
-    Apache Ignite storage for Light Requests and Responses.
+    """Apache Ignite storage for Light Requests and Responses.
 
     :param host: Ignite service hostname or IP address.
     :param port: Ignite service port.
@@ -64,8 +63,7 @@ class IgniteStorage(LightStorage):
 
 
 class AuxiliaryIgniteStorage(AuxiliaryStorage):
-    """
-    Apache Ignite storage for auxiliary data.
+    """Apache Ignite storage for auxiliary data.
 
     :param host: Ignite service hostname or IP address.
     :param port: Ignite service port.
@@ -88,7 +86,7 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
             self._client.connect(self.host, self.port)
         return self._client.get_cache(cache_name)
 
-    def pop(self, uid: str) -> Optional[Dict[str, Any]]:
+    def pop(self, uid: str) -> Optional[dict[str, Any]]:
         """Look up data by a unique id and then remove it."""
         if self.prefix:
             uid = self.prefix + uid
@@ -97,9 +95,8 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
         LOGGER.debug("Got data from cache: id=%r, data=%s", uid, data)
         return json.loads(data) if data is not None else None
 
-    def put(self, uid: str, data: Dict[str, Any]) -> None:
-        """
-        Store data under a unique id.
+    def put(self, uid: str, data: dict[str, Any]) -> None:
+        """Store data under a unique id.
 
         Data must be JSON-serializable.
         """

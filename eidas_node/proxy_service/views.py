@@ -3,7 +3,7 @@
 import logging
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Any, Optional, cast
 from uuid import uuid4
 
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
@@ -27,8 +27,7 @@ LOG_ID_SERIES = WrappedSeries()
 
 
 class ProxyServiceRequestView(TemplateView):
-    """
-    Forward service provider's request to an identity provider.
+    """Forward service provider's request to an identity provider.
 
     eIDAS Generic Proxy Service provides the service provider's request as a light request.
     """
@@ -41,7 +40,7 @@ class ProxyServiceRequestView(TemplateView):
     light_request: Optional[LightRequest] = None
     saml_request: Optional[SAMLRequest] = None
     log_id: int = 0
-    auxiliary_data: Optional[Dict[str, Any]] = None
+    auxiliary_data: Optional[dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -103,8 +102,7 @@ class ProxyServiceRequestView(TemplateView):
     def get_light_token(
         self, parameter_name: str, issuer: str, hash_algorithm: str, secret: str, lifetime: Optional[int] = None
     ) -> LightToken:
-        """
-        Retrieve and verify a light token according to token settings.
+        """Retrieve and verify a light token according to token settings.
 
         :param parameter_name: The name of HTTP POST parameter to get the token from.
         :param issuer: Token issuer.
@@ -126,9 +124,8 @@ class ProxyServiceRequestView(TemplateView):
             raise SecurityError("Token has expired.")
         return token
 
-    def get_light_storage(self, backend: str, options: Dict[str, Any]) -> LightStorage:
-        """
-        Create a light storage instance.
+    def get_light_storage(self, backend: str, options: dict[str, Any]) -> LightStorage:
+        """Create a light storage instance.
 
         :param backend: A fully qualified name of the backend class.
         :param options: The options to pass to the backend.
@@ -137,8 +134,7 @@ class ProxyServiceRequestView(TemplateView):
         return import_from_module(backend)(**options)
 
     def get_light_request(self) -> LightRequest:
-        """
-        Get a light request.
+        """Get a light request.
 
         :return: A light request.
         :raise SecurityError: If the request is not found.
@@ -150,9 +146,8 @@ class ProxyServiceRequestView(TemplateView):
             raise SecurityError("Request not found in light storage.")
         return request
 
-    def create_saml_request(self, issuer: str, signature_options: Optional[Dict[str, str]]) -> SAMLRequest:
-        """
-        Create a SAML request from a light request.
+    def create_saml_request(self, issuer: str, signature_options: Optional[dict[str, str]]) -> SAMLRequest:
+        """Create a SAML request from a light request.
 
         :param issuer: Issuer of the SAML request.
         :param signature_options: Optional options to create a signed request: `key_source`, `key_location`,
@@ -191,8 +186,7 @@ class ProxyServiceRequestView(TemplateView):
 
 
 class IdentityProviderResponseView(TemplateView):
-    """
-    Forward an identity provider's response to a service provider.
+    """Forward an identity provider's response to a service provider.
 
     eIDAS Generic Proxy Service expect the identity provider's response as a light response.
     """
@@ -206,7 +200,7 @@ class IdentityProviderResponseView(TemplateView):
     light_token: Optional[LightToken] = None
     encoded_token: Optional[str] = None
     log_id: int = 0
-    auxiliary_data: Optional[Dict[str, Any]] = None
+    auxiliary_data: Optional[dict[str, Any]] = None
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Handle a HTTP POST request."""
@@ -287,8 +281,7 @@ class IdentityProviderResponseView(TemplateView):
     def get_saml_response(
         self, key_source: Optional[str], key_location: Optional[str], cert_file: Optional[str]
     ) -> SAMLResponse:
-        """
-        Extract and decrypt a SAML response from POST data.
+        """Extract and decrypt a SAML response from POST data.
 
         :param key_source: An optional source ('file' or 'engine') to a key to decrypt the response.
         :param key_location: An optional path to a key to decrypt the response.
@@ -319,9 +312,8 @@ class IdentityProviderResponseView(TemplateView):
             response.verify_assertion(cert_file)
         return response
 
-    def get_light_storage(self, backend: str, options: Dict[str, Any]) -> LightStorage:
-        """
-        Create a light storage instance.
+    def get_light_storage(self, backend: str, options: dict[str, Any]) -> LightStorage:
+        """Create a light storage instance.
 
         :param backend: A fully qualified name of the backend class.
         :param options: The options to pass to the backend.
@@ -330,10 +322,9 @@ class IdentityProviderResponseView(TemplateView):
         return import_from_module(backend)(**options)
 
     def create_light_response(
-        self, issuer: str, auth_class_map: Optional[Dict[str, LevelOfAssurance]] = None
+        self, issuer: str, auth_class_map: Optional[dict[str, LevelOfAssurance]] = None
     ) -> LightResponse:
-        """
-        Create a light response from SAML response.
+        """Create a light response from SAML response.
 
         :param issuer: The issuer of the light response.
         :param auth_class_map: Mapping of non-LoA auth classes to LevelOfAssurance.
@@ -345,9 +336,8 @@ class IdentityProviderResponseView(TemplateView):
         response.issuer = issuer
         return response
 
-    def create_light_token(self, issuer: str, hash_algorithm: str, secret: str) -> Tuple[LightToken, str]:
-        """
-        Create and encode a light token according to token settings.
+    def create_light_token(self, issuer: str, hash_algorithm: str, secret: str) -> tuple[LightToken, str]:
+        """Create and encode a light token according to token settings.
 
         :param issuer: Token issuer.
         :param hash_algorithm: A hashlib hash algorithm.

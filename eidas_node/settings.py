@@ -1,7 +1,7 @@
 """Settings helpers."""
 
 from enum import Enum
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 from appsettings import Setting
 from django.core.exceptions import ValidationError
@@ -12,7 +12,7 @@ T = TypeVar("T", bound=Enum)
 class EnumSetting(Setting, Generic[T]):
     """Enumeration setting."""
 
-    def __init__(self, enum_type: Type[T], *args, **kwargs):
+    def __init__(self, enum_type: type[T], *args, **kwargs):
         kwargs.setdefault("transform_default", True)
         super().__init__(*args, **kwargs)
         self.enum_type = enum_type

@@ -1,7 +1,7 @@
 from base64 import b64decode, b64encode
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, Optional, TextIO, Tuple, cast
+from typing import BinaryIO, Optional, TextIO, cast
 from unittest.mock import MagicMock, call, patch, sentinel
 
 from django.test import RequestFactory, SimpleTestCase, override_settings
@@ -37,7 +37,7 @@ class TestProxyServiceRequestView(IgniteMockMixin, SimpleTestCase):
         self.url = reverse("proxy-service-request")
         self.addCleanup(self.mock_ignite_cache())
 
-    def get_token(self, issuer: Optional[str] = None) -> Tuple[LightToken, str]:
+    def get_token(self, issuer: Optional[str] = None) -> tuple[LightToken, str]:
         token = LightToken(
             id="request-token-id",
             issuer=issuer or "request-token-issuer",

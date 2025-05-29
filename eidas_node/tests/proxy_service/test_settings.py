@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Dict
+from typing import Any
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
@@ -7,7 +7,7 @@ from django.test import SimpleTestCase, override_settings
 from eidas_node.proxy_service.settings import check_settings
 from eidas_node.tests.constants import CERT_FILE, KEY_LOCATION, KEY_SOURCE
 
-PROXY_SERVICE_IDENTITY_PROVIDER: Dict[str, Any] = {
+PROXY_SERVICE_IDENTITY_PROVIDER: dict[str, Any] = {
     "ENDPOINT": "https://test.example.net/identity-provider-endpoint",
     "REQUEST_ISSUER": "https://test.example.net/saml/idp.xml",
     "REQUEST_SIGNATURE": {

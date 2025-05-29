@@ -5,7 +5,7 @@ import hmac
 from base64 import b64decode, b64encode
 from collections import OrderedDict
 from datetime import datetime
-from typing import Dict, List, Optional, cast
+from typing import Optional, cast
 
 from lxml import etree
 from lxml.etree import Element, QName
@@ -18,8 +18,7 @@ from eidas_node.xml import get_element_path
 
 
 class LightToken(DataModel):
-    """
-    eIDAS-Node Light Token.
+    """eIDAS-Node Light Token.
 
     See eIDAS-Node National IdP and SP Integration Guide version 2.3: 4.4.1. Implementing the LightToken.
     """
@@ -41,8 +40,7 @@ class LightToken(DataModel):
                 raise ValidationError({field: 'Character "|" not allowed.'})
 
     def digest(self, hash_algorithm: str, secret: str) -> bytes:
-        """
-        Calculate the digest of the token.
+        """Calculate the digest of the token.
 
         :param hash_algorithm: One of hashlib hash algorithms.
         :param secret: The secret shared between the communicating parties.
@@ -58,8 +56,7 @@ class LightToken(DataModel):
         return algorithm.digest()
 
     def encode(self, hash_algorithm: str, secret: str) -> bytes:
-        """
-        Encode token for transmission.
+        """Encode token for transmission.
 
         :param hash_algorithm: One of hashlib hash algorithms.
         :param secret: The secret shared between the communicating parties.
@@ -74,8 +71,7 @@ class LightToken(DataModel):
 
     @classmethod
     def decode(cls, encoded_token: bytes, hash_algorithm: str, secret: str, max_size: int = 1024) -> "LightToken":
-        """
-        Decode encoded token and check the validity and digest.
+        """Decode encoded token and check the validity and digest.
 
         :param encoded_token:  Base64 encoded token.
         :param hash_algorithm: One of hashlib hash algorithms.
@@ -140,7 +136,7 @@ class LightRequest(XMLDataModel):
     """Optional state information expected to be returned with the LightResponse pair."""
     sp_country_code: Optional[str] = None
     """The code of requesting country."""
-    requested_attributes: Optional[Dict[str, List[str]]] = None
+    requested_attributes: Optional[dict[str, list[str]]] = None
     """The list of requested attributes."""
     requester_id: Optional[str] = None
     """Identification of service provider"""
@@ -166,11 +162,11 @@ class LightRequest(XMLDataModel):
         """Deserialize field 'sp_type'."""
         return ServiceProviderType(elm.text) if elm.text else None
 
-    def deserialize_requested_attributes(self, elm: Element) -> Dict[str, List[str]]:
+    def deserialize_requested_attributes(self, elm: Element) -> dict[str, list[str]]:
         """Deserialize field 'requested_attributes'."""
         return deserialize_attributes(elm)
 
-    def serialize_requested_attributes(self, root: Element, tag: str, attributes: Dict[str, List[str]]) -> None:
+    def serialize_requested_attributes(self, root: Element, tag: str, attributes: dict[str, list[str]]) -> None:
         """Serialize field 'requested_attributes'."""
         serialize_attributes(root, tag, attributes)
 
@@ -247,7 +243,7 @@ class LightResponse(XMLDataModel):
     """Level of assurance required to fulfil the request"""
     status: Optional[Status] = None
     """Complex element to provide status information from IdP."""
-    attributes: Optional[Dict[str, List[str]]] = None
+    attributes: Optional[dict[str, list[str]]] = None
     """The list of attributes and their values."""
     consent: Optional[str] = None
     """Type of conset specified by user"""
@@ -280,11 +276,11 @@ class LightResponse(XMLDataModel):
         """Deserialize field 'status'."""
         return Status.load_xml(elm)
 
-    def deserialize_attributes(self, elm: Element) -> Dict[str, List[str]]:
+    def deserialize_attributes(self, elm: Element) -> dict[str, list[str]]:
         """Deserialize field 'attributes'."""
         return deserialize_attributes(elm)
 
-    def serialize_attributes(self, root: etree.Element, tag: str, attributes: Dict[str, List[str]]) -> None:
+    def serialize_attributes(self, root: etree.Element, tag: str, attributes: dict[str, list[str]]) -> None:
         """Serialize field 'attributes'."""
         return serialize_attributes(root, tag, attributes)
 
@@ -292,7 +288,7 @@ class LightResponse(XMLDataModel):
 def validate_attributes(model: DataModel, field_name: str) -> None:
     """Validate eIDAS attributes."""
     model.validate_fields(dict, field_name, required=True)
-    attributes: Dict[str, List[str]] = getattr(model, field_name)
+    attributes: dict[str, list[str]] = getattr(model, field_name)
     for key, values in attributes.items():
         if not isinstance(key, str) or not key.strip():
             raise ValidationError({field_name: "All keys must be strings."})
@@ -300,7 +296,7 @@ def validate_attributes(model: DataModel, field_name: str) -> None:
             raise ValidationError({field_name: "All values must be lists of strings."})
 
 
-def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Optional[Dict[str, List[str]]]) -> None:
+def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Optional[dict[str, list[str]]]) -> None:
     """Serialize eIDAS attributes."""
     if attributes is not None:
         elm = etree.SubElement(parent_element, tag)
@@ -311,9 +307,9 @@ def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Op
                 etree.SubElement(attribute, "value").text = value
 
 
-def deserialize_attributes(attributes_elm: Element) -> Dict[str, List[str]]:
+def deserialize_attributes(attributes_elm: Element) -> dict[str, list[str]]:
     """Deserialize eIDAS attributes."""
-    attributes: Dict[str, List[str]] = OrderedDict()
+    attributes: dict[str, list[str]] = OrderedDict()
     for attribute in attributes_elm:
         if QName(attribute.tag).localname != "attribute":
             raise ValidationError({get_element_path(attribute): "Unexpected element {!r}".format(attribute.tag)})

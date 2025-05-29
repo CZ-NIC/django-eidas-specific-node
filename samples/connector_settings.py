@@ -1,5 +1,4 @@
-"""
-Development settings for eidas_node.connector Django app.
+"""Development settings for eidas_node.connector Django app.
 
 DO NOT USE IN PRODUCTION!
 
@@ -7,7 +6,7 @@ See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 """
 
 # Security
-from typing import Dict, Any
+from typing import Any
 
 SECRET_KEY = "secret"
 DEBUG = True
@@ -37,26 +36,26 @@ TEMPLATES = [
 ]
 
 # eIDAS Connector
-CONNECTOR_REQUEST_TOKEN: Dict[str, Any] = {
+CONNECTOR_REQUEST_TOKEN: dict[str, Any] = {
     "HASH_ALGORITHM": "sha256",
     "SECRET": "mySecretConnectorRequest",
     "ISSUER": "specificCommunicationDefinitionConnectorRequest",
 }
 
-CONNECTOR_RESPONSE_TOKEN: Dict[str, str] = {
+CONNECTOR_RESPONSE_TOKEN: dict[str, str] = {
     "HASH_ALGORITHM": "sha256",
     "SECRET": "mySecretConnectorResponse",
     "ISSUER": "specificCommunicationDefinitionConnectorResponse",
     "LIFETIME": 10,  # minutes
 }
 
-CONNECTOR_SERVICE_PROVIDER: Dict[str, str] = {
+CONNECTOR_SERVICE_PROVIDER: dict[str, str] = {
     "ENDPOINT": "/DemoServiceProviderResponse",
     "REQUEST_ISSUER": "REQUEST_ISSUER",
     "RESPONSE_ISSUER": "RESPONSE_ISSUER",
 }
 
-CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
+CONNECTOR_LIGHT_STORAGE: dict[str, Any] = {
     "BACKEND": "eidas_node.storage.ignite.IgniteStorage",
     "OPTIONS": {
         "host": "ignite.example.net",
@@ -66,7 +65,7 @@ CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
     },
 }
 
-CONNECTOR_EIDAS_NODE: Dict[str, str] = {
+CONNECTOR_EIDAS_NODE: dict[str, str] = {
     "CONNECTOR_REQUEST_URL": "http://eidasnode.example.net/EidasNode/SpecificConnectorRequest",
     "REQUEST_ISSUER": "connector-request-issuer",
 }

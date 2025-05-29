@@ -24,8 +24,7 @@ def datetime_iso_format_milliseconds(timestamp: datetime) -> str:
 
 
 def import_from_module(name: str) -> Any:
-    """
-    Import a module member specified by a fully qualified name.
+    """Import a module member specified by a fully qualified name.
 
     :param name: A fully qualified name (`package.module.ClassName`).
     :return: The requested module member.
@@ -54,8 +53,7 @@ class WrappedSeries:
         self._lock = Lock()
 
     def next(self) -> int:
-        """
-        Get the next number from the series.
+        """Get the next number from the series.
 
         This method is thread-safe.
         """

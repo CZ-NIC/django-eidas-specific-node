@@ -25,7 +25,7 @@ def tearDownModule():
     },
 )
 class TestSignXMLNodePKCS11(test_xml.TestSignXMLNode):
-    "Sign tests with key stored in SoftHSM"
+    """Sign tests with key stored in SoftHSM."""
 
 
 # Commented out as underlying libraries doesn't support decrypt RSA-OAEP algorithm for now

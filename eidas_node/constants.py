@@ -58,8 +58,7 @@ class SubStatusCode(str, Enum):
 
 @unique
 class XmlBlockCipher(str, Enum):
-    """
-    XML encryption algorithms.
+    """XML encryption algorithms.
 
     Specification: https://www.w3.org/TR/xmlenc-core1/#sec-Alg-Block
     """
@@ -76,8 +75,7 @@ class XmlBlockCipher(str, Enum):
 
 @unique
 class XmlKeyTransport(str, Enum):
-    """
-    XML key transport algorithms.
+    """XML key transport algorithms.
 
     Specification: https://www.w3.org/TR/xmlenc-core1/#sec-Alg-KeyTransport
     """

@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Dict
+from typing import Any
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
@@ -7,7 +7,7 @@ from django.test import SimpleTestCase, override_settings
 from eidas_node.connector.settings import check_settings
 from eidas_node.tests.constants import CERT_FILE, KEY_LOCATION, KEY_SOURCE
 
-CONNECTOR_SERVICE_PROVIDER: Dict[str, Any] = {
+CONNECTOR_SERVICE_PROVIDER: dict[str, Any] = {
     "ENDPOINT": "/DemoServiceProviderResponse",
     "REQUEST_ISSUER": "test-saml-request-issuer",
     "RESPONSE_ISSUER": "test-saml-response-issuer",

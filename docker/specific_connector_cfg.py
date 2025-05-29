@@ -1,15 +1,14 @@
-"""
-Development settings for eidas_node Django app.
+"""Development settings for eidas_node Django app.
 
 DO NOT USE IN PRODUCTION!
 
 See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 """
 
-from typing import Dict, Any
+from typing import Any
 
 from eidas_node.connector.settings import DEFAULT_COUNTRIES
-from eidas_node.tests.constants import KEY_SOURCE, KEY_LOCATION, CERT_FILE
+from eidas_node.tests.constants import CERT_FILE, KEY_LOCATION, KEY_SOURCE
 
 SECRET_KEY = "5x-fiyyunqio&)a+8%$0fqvqpc1s18n^xj21ftc-ojpu2)jmce"
 DEBUG = True
@@ -39,20 +38,20 @@ TEMPLATES = [
 ]
 
 # eIDAS Proxy Service
-CONNECTOR_REQUEST_TOKEN: Dict[str, Any] = {
+CONNECTOR_REQUEST_TOKEN: dict[str, Any] = {
     "HASH_ALGORITHM": "sha256",
     "SECRET": "mySecretConnectorRequest",
     "ISSUER": "specificCommunicationDefinitionConnectorRequest",
 }
 
-CONNECTOR_RESPONSE_TOKEN: Dict[str, str] = {
+CONNECTOR_RESPONSE_TOKEN: dict[str, str] = {
     "HASH_ALGORITHM": "sha256",
     "SECRET": "mySecretConnectorResponse",
     "ISSUER": "specificCommunicationDefinitionConnectorResponse",
     "LIFETIME": 10,  # minutes
 }
 
-CONNECTOR_SERVICE_PROVIDER: Dict[str, str] = {
+CONNECTOR_SERVICE_PROVIDER: dict[str, str] = {
     "ENDPOINT": "/DemoServiceProviderResponse",
     "REQUEST_ISSUER": "REQUEST_ISSUER",
     "RESPONSE_ISSUER": "RESPONSE_ISSUER",
@@ -63,7 +62,7 @@ CONNECTOR_SERVICE_PROVIDER: Dict[str, str] = {
     },
 }
 
-CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
+CONNECTOR_LIGHT_STORAGE: dict[str, Any] = {
     "BACKEND": "eidas_node.storage.ignite.IgniteStorage",
     "OPTIONS": {
         "host": "pokuston-m-01.office.nic.cz",
@@ -73,7 +72,7 @@ CONNECTOR_LIGHT_STORAGE: Dict[str, Any] = {
     },
 }
 
-CONNECTOR_EIDAS_NODE: Dict[str, str] = {
+CONNECTOR_EIDAS_NODE: dict[str, str] = {
     "CONNECTOR_REQUEST_URL": "http://pokuston.office.nic.cz:8888/EidasNode/SpecificConnectorRequest",
     "REQUEST_ISSUER": "connector-request-issuer",
 }

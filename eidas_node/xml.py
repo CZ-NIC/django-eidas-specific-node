@@ -3,7 +3,7 @@
 import re
 from collections import namedtuple
 from io import BytesIO
-from typing import BinaryIO, List, Union
+from typing import BinaryIO, Union
 from uuid import uuid4
 
 import xmlsec
@@ -58,7 +58,7 @@ def dump_xml(
 
 def get_element_path(elm: etree.Element) -> str:
     """Create an element path from the root element."""
-    path: List[str] = []
+    path: list[str] = []
     while elm is not None:
         q_name = etree.QName(elm.tag)
         tag = q_name.localname
@@ -79,8 +79,7 @@ def is_xml_id_valid(xml_id: str) -> bool:
 
 
 def create_xml_uuid(prefix: str = "_") -> str:
-    """
-    Create a UUID which is also a valid XML id.
+    """Create a UUID which is also a valid XML id.
 
     :param prefix: UUID prefix. It must start with a letter or underscore.
     :return: A prefixed UUID.
@@ -91,14 +90,13 @@ def create_xml_uuid(prefix: str = "_") -> str:
 
 
 def decrypt_xml(tree: ElementTree, key_source: str, key_location: str) -> int:
-    """
-    Decrypt a XML document.
+    """Decrypt a XML document.
 
     :param tree: The XML document to decrypt.
     :param key_file: A path to an encryption key file.
     :return: The number of decrypted elements
     """
-    encrypted_elements = tree.findall(".//{%s}EncryptedData" % XML_ENC_NAMESPACE)
+    encrypted_elements = tree.findall(".//{{{}}}EncryptedData".format(XML_ENC_NAMESPACE))
     if encrypted_elements:
         manager = xmlsec.KeysManager()
         if key_source == "file":
@@ -118,8 +116,7 @@ def decrypt_xml(tree: ElementTree, key_source: str, key_location: str) -> int:
 
 
 def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_transport: XmlKeyTransport) -> None:
-    """
-    Encrypt a XML node.
+    """Encrypt a XML node.
 
     The node is removed from the parent element and replaced with <EncryptedData> element.
 
@@ -138,20 +135,20 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
     # Create a template for encryption. xmlsec.template functions don't cover all libxmlsec1 features yet.
     enc_data = SubElement(
         container,
-        "{%s}EncryptedData" % XML_ENC_NAMESPACE,
+        "{{{}}}EncryptedData".format(XML_ENC_NAMESPACE),
         {"Type": xmlsec.constants.TypeEncElement},
         nsmap={"xmlenc": XML_ENC_NAMESPACE},
     )
-    SubElement(enc_data, "{%s}EncryptionMethod" % XML_ENC_NAMESPACE, {"Algorithm": cipher.value})
-    SubElement(enc_data, "{%s}CipherData" % XML_ENC_NAMESPACE)
+    SubElement(enc_data, "{{{}}}EncryptionMethod".format(XML_ENC_NAMESPACE), {"Algorithm": cipher.value})
+    SubElement(enc_data, "{{{}}}CipherData".format(XML_ENC_NAMESPACE))
     # typing: we have to ignore all xmlsec.template until #247 is fixed
     xmlsec.template.encrypted_data_ensure_cipher_value(enc_data)  # type: ignore[attr-defined]
 
     # Info about the generated encryption key.
     key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_data, ns="ds")  # type: ignore[attr-defined]
-    enc_key = SubElement(key_info, "{%s}EncryptedKey" % XML_ENC_NAMESPACE)
-    SubElement(enc_key, "{%s}EncryptionMethod" % XML_ENC_NAMESPACE, {"Algorithm": key_transport.value})
-    SubElement(enc_key, "{%s}CipherData" % XML_ENC_NAMESPACE)
+    enc_key = SubElement(key_info, "{{{}}}EncryptedKey".format(XML_ENC_NAMESPACE))
+    SubElement(enc_key, "{{{}}}EncryptionMethod".format(XML_ENC_NAMESPACE), {"Algorithm": key_transport.value})
+    SubElement(enc_key, "{{{}}}CipherData".format(XML_ENC_NAMESPACE))
     xmlsec.template.encrypted_data_ensure_cipher_value(enc_key)  # type: ignore[attr-defined]
 
     # Info about the certificate.
@@ -207,8 +204,7 @@ def sign_xml_node(
     digest_method: str,
     position: int = 0,
 ) -> None:
-    """
-    Sign a XML element and insert the signature as a child element.
+    """Sign a XML element and insert the signature as a child element.
 
     :param node: The XML element to sign
     :param key_source: Source type of the key ('file' or 'engine')
@@ -276,9 +272,8 @@ def sign_xml_node(
     remove_extra_xml_whitespace(signature)
 
 
-def verify_xml_signatures(node: Element, cert_file: str) -> List[SignatureInfo]:
-    """
-    Verify all XML signatures from the provided node.
+def verify_xml_signatures(node: Element, cert_file: str) -> list[SignatureInfo]:
+    """Verify all XML signatures from the provided node.
 
     :param node: A XML subtree.
     :param cert_file: A path to the certificate file.
