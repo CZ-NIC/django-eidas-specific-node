@@ -8,7 +8,7 @@ See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 # Security
 from typing import Any
 
-SECRET_KEY = "secret"
+SECRET_KEY = "secret"  # noqa: S105
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 

@@ -10,7 +10,7 @@ from typing import Any
 from eidas_node.connector.settings import DEFAULT_COUNTRIES
 from eidas_node.tests.constants import CERT_FILE, KEY_LOCATION, KEY_SOURCE
 
-SECRET_KEY = "5x-fiyyunqio&)a+8%$0fqvqpc1s18n^xj21ftc-ojpu2)jmce"
+SECRET_KEY = "5x-fiyyunqio&)a+8%$0fqvqpc1s18n^xj21ftc-ojpu2)jmce"  # noqa: S105
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 

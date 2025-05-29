@@ -4,7 +4,7 @@
 # with basic types to be importable from settings.
 from enum import Enum, unique
 
-TOKEN_ID_PREFIX = "T"
+TOKEN_ID_PREFIX = "T"  # noqa: S105
 
 
 @unique

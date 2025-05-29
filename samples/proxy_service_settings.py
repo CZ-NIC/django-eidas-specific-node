@@ -6,7 +6,7 @@ See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 """
 
 # Security
-SECRET_KEY = "secret"
+SECRET_KEY = "secret"  # noqa: S105
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
