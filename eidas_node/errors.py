@@ -1,6 +1,6 @@
 """Errors of eidas_node."""
-from typing import Dict
 
+from typing import Dict
 
 class EidasNodeError(Exception):
     """Base error of eidas_node package."""
@@ -17,10 +17,10 @@ class ValidationError(EidasNodeError):
         self.errors = errors
 
     def __str__(self) -> str:
-        return 'Validation failed: {!r}'.format(self.errors)
+        return "Validation failed: {!r}".format(self.errors)
 
     def __repr__(self) -> str:
-        return '{}({!r})'.format(self.__class__.__name__, self.errors)
+        return "{}({!r})".format(self.__class__.__name__, self.errors)
 
 
 class ParseError(EidasNodeError):
@@ -37,7 +37,7 @@ class ParseError(EidasNodeError):
         return self.error
 
     def __repr__(self) -> str:
-        return '{}({!r})'.format(self.__class__.__name__, self.error)
+        return "{}({!r})".format(self.__class__.__name__, self.error)
 
 
 class SecurityError(EidasNodeError):
@@ -54,4 +54,4 @@ class SecurityError(EidasNodeError):
         return self.error
 
     def __repr__(self) -> str:
-        return '{}({!r})'.format(self.__class__.__name__, self.error)
+        return "{}({!r})".format(self.__class__.__name__, self.error)

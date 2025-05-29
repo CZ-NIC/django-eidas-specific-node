@@ -1,4 +1,5 @@
 """Storage utility functions."""
+
 from typing import Any, Dict
 
 from eidas_node.storage.base import AuxiliaryStorage

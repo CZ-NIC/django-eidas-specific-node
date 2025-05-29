@@ -1,4 +1,5 @@
 """Models of eidas_node."""
+
 import hashlib
 import hmac
 from base64 import b64decode, b64encode
@@ -23,7 +24,7 @@ class LightToken(DataModel):
     See eIDAS-Node National IdP and SP Integration Guide version 2.3: 4.4.1. Implementing the LightToken.
     """
 
-    FIELDS = ['id', 'issuer', 'created']
+    FIELDS = ["id", "issuer", "created"]
     id: str
     """A unique identifier to reference the real data object (LightRequest/LightResponse)."""
     issuer: str
@@ -33,10 +34,10 @@ class LightToken(DataModel):
 
     def validate(self) -> None:
         """Validate this data model."""
-        self.validate_fields(str, 'id', 'issuer', required=True)
-        self.validate_fields(datetime, 'created', required=True)
-        for field in 'id', 'issuer':
-            if '|' in getattr(self, field):
+        self.validate_fields(str, "id", "issuer", required=True)
+        self.validate_fields(datetime, "created", required=True)
+        for field in "id", "issuer":
+            if "|" in getattr(self, field):
                 raise ValidationError({field: 'Character "|" not allowed.'})
 
     def digest(self, hash_algorithm: str, secret: str) -> bytes:
@@ -51,9 +52,9 @@ class LightToken(DataModel):
         self.validate()
         assert self.id is not None
         assert self.issuer is not None
-        data = '|'.join((self.id, self.issuer, create_eidas_timestamp(cast(datetime, self.created)), secret))
+        data = "|".join((self.id, self.issuer, create_eidas_timestamp(cast(datetime, self.created)), secret))
         algorithm = hashlib.new(hash_algorithm)
-        algorithm.update(data.encode('utf-8'))
+        algorithm.update(data.encode("utf-8"))
         return algorithm.digest()
 
     def encode(self, hash_algorithm: str, secret: str) -> bytes:
@@ -65,14 +66,14 @@ class LightToken(DataModel):
         :return: Base64 encoded token as bytes.
         :raise ValidationError: If token data are invalid.
         """
-        digest = b64encode(self.digest(hash_algorithm, secret)).decode('ascii')
+        digest = b64encode(self.digest(hash_algorithm, secret)).decode("ascii")
         assert self.id is not None
         assert self.issuer is not None
-        data = '|'.join((self.issuer, self.id, create_eidas_timestamp(cast(datetime, self.created)), digest))
-        return b64encode(data.encode('utf-8'))
+        data = "|".join((self.issuer, self.id, create_eidas_timestamp(cast(datetime, self.created)), digest))
+        return b64encode(data.encode("utf-8"))
 
     @classmethod
-    def decode(cls, encoded_token: bytes, hash_algorithm: str, secret: str, max_size: int = 1024) -> 'LightToken':
+    def decode(cls, encoded_token: bytes, hash_algorithm: str, secret: str, max_size: int = 1024) -> "LightToken":
         """
         Decode encoded token and check the validity and digest.
 
@@ -86,30 +87,41 @@ class LightToken(DataModel):
         :raise SecurityError: If the token digest is invalid.
         """
         if max_size and len(encoded_token) > max_size:
-            raise ParseError('Maximal token size exceeded.')
-        data = b64decode(encoded_token, validate=True).decode('utf-8')
+            raise ParseError("Maximal token size exceeded.")
+        data = b64decode(encoded_token, validate=True).decode("utf-8")
         try:
-            issuer, token_id, timestamp, digest_base64 = data.split('|')
+            issuer, token_id, timestamp, digest_base64 = data.split("|")
         except ValueError as e:
-            raise ParseError('Token has wrong number of parts: {}.'.format(e.args[0]))
+            raise ParseError("Token has wrong number of parts: {}.".format(e.args[0]))
 
         token = LightToken(issuer=issuer, id=token_id, created=parse_eidas_timestamp(timestamp))
         token.validate()
 
-        provided_digest = b64decode(digest_base64.encode('ascii'))
+        provided_digest = b64decode(digest_base64.encode("ascii"))
         valid_digest = token.digest(hash_algorithm, secret)
         if not hmac.compare_digest(valid_digest, provided_digest):
-            raise SecurityError('Light token has invalid digest.')
+            raise SecurityError("Light token has invalid digest.")
         return token
 
 
 class LightRequest(XMLDataModel):
     """A request sent to/received from the generic part of eIDAS-Node."""
 
-    FIELDS = ['citizen_country_code', 'id', 'issuer', 'level_of_assurance', 'name_id_format', 'provider_name',
-              'sp_type', 'relay_state', 'sp_country_code', 'requested_attributes', 'requester_id']
-    ROOT_ELEMENT = 'lightRequest'
-    ROOT_NS = 'http://cef.eidas.eu/LightRequest'
+    FIELDS = [
+        "citizen_country_code",
+        "id",
+        "issuer",
+        "level_of_assurance",
+        "name_id_format",
+        "provider_name",
+        "sp_type",
+        "relay_state",
+        "sp_country_code",
+        "requested_attributes",
+        "requester_id",
+    ]
+    ROOT_ELEMENT = "lightRequest"
+    ROOT_NS = "http://cef.eidas.eu/LightRequest"
     citizen_country_code: Optional[str] = None
     """Country code of the requesting citizen. ISO ALPHA-2 format."""
     id: Optional[str] = None
@@ -135,12 +147,12 @@ class LightRequest(XMLDataModel):
 
     def validate(self) -> None:
         """Validate this data model."""
-        self.validate_fields(str, 'citizen_country_code', 'id', required=True)
-        self.validate_fields(str, 'issuer', 'provider_name', 'relay_state', 'sp_country_code', required=False)
-        self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=True)
-        self.validate_fields(NameIdFormat, 'name_id_format', required=False)
-        self.validate_fields(ServiceProviderType, 'sp_type', required=False)
-        validate_attributes(self, 'requested_attributes')
+        self.validate_fields(str, "citizen_country_code", "id", required=True)
+        self.validate_fields(str, "issuer", "provider_name", "relay_state", "sp_country_code", required=False)
+        self.validate_fields(LevelOfAssurance, "level_of_assurance", required=True)
+        self.validate_fields(NameIdFormat, "name_id_format", required=False)
+        self.validate_fields(ServiceProviderType, "sp_type", required=False)
+        validate_attributes(self, "requested_attributes")
 
     def deserialize_level_of_assurance(self, elm: Element) -> Optional[LevelOfAssurance]:
         """Deserialize field 'level_of_assurance'."""
@@ -166,8 +178,8 @@ class LightRequest(XMLDataModel):
 class Status(XMLDataModel):
     """Complex element to provide status information from IdP."""
 
-    FIELDS = ['failure', 'status_code', 'sub_status_code', 'status_message']
-    ROOT_ELEMENT = 'status'
+    FIELDS = ["failure", "status_code", "sub_status_code", "status_message"]
+    ROOT_ELEMENT = "status"
     failure: bool = False
     """Whether the authentication request has failed."""
     status_code: Optional[StatusCode] = None
@@ -179,14 +191,14 @@ class Status(XMLDataModel):
 
     def validate(self) -> None:
         """Validate this data model."""
-        self.validate_fields(bool, 'failure', required=True)
-        self.validate_fields(StatusCode, 'status_code', required=False)
-        self.validate_fields(SubStatusCode, 'sub_status_code', required=False)
-        self.validate_fields(str, 'status_message', required=False)
+        self.validate_fields(bool, "failure", required=True)
+        self.validate_fields(StatusCode, "status_code", required=False)
+        self.validate_fields(SubStatusCode, "sub_status_code", required=False)
+        self.validate_fields(str, "status_message", required=False)
 
     def deserialize_failure(self, elm: Element) -> Optional[bool]:
         """Deserialize field 'failure'."""
-        return elm.text.lower() == 'true' if elm.text else None
+        return elm.text.lower() == "true" if elm.text else None
 
     def deserialize_status_code(self, elm: Element) -> Optional[StatusCode]:
         """Deserialize field 'status_code'."""
@@ -194,7 +206,7 @@ class Status(XMLDataModel):
 
     def deserialize_sub_status_code(self, elm: Element) -> Optional[SubStatusCode]:
         """Deserialize field 'sub_status_code'."""
-        if elm.text and '##' in elm.text:
+        if elm.text and "##" in elm.text:
             return None
         return SubStatusCode(elm.text) if elm.text else None
 
@@ -202,10 +214,21 @@ class Status(XMLDataModel):
 class LightResponse(XMLDataModel):
     """A response sent to/received from the generic part of eIDAS-Node."""
 
-    FIELDS = ['id', 'in_response_to_id', 'issuer', 'ip_address', 'relay_state', 'subject',
-              'subject_name_id_format', 'level_of_assurance', 'status', 'attributes', 'consent']
-    ROOT_ELEMENT = 'lightResponse'
-    ROOT_NS = 'http://cef.eidas.eu/LightResponse'
+    FIELDS = [
+        "id",
+        "in_response_to_id",
+        "issuer",
+        "ip_address",
+        "relay_state",
+        "subject",
+        "subject_name_id_format",
+        "level_of_assurance",
+        "status",
+        "attributes",
+        "consent",
+    ]
+    ROOT_ELEMENT = "lightResponse"
+    ROOT_NS = "http://cef.eidas.eu/LightResponse"
     id: Optional[str] = None
     """Internal unique ID."""
     in_response_to_id: Optional[str] = None
@@ -231,19 +254,19 @@ class LightResponse(XMLDataModel):
 
     def validate(self) -> None:
         """Validate this data model."""
-        self.validate_fields(Status, 'status', required=True)
+        self.validate_fields(Status, "status", required=True)
         cast(Status, self.status).validate()
-        validate_attributes(self, 'attributes')
+        validate_attributes(self, "attributes")
         if cast(Status, self.status).failure:
-            self.validate_fields(str, 'id', 'in_response_to_id', required=True)
-            self.validate_fields(str, 'subject', 'issuer', 'ip_address', 'relay_state', required=False)
-            self.validate_fields(NameIdFormat, 'subject_name_id_format', required=False)
-            self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=False)
+            self.validate_fields(str, "id", "in_response_to_id", required=True)
+            self.validate_fields(str, "subject", "issuer", "ip_address", "relay_state", required=False)
+            self.validate_fields(NameIdFormat, "subject_name_id_format", required=False)
+            self.validate_fields(LevelOfAssurance, "level_of_assurance", required=False)
         else:
-            self.validate_fields(str, 'id', 'in_response_to_id', 'subject', required=True)
-            self.validate_fields(str, 'issuer', 'ip_address', 'relay_state', required=False)
-            self.validate_fields(NameIdFormat, 'subject_name_id_format', required=True)
-            self.validate_fields(LevelOfAssurance, 'level_of_assurance', required=True)
+            self.validate_fields(str, "id", "in_response_to_id", "subject", required=True)
+            self.validate_fields(str, "issuer", "ip_address", "relay_state", required=False)
+            self.validate_fields(NameIdFormat, "subject_name_id_format", required=True)
+            self.validate_fields(LevelOfAssurance, "level_of_assurance", required=True)
 
     def deserialize_subject_name_id_format(self, elm: Element) -> Optional[NameIdFormat]:
         """Deserialize field 'subject_name_name_id_format'."""
@@ -272,9 +295,9 @@ def validate_attributes(model: DataModel, field_name: str) -> None:
     attributes: Dict[str, List[str]] = getattr(model, field_name)
     for key, values in attributes.items():
         if not isinstance(key, str) or not key.strip():
-            raise ValidationError({field_name: 'All keys must be strings.'})
+            raise ValidationError({field_name: "All keys must be strings."})
         if not isinstance(values, list) or any(not isinstance(value, str) for value in values):
-            raise ValidationError({field_name: 'All values must be lists of strings.'})
+            raise ValidationError({field_name: "All values must be lists of strings."})
 
 
 def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Optional[Dict[str, List[str]]]) -> None:
@@ -282,27 +305,27 @@ def serialize_attributes(parent_element: etree.Element, tag: str, attributes: Op
     if attributes is not None:
         elm = etree.SubElement(parent_element, tag)
         for name, values in attributes.items():
-            attribute = etree.SubElement(elm, 'attribute')
-            etree.SubElement(attribute, 'definition').text = name
+            attribute = etree.SubElement(elm, "attribute")
+            etree.SubElement(attribute, "definition").text = name
             for value in values:
-                etree.SubElement(attribute, 'value').text = value
+                etree.SubElement(attribute, "value").text = value
 
 
 def deserialize_attributes(attributes_elm: Element) -> Dict[str, List[str]]:
     """Deserialize eIDAS attributes."""
     attributes: Dict[str, List[str]] = OrderedDict()
     for attribute in attributes_elm:
-        if QName(attribute.tag).localname != 'attribute':
-            raise ValidationError({get_element_path(attribute): 'Unexpected element {!r}'.format(attribute.tag)})
+        if QName(attribute.tag).localname != "attribute":
+            raise ValidationError({get_element_path(attribute): "Unexpected element {!r}".format(attribute.tag)})
         if not len(attribute):
-            raise ValidationError({get_element_path(attribute): 'Missing attribute.definition element.'})
+            raise ValidationError({get_element_path(attribute): "Missing attribute.definition element."})
         definition = attribute[0]
-        if QName(definition.tag).localname != 'definition':
-            raise ValidationError({get_element_path(definition): 'Unexpected element {!r}'.format(definition.tag)})
+        if QName(definition.tag).localname != "definition":
+            raise ValidationError({get_element_path(definition): "Unexpected element {!r}".format(definition.tag)})
 
         values = attributes[definition.text] = []
         for value in attribute[1:]:
-            if QName(value.tag).localname != 'value':
-                raise ValidationError({get_element_path(value): 'Unexpected element {!r}'.format(value.tag)})
+            if QName(value.tag).localname != "value":
+                raise ValidationError({get_element_path(value): "Unexpected element {!r}".format(value.tag)})
             values.append(value.text)
     return attributes

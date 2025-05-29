@@ -1,4 +1,5 @@
 """Storage for Light Requests and Responses backed by Apache Ignite."""
+
 import json
 from typing import Any, Dict, Optional
 
@@ -40,25 +41,25 @@ class IgniteStorage(LightStorage):
     def pop_light_request(self, uid: str) -> Optional[LightRequest]:
         """Look up a LightRequest by a unique id and then remove it."""
         data = self.get_cache(self.request_cache_name).get_and_remove(uid)
-        LOGGER.debug('Got Light Request from cache: id=%r, data=%s', uid, data)
+        LOGGER.debug("Got Light Request from cache: id=%r, data=%s", uid, data)
         return LightRequest().load_xml(parse_xml(data)) if data is not None else None
 
     def pop_light_response(self, uid: str) -> Optional[LightResponse]:
         """Look up a LightResponse by a unique id and then remove it."""
         data = self.get_cache(self.response_cache_name).get_and_remove(uid)
-        LOGGER.debug('Got Light Response from cache: id=%r, data=%s', uid, data)
+        LOGGER.debug("Got Light Response from cache: id=%r, data=%s", uid, data)
         return LightResponse().load_xml(parse_xml(data)) if data is not None else None
 
     def put_light_request(self, uid: str, request: LightRequest) -> None:
         """Store a LightRequest under a unique id."""
-        data = dump_xml(request.export_xml()).decode('utf-8')
-        LOGGER.debug('Store Light Request to cache: id=%r, data=%s', uid, data)
+        data = dump_xml(request.export_xml()).decode("utf-8")
+        LOGGER.debug("Store Light Request to cache: id=%r, data=%s", uid, data)
         self.get_cache(self.request_cache_name).put(uid, data)
 
     def put_light_response(self, uid: str, response: LightResponse) -> None:
         """Store a LightResponse under a unique id."""
-        data = dump_xml(response.export_xml()).decode('utf-8')
-        LOGGER.debug('Store Light Response to cache: id=%r, data=%s', uid, data)
+        data = dump_xml(response.export_xml()).decode("utf-8")
+        LOGGER.debug("Store Light Response to cache: id=%r, data=%s", uid, data)
         self.get_cache(self.response_cache_name).put(uid, data)
 
 
@@ -72,9 +73,7 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
     :param timeout: Timeout (in seconds) for socket operations.
     """
 
-    def __init__(self,
-                 host: str, port: int, cache_name: str,
-                 timeout: int = 30, prefix: Optional[str] = None):
+    def __init__(self, host: str, port: int, cache_name: str, timeout: int = 30, prefix: Optional[str] = None):
         self.host = host
         self.port = port
         self.cache_name = cache_name
@@ -95,7 +94,7 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
             uid = self.prefix + uid
 
         data = self.get_cache(self.cache_name).get_and_remove(uid)
-        LOGGER.debug('Got data from cache: id=%r, data=%s', uid, data)
+        LOGGER.debug("Got data from cache: id=%r, data=%s", uid, data)
         return json.loads(data) if data is not None else None
 
     def put(self, uid: str, data: Dict[str, Any]) -> None:
@@ -107,5 +106,5 @@ class AuxiliaryIgniteStorage(AuxiliaryStorage):
         if self.prefix:
             uid = self.prefix + uid
 
-        LOGGER.debug('Store data to cache: id=%r, data=%s', uid, data)
+        LOGGER.debug("Store data to cache: id=%r, data=%s", uid, data)
         self.get_cache(self.cache_name).put(uid, json.dumps(data, sort_keys=True))

@@ -13,6 +13,7 @@ The declaration of a data model is as simple as:
         def validate(self) -> None:
             ...
 """
+
 import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
@@ -37,25 +38,28 @@ class DataModel(ABC):
     """Names of data fields."""
 
     def __init__(self, **data: Any) -> None:
-        if not hasattr(self, 'FIELDS'):
-            raise TypeError('DataModel subclasses must define FIELDS class attribute.')
+        if not hasattr(self, "FIELDS"):
+            raise TypeError("DataModel subclasses must define FIELDS class attribute.")
         fields = set(self.FIELDS)
         for name, value in data.items():
             try:
                 fields.remove(name)
             except KeyError:
-                raise TypeError('{}.__init__() got an unexpected keyword argument {!r}'
-                                .format(self.__class__.__name__, name))
+                raise TypeError(
+                    "{}.__init__() got an unexpected keyword argument {!r}".format(self.__class__.__name__, name)
+                )
             else:
                 setattr(self, name, value)
         for name in fields:
             if not hasattr(self, name):
-                raise ValidationError({
-                    name: '{}.__init__(): a missing keyword argument {!r} for a field without default value'.format(
-                        self.__class__.__name__,
-                        name,
-                    )
-                })
+                raise ValidationError(
+                    {
+                        name: "{}.__init__(): a missing keyword argument {!r} for a field without default value".format(
+                            self.__class__.__name__,
+                            name,
+                        )
+                    }
+                )
 
     def get_data_as_tuple(self) -> Tuple[Any, ...]:
         """Return the values of fields in the declared order."""
@@ -89,19 +93,20 @@ class DataModel(ABC):
             if not isinstance(value, required_type):
                 if required:
                     raise ValidationError(
-                        {name: 'Must be {}, not {}.'.format(required_type.__name__, type(value).__name__)})
+                        {name: "Must be {}, not {}.".format(required_type.__name__, type(value).__name__)}
+                    )
                 if value is not None:
                     raise ValidationError(
-                        {name: 'Must be {} or None, not {}.'.format(required_type.__name__, type(value).__name__)})
+                        {name: "Must be {} or None, not {}.".format(required_type.__name__, type(value).__name__)}
+                    )
 
     def __iter__(self) -> Iterator[Any]:
         """Iterate over values of all fields."""
         return (getattr(self, name) for name in self.FIELDS)
 
     def __repr__(self) -> str:
-        return '{}({})'.format(
-            self.__class__.__name__,
-            ', '.join('{}={!r}'.format(key, getattr(self, key)) for key in self.FIELDS)
+        return "{}({})".format(
+            self.__class__.__name__, ", ".join("{}={!r}".format(key, getattr(self, key)) for key in self.FIELDS)
         )
 
     def __str__(self) -> str:
@@ -113,7 +118,7 @@ class DataModel(ABC):
         return type(self) is type(other) and self.get_data_as_tuple() == other.get_data_as_tuple()
 
 
-T = TypeVar('T', bound='XMLDataModel')
+T = TypeVar("T", bound="XMLDataModel")
 
 
 class XMLDataModel(DataModel, ABC):
@@ -134,7 +139,7 @@ class XMLDataModel(DataModel, ABC):
         """
         self.validate()
         if not self.ROOT_ELEMENT:
-            raise TypeError('XMLDataModel subclasses must define ROOT_ELEMENT class attribute.')
+            raise TypeError("XMLDataModel subclasses must define ROOT_ELEMENT class attribute.")
         root_nsmap = {} if not self.ROOT_NS else {None: self.ROOT_NS}
         root = Element(self.ROOT_ELEMENT, nsmap=root_nsmap)
         self.serialize_fields(root)
@@ -145,7 +150,7 @@ class XMLDataModel(DataModel, ABC):
         for field_name in self.FIELDS:
             value = getattr(self, field_name)
             tag = convert_field_name_to_tag_name(field_name)
-            serialize_func = getattr(self, 'serialize_' + field_name, None)
+            serialize_func = getattr(self, "serialize_" + field_name, None)
             if serialize_func:
                 serialize_func(parent_element, tag, value)
             elif value is not None:
@@ -170,21 +175,21 @@ class XMLDataModel(DataModel, ABC):
         :raise TypeError: If ROOT_ELEMENT class attribute is not defined.
         """
         if not cls.ROOT_ELEMENT:
-            raise TypeError('XMLDataModel subclasses must define ROOT_ELEMENT class attribute.')
+            raise TypeError("XMLDataModel subclasses must define ROOT_ELEMENT class attribute.")
 
-        if hasattr(root, 'getroot'):
+        if hasattr(root, "getroot"):
             root = root.getroot()
 
         if QName(root.tag).localname != cls.ROOT_ELEMENT:
-            raise ValidationError({get_element_path(root): 'Invalid root element {!r}.'.format(root.tag)})
+            raise ValidationError({get_element_path(root): "Invalid root element {!r}.".format(root.tag)})
 
         model = cls()
         for elm in root:
             field_name = convert_tag_name_to_field_name(elm.tag)
             if field_name not in cls.FIELDS:
-                raise ValidationError({get_element_path(elm): 'Unknown element {!r}.'.format(elm.tag)})
+                raise ValidationError({get_element_path(elm): "Unknown element {!r}.".format(elm.tag)})
 
-            deserialize_func = getattr(model, 'deserialize_' + field_name, None)
+            deserialize_func = getattr(model, "deserialize_" + field_name, None)
             setattr(model, field_name, deserialize_func(elm) if deserialize_func else elm.text)
         return model
 
@@ -196,7 +201,7 @@ def convert_tag_name_to_field_name(tag_name: str) -> str:
     :param tag_name: A tag name ('nameIdFormat').
     :return: A field name ('name_id_format').
     """
-    return re.sub('([A-Z]+)', r'_\1', QName(tag_name).localname).lower()
+    return re.sub("([A-Z]+)", r"_\1", QName(tag_name).localname).lower()
 
 
 def convert_field_name_to_tag_name(field_name: str) -> str:
@@ -206,5 +211,5 @@ def convert_field_name_to_tag_name(field_name: str) -> str:
     :param field_name: A field name ('name_id_format').
     :return: A XML tag name ('nameIdFormat').
     """
-    tag_name = field_name.title().replace('_', '')
+    tag_name = field_name.title().replace("_", "")
     return tag_name[0].lower() + tag_name[1:]

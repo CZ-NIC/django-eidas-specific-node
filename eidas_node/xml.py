@@ -1,4 +1,5 @@
 """XML utility functions."""
+
 import re
 from collections import namedtuple
 from io import BytesIO
@@ -12,14 +13,14 @@ from lxml.etree import Element, ElementTree, QName, SubElement
 from eidas_node.constants import XmlBlockCipher, XmlKeyTransport
 from eidas_node.errors import SecurityError
 
-VALID_XML_ID_RE = re.compile('^[_a-zA-Z][-._a-zA-Z0-9]*$')
-XML_ENC_NAMESPACE = 'http://www.w3.org/2001/04/xmlenc#'
-XML_SIG_NAMESPACE = 'http://www.w3.org/2000/09/xmldsig#'
-XML_ATTRIBUTE_ID = 'ID'
-XML_ATTRIBUTE_URI = 'URI'
+VALID_XML_ID_RE = re.compile("^[_a-zA-Z][-._a-zA-Z0-9]*$")
+XML_ENC_NAMESPACE = "http://www.w3.org/2001/04/xmlenc#"
+XML_SIG_NAMESPACE = "http://www.w3.org/2000/09/xmldsig#"
+XML_ATTRIBUTE_ID = "ID"
+XML_ATTRIBUTE_URI = "URI"
 
-SignatureInfo = namedtuple('SignatureInfo', 'signature,references')
-XmlKeyInfo = namedtuple('XmlKeyInfo', 'key_type,key_length')
+SignatureInfo = namedtuple("SignatureInfo", "signature,references")
+XmlKeyInfo = namedtuple("XmlKeyInfo", "key_type,key_length")
 
 # Specification: https://www.w3.org/TR/xmlenc-core1/#sec-Alg-Block
 XML_KEY_INFO = {
@@ -36,17 +37,23 @@ XML_KEY_INFO = {
 def parse_xml(xml: Union[str, bytes, BinaryIO]) -> etree.ElementTree:
     """Parse a XML document."""
     if isinstance(xml, str):
-        xml = xml.encode('utf-8')
+        xml = xml.encode("utf-8")
     if isinstance(xml, bytes):
         xml = BytesIO(xml)
     return etree.parse(xml)
 
 
-def dump_xml(xml: etree.ElementTree, pretty_print: bool = True, encoding: str = 'utf-8',
-             xml_declaration: bool = True, standalone: bool = True) -> bytes:
+def dump_xml(
+    xml: etree.ElementTree,
+    pretty_print: bool = True,
+    encoding: str = "utf-8",
+    xml_declaration: bool = True,
+    standalone: bool = True,
+) -> bytes:
     """Export an element tree as a XML document."""
-    return etree.tostring(xml, pretty_print=pretty_print, encoding=encoding,
-                          xml_declaration=xml_declaration, standalone=standalone)
+    return etree.tostring(
+        xml, pretty_print=pretty_print, encoding=encoding, xml_declaration=xml_declaration, standalone=standalone
+    )
 
 
 def get_element_path(elm: etree.Element) -> str:
@@ -57,13 +64,13 @@ def get_element_path(elm: etree.Element) -> str:
         tag = q_name.localname
         for key, namespace in elm.nsmap.items():
             if key and namespace == q_name.namespace:
-                tag = '{}:{}'.format(key, q_name.localname)
+                tag = "{}:{}".format(key, q_name.localname)
                 break
 
-        path.append('<{}>'.format(tag))
+        path.append("<{}>".format(tag))
         elm = elm.getparent()
     path.reverse()
-    return ''.join(path)
+    return "".join(path)
 
 
 def is_xml_id_valid(xml_id: str) -> bool:
@@ -71,7 +78,7 @@ def is_xml_id_valid(xml_id: str) -> bool:
     return VALID_XML_ID_RE.match(xml_id) is not None
 
 
-def create_xml_uuid(prefix: str = '_') -> str:
+def create_xml_uuid(prefix: str = "_") -> str:
     """
     Create a UUID which is also a valid XML id.
 
@@ -79,7 +86,7 @@ def create_xml_uuid(prefix: str = '_') -> str:
     :return: A prefixed UUID.
     """
     if not is_xml_id_valid(prefix):
-        raise ValueError('Invalid prefix: {!r}'.format(prefix))
+        raise ValueError("Invalid prefix: {!r}".format(prefix))
     return prefix + str(uuid4())
 
 
@@ -123,30 +130,32 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
     """
     # Create a container without any XML namespace to force namespace declarations in the encrypted node.
     # The decrypted element may then exist as an independent XML document.
-    container = Element('container')
+    container = Element("container")
     parent = node.getparent()
     node_index = parent.index(node)
     container.append(node)
 
     # Create a template for encryption. xmlsec.template functions don't cover all libxmlsec1 features yet.
-    enc_data = SubElement(container,
-                          '{%s}EncryptedData' % XML_ENC_NAMESPACE,
-                          {'Type': xmlsec.constants.TypeEncElement},
-                          nsmap={'xmlenc': XML_ENC_NAMESPACE})
-    SubElement(enc_data, '{%s}EncryptionMethod' % XML_ENC_NAMESPACE, {'Algorithm': cipher.value})
-    SubElement(enc_data, '{%s}CipherData' % XML_ENC_NAMESPACE)
+    enc_data = SubElement(
+        container,
+        "{%s}EncryptedData" % XML_ENC_NAMESPACE,
+        {"Type": xmlsec.constants.TypeEncElement},
+        nsmap={"xmlenc": XML_ENC_NAMESPACE},
+    )
+    SubElement(enc_data, "{%s}EncryptionMethod" % XML_ENC_NAMESPACE, {"Algorithm": cipher.value})
+    SubElement(enc_data, "{%s}CipherData" % XML_ENC_NAMESPACE)
     # typing: we have to ignore all xmlsec.template until #247 is fixed
     xmlsec.template.encrypted_data_ensure_cipher_value(enc_data)  # type: ignore[attr-defined]
 
     # Info about the generated encryption key.
-    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_data, ns='ds')  # type: ignore[attr-defined]
-    enc_key = SubElement(key_info, '{%s}EncryptedKey' % XML_ENC_NAMESPACE)
-    SubElement(enc_key, '{%s}EncryptionMethod' % XML_ENC_NAMESPACE, {'Algorithm': key_transport.value})
-    SubElement(enc_key, '{%s}CipherData' % XML_ENC_NAMESPACE)
+    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_data, ns="ds")  # type: ignore[attr-defined]
+    enc_key = SubElement(key_info, "{%s}EncryptedKey" % XML_ENC_NAMESPACE)
+    SubElement(enc_key, "{%s}EncryptionMethod" % XML_ENC_NAMESPACE, {"Algorithm": key_transport.value})
+    SubElement(enc_key, "{%s}CipherData" % XML_ENC_NAMESPACE)
     xmlsec.template.encrypted_data_ensure_cipher_value(enc_key)  # type: ignore[attr-defined]
 
     # Info about the certificate.
-    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_key, ns='ds')  # type: ignore[attr-defined]
+    key_info = xmlsec.template.encrypted_data_ensure_key_info(enc_key, ns="ds")  # type: ignore[attr-defined]
     x509_data = xmlsec.template.add_x509_data(key_info)  # type: ignore[attr-defined]
     xmlsec.template.x509_data_add_certificate(x509_data)  # type: ignore[attr-defined]
     xmlsec.template.x509_data_add_issuer_serial(x509_data)  # type: ignore[attr-defined]
@@ -164,7 +173,7 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
     try:
         ctx.encrypt_xml(enc_data, node)
     except xmlsec.Error:
-        raise SecurityError('XML encryption failed. Invalid certificate, invalid or unsupported encryption method.')
+        raise SecurityError("XML encryption failed. Invalid certificate, invalid or unsupported encryption method.")
 
     # xmlsec library adds unnecessary tail newlines again, so we remove them.
     remove_extra_xml_whitespace(enc_data)
@@ -185,12 +194,19 @@ def remove_extra_xml_whitespace(node: Element) -> None:
 def remove_newlines_in_xml_text(node: Element) -> None:
     """Remove newlines in the text of leaf XML elements."""
     for elm in node.iter():
-        if not len(elm) and elm.text is not None and '\n' in elm.text:
-            elm.text = elm.text.replace('\n', '')
+        if not len(elm) and elm.text is not None and "\n" in elm.text:
+            elm.text = elm.text.replace("\n", "")
 
 
-def sign_xml_node(node: Element, key_source: str, key_location: str, cert_file: str,
-                  signature_method: str, digest_method: str, position: int = 0) -> None:
+def sign_xml_node(
+    node: Element,
+    key_source: str,
+    key_location: str,
+    cert_file: str,
+    signature_method: str,
+    digest_method: str,
+    position: int = 0,
+) -> None:
     """
     Sign a XML element and insert the signature as a child element.
 
@@ -206,7 +222,8 @@ def sign_xml_node(node: Element, key_source: str, key_location: str, cert_file: 
     # Prepare signature template for xmlsec to fill it with the signature and additional data
     ctx = xmlsec.SignatureContext()
     signature = xmlsec.template.create(  # type: ignore[attr-defined]
-        node, xmlsec.constants.TransformExclC14N, getattr(xmlsec.Transform, signature_method))  # type: ignore
+        node, xmlsec.constants.TransformExclC14N, getattr(xmlsec.Transform, signature_method)
+    )  # type: ignore
     key_info = xmlsec.template.ensure_key_info(signature)  # type: ignore[attr-defined]
     x509_data = xmlsec.template.add_x509_data(key_info)  # type: ignore[attr-defined]
     xmlsec.template.x509_data_add_certificate(x509_data)  # type: ignore[attr-defined]
@@ -222,8 +239,11 @@ def sign_xml_node(node: Element, key_source: str, key_location: str, cert_file: 
     ctx.register_id(node, XML_ATTRIBUTE_ID, None)
 
     # Add reference to signature with URI attribute pointing to that ID.
-    ref = xmlsec.template.add_reference(signature,  # type: ignore[attr-defined]
-                                        getattr(xmlsec.Transform, digest_method), uri="#" + node_id)  # type: ignore
+    ref = xmlsec.template.add_reference(
+        signature,  # type: ignore[attr-defined]
+        getattr(xmlsec.Transform, digest_method),
+        uri="#" + node_id,
+    )  # type: ignore
 
     # XML normalization transform performed on the node contents before signing and verification.
     # 1. When enveloped signature method is used, the signature is included as a child of the signed element.
@@ -235,10 +255,10 @@ def sign_xml_node(node: Element, key_source: str, key_location: str, cert_file: 
     # xmlsec library adds unnecessary newlines to the signature template. They may cause troubles to other
     # XMLSEC implementations, so we remove any unnecessary whitespace to avoid compatibility issues.
     for elm in signature.iter():
-        if elm.text is not None and '\n' in elm.text:
-            elm.text = elm.text.replace('\n', '')
-        if elm.tail is not None and '\n' in elm.tail:
-            elm.tail = elm.tail.replace('\n', '')
+        if elm.text is not None and "\n" in elm.text:
+            elm.text = elm.text.replace("\n", "")
+        if elm.tail is not None and "\n" in elm.tail:
+            elm.tail = elm.tail.replace("\n", "")
     remove_extra_xml_whitespace(signature)
 
     # Insert the signature as a child element.
@@ -266,29 +286,33 @@ def verify_xml_signatures(node: Element, cert_file: str) -> List[SignatureInfo]:
     :raise SecurityError: If any of the element references or signatures are invalid.
     """
     signature_info = []
-    signatures = node.findall(".//{}".format(QName(XML_SIG_NAMESPACE, 'Signature')))
+    signatures = node.findall(".//{}".format(QName(XML_SIG_NAMESPACE, "Signature")))
     if signatures:
         key = xmlsec.Key.from_file(cert_file, xmlsec.constants.KeyDataFormatCertPem)
         for sig_num, signature in enumerate(signatures, 1):
             # Find and register referenced elements
             referenced_elements = []
             ctx = xmlsec.SignatureContext()
-            refs = signature.findall('./{}/{}'.format(QName(XML_SIG_NAMESPACE, 'SignedInfo'),
-                                                      QName(XML_SIG_NAMESPACE, 'Reference')))
+            refs = signature.findall(
+                "./{}/{}".format(QName(XML_SIG_NAMESPACE, "SignedInfo"), QName(XML_SIG_NAMESPACE, "Reference"))
+            )
             for ref_num, ref in enumerate(refs, 1):
                 # ID is referenced in the URI attribute and prefixed with a hash.
                 ref_id = ref.get(XML_ATTRIBUTE_URI)
-                if ref_id is None or len(ref_id) < 2 or ref_id[0] != '#':
-                    raise SecurityError('Signature {}, reference {}: Invalid id {!r}.'
-                                        .format(sig_num, ref_num, ref_id))
+                if ref_id is None or len(ref_id) < 2 or ref_id[0] != "#":
+                    raise SecurityError("Signature {}, reference {}: Invalid id {!r}.".format(sig_num, ref_num, ref_id))
                 ref_id = ref_id[1:]
-                ref_elms = node.xpath('//*[@{}=\'{}\']'.format(XML_ATTRIBUTE_ID, ref_id))
+                ref_elms = node.xpath("//*[@{}='{}']".format(XML_ATTRIBUTE_ID, ref_id))
                 if not ref_elms:
-                    raise SecurityError('Signature {}, reference {}: Element with id {!r} not found.'
-                                        .format(sig_num, ref_num, ref_id))
+                    raise SecurityError(
+                        "Signature {}, reference {}: Element with id {!r} not found.".format(sig_num, ref_num, ref_id)
+                    )
                 if len(ref_elms) > 1:
-                    raise SecurityError('Signature {}, reference {}: Element with id {!r} occurs more than once.'
-                                        .format(sig_num, ref_num, ref_id))
+                    raise SecurityError(
+                        "Signature {}, reference {}: Element with id {!r} occurs more than once.".format(
+                            sig_num, ref_num, ref_id
+                        )
+                    )
                 referenced_elements.append(ref_elms[0])
                 # Unlike HTML, XML doesn't have a single standardized id so we need to tell xmlsec about our id.
                 ctx.register_id(ref_elms[0], XML_ATTRIBUTE_ID, None)
@@ -298,7 +322,7 @@ def verify_xml_signatures(node: Element, cert_file: str) -> List[SignatureInfo]:
                 ctx.key = key
                 ctx.verify(signature)
             except xmlsec.Error:
-                raise SecurityError('Signature {} is invalid.'.format(sig_num))
+                raise SecurityError("Signature {} is invalid.".format(sig_num))
 
             signature_info.append(SignatureInfo(signature, tuple(referenced_elements)))
     return signature_info
