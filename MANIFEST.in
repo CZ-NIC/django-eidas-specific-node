@@ -1,2 +1,4 @@
+include pyproject.toml
 graft eidas_node
-include LICENSE README.md requirements.txt
+include LICENSE
+include README.md
