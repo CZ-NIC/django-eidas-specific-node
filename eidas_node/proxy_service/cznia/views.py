@@ -34,7 +34,7 @@ class CzNiaResponseView(IdentityProviderResponseView):
 
         if sub_status_code is not None:
             status_elm = xml.find(".//{}".format(Q_NAMES["saml2p:Status"]))
-            assert status_elm is not None
+            assert status_elm is not None  # noqa: S101
             status_code_elm = status_elm[0]
             status_code_elm.attrib["Value"] = StatusCode.RESPONDER
             SubElement(status_code_elm, Q_NAMES["saml2p:StatusCode"], {"Value": sub_status_code})
@@ -42,7 +42,7 @@ class CzNiaResponseView(IdentityProviderResponseView):
             assertion = xml.find(".//{}".format(Q_NAMES["saml2:EncryptedAssertion"]))
             if assertion is None:
                 assertion = xml.find(".//{}".format(Q_NAMES["saml2:Assertion"]))
-            assert assertion is not None
+            assert assertion is not None  # noqa: S101
             assertion.getparent().remove(assertion)
 
         return response

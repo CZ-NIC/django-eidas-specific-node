@@ -160,7 +160,7 @@ class SAMLRequest:
             SubElement(extensions, Q_NAMES["eidas:SPCountry"]).text = light_request.sp_country_code
         # In the version 2.4 of CEF eIDAS Node, citizen_country_code is used
         else:
-            assert light_request.citizen_country_code  # mandatory field
+            assert light_request.citizen_country_code  # mandatory field  # noqa: S101
             SubElement(extensions, Q_NAMES["eidas:SPCountry"]).text = light_request.citizen_country_code
         attributes = SubElement(extensions, Q_NAMES["eidas:RequestedAttributes"])
         for name, values in cast(dict[str, list[str]], light_request.requested_attributes).items():
@@ -387,7 +387,7 @@ class SAMLResponse:
         # 3. StatusResponseType <saml2p:Extensions> optional, skipped
         # 4. StatusResponseType <saml2p:Status> required
         status = light_response.status
-        assert status is not None
+        assert status is not None  # noqa: S101
         status_elm = SubElement(root, Q_NAMES["saml2p:Status"])
         # 4.1 <saml2p:Status> <saml2p:StatusCode> required
         status_code = status.status_code
@@ -412,7 +412,7 @@ class SAMLResponse:
         # 4.3 <saml2p:Status> <saml2p:StatusDetail> optional, skipped
         if not status.failure:
             # 5. AssertionType
-            assert light_response.id is not None
+            assert light_response.id is not None  # noqa: S101
             assertion_elm = SubElement(
                 root,
                 Q_NAMES["saml2:Assertion"],

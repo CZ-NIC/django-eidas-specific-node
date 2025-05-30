@@ -21,12 +21,12 @@ class EnumSetting(Setting, Generic[T]):
         """Validate an enumeration value."""
         try:
             self.transform(value)
-        except KeyError:
+        except KeyError as err:
             raise ValidationError(
                 "{!r} is not a valid {}. Available values: {!r}".format(
                     value, self.enum_type.__name__, {m.name for m in self.enum_type}
                 )
-            )
+            ) from err
 
     def transform(self, value) -> T:
         """Transform member name to the corresponding enumeration value."""

@@ -40,7 +40,7 @@ def parse_xml(xml: Union[str, bytes, BinaryIO]) -> etree.ElementTree:
         xml = xml.encode("utf-8")
     if isinstance(xml, bytes):
         xml = BytesIO(xml)
-    return etree.parse(xml)
+    return etree.parse(xml)  # noqa: S320
 
 
 def dump_xml(
@@ -169,8 +169,10 @@ def encrypt_xml_node(node: Element, cert_file: str, cipher: XmlBlockCipher, key_
 
     try:
         ctx.encrypt_xml(enc_data, node)
-    except xmlsec.Error:
-        raise SecurityError("XML encryption failed. Invalid certificate, invalid or unsupported encryption method.")
+    except xmlsec.Error as err:
+        raise SecurityError(
+            "XML encryption failed. Invalid certificate, invalid or unsupported encryption method."
+        ) from err
 
     # xmlsec library adds unnecessary tail newlines again, so we remove them.
     remove_extra_xml_whitespace(enc_data)
@@ -217,9 +219,11 @@ def sign_xml_node(
     """
     # Prepare signature template for xmlsec to fill it with the signature and additional data
     ctx = xmlsec.SignatureContext()
-    signature = xmlsec.template.create(  # type: ignore[attr-defined]
-        node, xmlsec.constants.TransformExclC14N, getattr(xmlsec.Transform, signature_method)
-    )  # type: ignore
+    signature = xmlsec.template.create(
+        node,
+        xmlsec.constants.TransformExclC14N,
+        getattr(xmlsec.Transform, signature_method),  # type: ignore[attr-defined]
+    )
     key_info = xmlsec.template.ensure_key_info(signature)  # type: ignore[attr-defined]
     x509_data = xmlsec.template.add_x509_data(key_info)  # type: ignore[attr-defined]
     xmlsec.template.x509_data_add_certificate(x509_data)  # type: ignore[attr-defined]
@@ -236,10 +240,10 @@ def sign_xml_node(
 
     # Add reference to signature with URI attribute pointing to that ID.
     ref = xmlsec.template.add_reference(
-        signature,  # type: ignore[attr-defined]
-        getattr(xmlsec.Transform, digest_method),
+        signature,
+        getattr(xmlsec.Transform, digest_method),  # type: ignore[attr-defined]
         uri="#" + node_id,
-    )  # type: ignore
+    )
 
     # XML normalization transform performed on the node contents before signing and verification.
     # 1. When enveloped signature method is used, the signature is included as a child of the signed element.
@@ -316,8 +320,8 @@ def verify_xml_signatures(node: Element, cert_file: str) -> list[SignatureInfo]:
             try:
                 ctx.key = key
                 ctx.verify(signature)
-            except xmlsec.Error:
-                raise SecurityError("Signature {} is invalid.".format(sig_num))
+            except xmlsec.Error as err:
+                raise SecurityError("Signature {} is invalid.".format(sig_num)) from err
 
             signature_info.append(SignatureInfo(signature, tuple(referenced_elements)))
     return signature_info

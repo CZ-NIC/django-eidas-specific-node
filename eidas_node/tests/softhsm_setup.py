@@ -33,7 +33,7 @@ def run_cmd(args, softhsm_conf=None) -> tuple[bytes, bytes]:
     if softhsm_conf is not None:
         env["SOFTHSM_CONF"] = softhsm_conf
         env["SOFTHSM2_CONF"] = softhsm_conf
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)  # noqa: S603
     out, err = proc.communicate()
     if err is not None and len(err) > 0:
         logging.error(err)
@@ -94,7 +94,7 @@ softhsm_version = 1
 if component_path["SOFTHSM"].endswith("softhsm2-util"):
     softhsm_version = 2
 
-openssl_version = subprocess.check_output([component_path["OPENSSL"], "version"])[8:11].decode()
+openssl_version = subprocess.check_output([component_path["OPENSSL"], "version"])[8:11].decode()  # noqa: S603
 
 p11_test_files: list[str] = []
 softhsm_conf: Optional[str] = None

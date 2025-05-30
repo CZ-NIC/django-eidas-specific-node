@@ -88,7 +88,7 @@ class ProxyServiceRequestView(TemplateView):
                     PROXY_SERVICE_SETTINGS.auxiliary_storage["backend"],
                     PROXY_SERVICE_SETTINGS.auxiliary_storage["options"],
                 )
-                assert self.light_request.id is not None
+                assert self.light_request.id is not None  # noqa: S101
                 auxiliary_storage.put(self.light_request.id, self.auxiliary_data)
 
         except EidasNodeError as e:
@@ -139,8 +139,8 @@ class ProxyServiceRequestView(TemplateView):
         :return: A light request.
         :raise SecurityError: If the request is not found.
         """
-        assert self.storage is not None
-        assert self.light_token is not None
+        assert self.storage is not None  # noqa: S101
+        assert self.light_token is not None  # noqa: S101
         request = self.storage.pop_light_request(self.light_token.id)
         if request is None:
             raise SecurityError("Request not found in light storage.")
@@ -154,7 +154,7 @@ class ProxyServiceRequestView(TemplateView):
             `cert_file`, `signature_method` abd `digest_method`.
         :return: A SAML request.
         """
-        assert self.light_request is not None
+        assert self.light_request is not None  # noqa: S101
 
         # Replace the original issuer with our issuer registered at the Identity Provider.
         self.light_request.issuer = issuer
@@ -265,8 +265,8 @@ class IdentityProviderResponseView(TemplateView):
 
     def rewrite_name_id(self):
         """Rewrite name id if needed."""
-        assert self.light_response is not None
-        assert self.auxiliary_data is not None
+        assert self.light_response is not None  # noqa: S101
+        assert self.auxiliary_data is not None  # noqa: S101
         if (
             not cast(Status, self.light_response.status).failure
             and PROXY_SERVICE_SETTINGS.transient_name_id_fallback
@@ -330,7 +330,7 @@ class IdentityProviderResponseView(TemplateView):
         :param auth_class_map: Mapping of non-LoA auth classes to LevelOfAssurance.
         :return: A light response.
         """
-        assert self.saml_response is not None
+        assert self.saml_response is not None  # noqa: S101
         response = self.saml_response.create_light_response(auth_class_map)
         # Use our issuer specified in the generic eIDAS Node configuration.
         response.issuer = issuer

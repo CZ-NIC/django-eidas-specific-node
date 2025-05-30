@@ -71,7 +71,7 @@ class TestDataModel(SimpleTestCase):
         self.assertRaisesMessage(ValidationError, "missing keyword argument 'age'", ModelWithoutDefaultValue)
 
         model = ModelWithoutDefaultValue(age=18)
-        self.assertEqual(model.age, 18)
+        self.assertEqual(model.age, 18)  # type: ignore[attr-defined]
 
     def test_equal_with_same_models(self):
         model = get_user()

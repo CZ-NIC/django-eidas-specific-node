@@ -22,6 +22,9 @@ max-doc-length = 120
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
 [tool.doc8]
 max-line-length = 120
 allow-long-titles = true

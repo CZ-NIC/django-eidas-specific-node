@@ -99,7 +99,7 @@ class ServiceProviderRequestView(TemplateView):
                 self.auxiliary_data["citizen_country"] = self.light_request.citizen_country_code
                 self.auxiliary_data["origin_country"] = self.light_request.sp_country_code
 
-            assert self.light_request.requested_attributes is not None
+            assert self.light_request.requested_attributes is not None  # noqa: S101
             self.adjust_requested_attributes(
                 self.light_request.requested_attributes, CONNECTOR_SETTINGS.allowed_attributes
             )
@@ -123,7 +123,7 @@ class ServiceProviderRequestView(TemplateView):
                 auxiliary_storage = get_auxiliary_storage(
                     CONNECTOR_SETTINGS.auxiliary_storage["backend"], CONNECTOR_SETTINGS.auxiliary_storage["options"]
                 )
-                assert self.light_request.id is not None
+                assert self.light_request.id is not None  # noqa: S101
                 auxiliary_storage.put(self.light_request.id, self.auxiliary_data)
 
         except (EidasNodeError, MultiValueDictKeyError) as e:
@@ -162,7 +162,7 @@ class ServiceProviderRequestView(TemplateView):
         :param light_issuer: The issuer of the light request.
         :return: A light request.
         """
-        assert self.saml_request is not None
+        assert self.saml_request is not None  # noqa: S101
         request = self.saml_request.create_light_request()
         # Verify the original issuer of the request.
         if not request.issuer or not hmac.compare_digest(request.issuer, saml_issuer):
@@ -270,8 +270,8 @@ class ConnectorResponseView(TemplateView):
             else:
                 self.auxiliary_data = {}
 
-            assert self.light_response is not None
-            assert self.light_response.status is not None
+            assert self.light_response is not None  # noqa: S101
+            assert self.light_response.status is not None  # noqa: S101
             LOGGER.info(
                 "[#%r] Got light response: id=%r, issuer=%r, in_response_to=%r, citizen_country=%r,"
                 " origin_country=%r, status=%s, substatus=%s.",
@@ -344,8 +344,8 @@ class ConnectorResponseView(TemplateView):
         :return: A light response.
         :raise SecurityError: If the response is not found.
         """
-        assert self.storage is not None
-        assert self.light_token is not None
+        assert self.storage is not None  # noqa: S101
+        assert self.light_token is not None  # noqa: S101
         response = self.storage.pop_light_response(self.light_token.id)
         if response is None:
             raise SecurityError("Response not found in light storage.")
@@ -374,7 +374,7 @@ class ConnectorResponseView(TemplateView):
         :return: A SAML response.
         """
         # Replace the original issuer with our issuer registered at the Identity Provider.
-        assert self.light_response is not None
+        assert self.light_response is not None  # noqa: S101
         self.light_response.issuer = issuer
         response = SAMLResponse.from_light_response(
             self.light_response, audience, destination, datetime.utcnow(), timedelta(minutes=validity)

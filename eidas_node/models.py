@@ -48,8 +48,8 @@ class LightToken(DataModel):
         :raise ValidationError: If token data are invalid.
         """
         self.validate()
-        assert self.id is not None
-        assert self.issuer is not None
+        assert self.id is not None  # noqa: S101
+        assert self.issuer is not None  # noqa: S101
         data = "|".join((self.id, self.issuer, create_eidas_timestamp(cast(datetime, self.created)), secret))
         algorithm = hashlib.new(hash_algorithm)
         algorithm.update(data.encode("utf-8"))
@@ -64,8 +64,8 @@ class LightToken(DataModel):
         :raise ValidationError: If token data are invalid.
         """
         digest = b64encode(self.digest(hash_algorithm, secret)).decode("ascii")
-        assert self.id is not None
-        assert self.issuer is not None
+        assert self.id is not None  # noqa: S101
+        assert self.issuer is not None  # noqa: S101
         data = "|".join((self.issuer, self.id, create_eidas_timestamp(cast(datetime, self.created)), digest))
         return b64encode(data.encode("utf-8"))
 
@@ -88,7 +88,7 @@ class LightToken(DataModel):
         try:
             issuer, token_id, timestamp, digest_base64 = data.split("|")
         except ValueError as e:
-            raise ParseError("Token has wrong number of parts: {}.".format(e.args[0]))
+            raise ParseError("Token has wrong number of parts: {}.".format(e.args[0])) from e
 
         token = LightToken(issuer=issuer, id=token_id, created=parse_eidas_timestamp(timestamp))
         token.validate()

@@ -43,10 +43,10 @@ class DataModel(ABC):
         for name, value in data.items():
             try:
                 fields.remove(name)
-            except KeyError:
+            except KeyError as err:
                 raise TypeError(
                     "{}.__init__() got an unexpected keyword argument {!r}".format(self.__class__.__name__, name)
-                )
+                ) from err
             else:
                 setattr(self, name, value)
         for name in fields:
