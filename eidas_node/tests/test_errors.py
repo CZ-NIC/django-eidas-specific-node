@@ -4,7 +4,7 @@ from eidas_node.errors import ParseError, SecurityError, ValidationError
 
 
 class TestValidationError(SimpleTestCase):
-    ERRORS = {'name': 'Invalid name.'}
+    ERRORS = {"name": "Invalid name."}
 
     def test_errors_attribute(self):
         self.assertIs(ValidationError(self.ERRORS).errors, self.ERRORS)
@@ -17,7 +17,7 @@ class TestValidationError(SimpleTestCase):
 
 
 class TestParseError(SimpleTestCase):
-    ERROR = 'Parsing failed.'
+    ERROR = "Parsing failed."
 
     def test_error_attribute(self):
         self.assertIs(ParseError(self.ERROR).error, self.ERROR)
@@ -26,11 +26,11 @@ class TestParseError(SimpleTestCase):
         self.assertEqual(repr(ParseError(self.ERROR)), "ParseError('Parsing failed.')")
 
     def test_str(self):
-        self.assertEqual(str(ParseError(self.ERROR)), 'Parsing failed.')
+        self.assertEqual(str(ParseError(self.ERROR)), "Parsing failed.")
 
 
 class TestSecurityError(SimpleTestCase):
-    ERROR = 'Signature does not match.'
+    ERROR = "Signature does not match."
 
     def test_error_attribute(self):
         self.assertIs(SecurityError(self.ERROR).error, self.ERROR)
@@ -39,4 +39,4 @@ class TestSecurityError(SimpleTestCase):
         self.assertEqual(repr(SecurityError(self.ERROR)), "SecurityError('Signature does not match.')")
 
     def test_str(self):
-        self.assertEqual(str(SecurityError(self.ERROR)), 'Signature does not match.')
+        self.assertEqual(str(SecurityError(self.ERROR)), "Signature does not match.")

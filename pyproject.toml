@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "W", "F", "C", "I", "D", "S", "UP", "B", "ISC", "G", "RSE"]
+ignore = ["D105", "D106", "D107", "UP032", "ISC001"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*" = ["D1", "S101", "S105", "S106", "S107", "B015", "B018"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 120
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.doc8]
+max-line-length = 120
+allow-long-titles = true

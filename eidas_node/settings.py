@@ -1,18 +1,19 @@
 """Settings helpers."""
+
 from enum import Enum
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 from appsettings import Setting
 from django.core.exceptions import ValidationError
 
-T = TypeVar('T', bound=Enum)
+T = TypeVar("T", bound=Enum)
 
 
 class EnumSetting(Setting, Generic[T]):
     """Enumeration setting."""
 
-    def __init__(self, enum_type: Type[T],  *args, **kwargs):
-        kwargs.setdefault('transform_default', True)
+    def __init__(self, enum_type: type[T], *args, **kwargs):
+        kwargs.setdefault("transform_default", True)
         super().__init__(*args, **kwargs)
         self.enum_type = enum_type
 
@@ -20,9 +21,12 @@ class EnumSetting(Setting, Generic[T]):
         """Validate an enumeration value."""
         try:
             self.transform(value)
-        except KeyError:
-            raise ValidationError('{!r} is not a valid {}. Available values: {!r}'.format(
-                value, self.enum_type.__name__, {m.name for m in self.enum_type}))
+        except KeyError as err:
+            raise ValidationError(
+                "{!r} is not a valid {}. Available values: {!r}".format(
+                    value, self.enum_type.__name__, {m.name for m in self.enum_type}
+                )
+            ) from err
 
     def transform(self, value) -> T:
         """Transform member name to the corresponding enumeration value."""

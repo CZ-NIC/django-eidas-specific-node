@@ -1,5 +1,4 @@
 """Errors of eidas_node."""
-from typing import Dict
 
 
 class EidasNodeError(Exception):
@@ -7,25 +6,23 @@ class EidasNodeError(Exception):
 
 
 class ValidationError(EidasNodeError):
-    """
-    Error for validation failures.
+    """Error for validation failures.
 
     :param errors: A dictionary of field names (keys) and error messages (values).
     """
 
-    def __init__(self, errors: Dict[str, str]):
+    def __init__(self, errors: dict[str, str]):
         self.errors = errors
 
     def __str__(self) -> str:
-        return 'Validation failed: {!r}'.format(self.errors)
+        return "Validation failed: {!r}".format(self.errors)
 
     def __repr__(self) -> str:
-        return '{}({!r})'.format(self.__class__.__name__, self.errors)
+        return "{}({!r})".format(self.__class__.__name__, self.errors)
 
 
 class ParseError(EidasNodeError):
-    """
-    Error for parsing and decoding failures.
+    """Error for parsing and decoding failures.
 
     :param error: An error message.
     """
@@ -37,12 +34,11 @@ class ParseError(EidasNodeError):
         return self.error
 
     def __repr__(self) -> str:
-        return '{}({!r})'.format(self.__class__.__name__, self.error)
+        return "{}({!r})".format(self.__class__.__name__, self.error)
 
 
 class SecurityError(EidasNodeError):
-    """
-    Error for signature and encryption failures.
+    """Error for signature and encryption failures.
 
     :param error: An error message.
     """
@@ -54,4 +50,4 @@ class SecurityError(EidasNodeError):
         return self.error
 
     def __repr__(self) -> str:
-        return '{}({!r})'.format(self.__class__.__name__, self.error)
+        return "{}({!r})".format(self.__class__.__name__, self.error)
