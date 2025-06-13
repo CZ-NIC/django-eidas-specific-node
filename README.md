@@ -6,11 +6,21 @@ Django implementation of member specific **Connector** and **Proxy Service** for
 Requirements
 ------------
 
-- [Django](https://docs.djangoproject.com) 2.2.x
+- [Django](https://docs.djangoproject.com) 4.2.x
 - [Django AppSettings](https://pypi.org/project/django-app-settings/) >= 0.5
 - [lxml](https://pypi.org/project/lxml/)
 - [xmlsec](https://pypi.org/project/xmlsec/)
 - [Apache Ignite Python client](https://pypi.org/project/pyignite/) (optional)
+
+HSM Requirements
+---------------
+For HSM to work, the underlying system libraries have to be in correct versions:
+
+libengine-pkcs11-openssl
+libxmlsec1-dev < 1.2.35
+libxmlsec1-openssl
+opensc
+softhsm2
 
 Changes
 -------
