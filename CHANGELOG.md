@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.11.0 2025-07-21
+-----------------
+
+* Removed support for python 3.8
+* Added support for python 3.10
+* Changed Django version to 4.2
+
 0.10.0 [2023-03-16]
 ----------
 
