@@ -170,14 +170,21 @@ class TestServiceProviderRequestView(IgniteMockMixin, SimpleTestCase):
         saml_request_xml, saml_request_encoded = self.load_saml_request(signed=True)
         view = ServiceProviderRequestView()
         view.request = self.factory.post(self.url, {"SAMLRequest": saml_request_encoded, "country_param": "ca"})
-        saml_request = view.get_saml_request("country_param", CERT_FILE)
+        saml_request = view.get_saml_request("country_param", [CERT_FILE])
+        self.assertXMLEqual(dump_xml(saml_request.document).decode("utf-8"), saml_request_xml)
+
+    def test_get_saml_request_valid_signature_multiple(self):
+        saml_request_xml, saml_request_encoded = self.load_saml_request(signed=True)
+        view = ServiceProviderRequestView()
+        view.request = self.factory.post(self.url, {"SAMLRequest": saml_request_encoded, "country_param": "ca"})
+        saml_request = view.get_saml_request("country_param", [WRONG_CERT_FILE, CERT_FILE])
         self.assertXMLEqual(dump_xml(saml_request.document).decode("utf-8"), saml_request_xml)
 
     def test_get_saml_request_invalid_signature(self):
         saml_request_xml, saml_request_encoded = self.load_saml_request(signed=True)
         view = ServiceProviderRequestView()
         view.request = self.factory.post(self.url, {"SAMLRequest": saml_request_encoded, "country_param": "ca"})
-        self.assertRaises(SecurityError, view.get_saml_request, "country_param", WRONG_CERT_FILE)
+        self.assertRaises(SecurityError, view.get_saml_request, "country_param", [WRONG_CERT_FILE])
 
     def test_create_light_request_wrong_issuer(self):
         saml_request_xml, _saml_request_encoded = self.load_saml_request()
