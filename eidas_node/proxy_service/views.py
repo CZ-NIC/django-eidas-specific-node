@@ -280,7 +280,7 @@ class IdentityProviderResponseView(TemplateView):
             self.light_response.subject = random_id
 
     def get_saml_response(
-        self, key_source: Optional[str], key_location: Optional[str], cert_files: list[str]
+        self, key_source: Optional[str], key_location: Optional[str], cert_files: Optional[list[str]]
     ) -> SAMLResponse:
         """Extract and decrypt a SAML response from POST data.
 
