@@ -315,16 +315,7 @@ class IdentityProviderResponseView(TemplateView):
                     break
             else:
                 raise SecurityError("Wrong signature")
-        if key_source and key_locations:
-            for key_location in key_locations:
-                try:
-                    response.decrypt(key_source, key_location)
-                except (RuntimeError, XmlsecError):
-                    pass
-                else:
-                    break
-            else:
-                raise SecurityError("Decryption failed")
+        self._decrypt_response(response, key_source, key_locations)
         if cert_files:
             for cert_file in cert_files:
                 try:
@@ -336,6 +327,21 @@ class IdentityProviderResponseView(TemplateView):
             else:
                 raise SecurityError("Wrong assertion")
         return response
+
+    @staticmethod
+    def _decrypt_response(
+        response: SAMLResponse, key_source: Optional[str], key_locations: Optional[list[str]]
+    ) -> None:
+        if key_source and key_locations:
+            for key_location in key_locations:
+                try:
+                    response.decrypt(key_source, key_location)
+                except (RuntimeError, XmlsecError):
+                    pass
+                else:
+                    break
+            else:
+                raise SecurityError("Decryption failed")
 
     def get_light_storage(self, backend: str, options: dict[str, Any]) -> LightStorage:
         """Create a light storage instance.
