@@ -336,6 +336,18 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         view.request = self.factory.post(self.url, {"SAMLResponse": saml_response_encoded})
         self.assertRaises(SecurityError, view.get_saml_response, None, None, [WRONG_CERT_FILE])
 
+    @patch("eidas_node.proxy_service.views.SAMLResponse.verify_response")
+    def test_get_saml_response_invalid_assertion(self, verify_mock):
+        with cast(TextIO, (DATA_DIR / "signed_response_and_assertion.xml").open("r")) as f:
+            tree = parse_xml(f.read())
+        remove_extra_xml_whitespace(tree)
+        saml_response_encoded = b64encode(dump_xml(tree, pretty_print=False)).decode("ascii")
+
+        view = IdentityProviderResponseView()
+        view.request = self.factory.post(self.url, {"SAMLResponse": saml_response_encoded})
+        verify_mock.return_value = True
+        self.assertRaises(SecurityError, view.get_saml_response, None, None, [WRONG_CERT_FILE])
+
     def test_get_saml_response_signed_and_encrypted(self):
         with cast(TextIO, (DATA_DIR / "nia_test_response.xml").open("r")) as f:
             tree = parse_xml(f.read())
