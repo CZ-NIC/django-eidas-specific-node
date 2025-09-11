@@ -13,6 +13,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from lxml.etree import XMLSyntaxError
+from xmlsec import Error as XmlsecError
 
 from eidas_node.attributes import MANDATORY_ATTRIBUTE_NAMES
 from eidas_node.connector.settings import CONNECTOR_SETTINGS
@@ -88,7 +89,7 @@ class ServiceProviderRequestView(TemplateView):
         try:
             self.saml_request = self.get_saml_request(
                 CONNECTOR_SETTINGS.service_provider["country_parameter"],
-                CONNECTOR_SETTINGS.service_provider["cert_file"],
+                CONNECTOR_SETTINGS.service_provider["cert_files"],
             )
             LOGGER.debug("SAML Request: %s", self.saml_request)
             self.light_request = self.create_light_request(
@@ -134,11 +135,11 @@ class ServiceProviderRequestView(TemplateView):
             )
         return super().get(request)
 
-    def get_saml_request(self, country_parameter: str, cert_file: Optional[str]) -> SAMLRequest:
+    def get_saml_request(self, country_parameter: str, cert_files: Optional[list[str]]) -> SAMLRequest:
         """Extract and decrypt a SAML request from POST data.
 
         :param country_parameter: A parameter containing citizen country code.
-        :param cert_file: The path of a certificate to verify the signature.
+        :param cert_files: The paths of a certificates to verify the signature.
         :return: A SAML request.
         """
         try:
@@ -151,8 +152,17 @@ class ServiceProviderRequestView(TemplateView):
             raise ParseError(str(e)) from None
 
         LOGGER.info("[#%r] Received SAML request: id=%r, issuer=%r", self.log_id, request.id, request.issuer)
-        if cert_file:
-            request.verify_request(cert_file)
+        if cert_files:
+            errors = []
+            for cert_file in cert_files:
+                try:
+                    request.verify_request(cert_file)
+                except (SecurityError, XmlsecError) as e:
+                    errors.append(e)
+                else:
+                    break
+            else:
+                raise SecurityError(f"Error: {errors}")
         return request
 
     def create_light_request(self, saml_issuer: str, light_issuer: str) -> LightRequest:
