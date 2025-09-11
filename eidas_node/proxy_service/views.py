@@ -280,12 +280,12 @@ class IdentityProviderResponseView(TemplateView):
             self.light_response.subject = random_id
 
     def get_saml_response(
-        self, key_source: Optional[str], key_location: Optional[str], cert_files: Optional[list[str]]
+        self, key_source: Optional[str], key_locations: Optional[list[str]], cert_files: Optional[list[str]]
     ) -> SAMLResponse:
         """Extract and decrypt a SAML response from POST data.
 
         :param key_source: An optional source ('file' or 'engine') to a key to decrypt the response.
-        :param key_location: An optional path to a key to decrypt the response.
+        :param key_locations: An optional path to a key to decrypt the response.
         :param cert_files: An optional paths to certificates to verify the response.
         :return: A SAML response.
         """
@@ -316,8 +316,7 @@ class IdentityProviderResponseView(TemplateView):
                     break
             else:
                 raise SecurityError(f"Wrong signature: {errors}")
-        if key_source and key_location:
-            response.decrypt(key_source, key_location)
+        self._decrypt_response(response, key_source, key_locations)
         if cert_files:
             errors = []
             for cert_file in cert_files:
@@ -330,6 +329,22 @@ class IdentityProviderResponseView(TemplateView):
             else:
                 raise SecurityError(f"Wrong assertion: {errors}")
         return response
+
+    @staticmethod
+    def _decrypt_response(
+        response: SAMLResponse, key_source: Optional[str], key_locations: Optional[list[str]]
+    ) -> None:
+        if key_source and key_locations:
+            errors = []
+            for key_location in key_locations:
+                try:
+                    response.decrypt(key_source, key_location)
+                except (RuntimeError, XmlsecError) as err:
+                    errors.append(err)
+                else:
+                    break
+            else:
+                raise SecurityError(f"Decryption failed: {errors}")
 
     def get_light_storage(self, backend: str, options: dict[str, Any]) -> LightStorage:
         """Create a light storage instance.

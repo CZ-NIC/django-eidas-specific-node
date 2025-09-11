@@ -54,7 +54,7 @@ class ProxyServiceSettings(AppSettings):
                 required=True,
             ),
             "key_source": StringSetting(),
-            "key_location": StringSetting(),
+            "key_location": ListSetting(item_type=str),
             "cert_files": ListSetting(item_type=str),
         },
         required=True,
