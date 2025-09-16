@@ -67,7 +67,7 @@ PROXY_SERVICE_IDENTITY_PROVIDER: dict[str, Any] = {
     },
     "RESPONSE_ISSUER": "test-saml-response-issuer",
     "KEY_SOURCE": "file",
-    "KEY_LOCATION": KEY_LOCATION,
+    "KEY_LOCATION": [KEY_LOCATION],
 }
 
 PROXY_SERVICE_LIGHT_STORAGE: dict[str, Any] = {
@@ -104,7 +104,7 @@ CONNECTOR_RESPONSE_TOKEN: dict[str, Any] = {
 
 CONNECTOR_SERVICE_PROVIDER: dict[str, Any] = {
     "ENDPOINT": "/DemoServiceProviderResponse",
-    "CERT_FILE": CERT_FILE,
+    "CERT_FILE": [CERT_FILE],
     "REQUEST_ISSUER": "test-saml-request-issuer",
     "RESPONSE_ISSUER": "test-saml-response-issuer",
     "RESPONSE_SIGNATURE": {
