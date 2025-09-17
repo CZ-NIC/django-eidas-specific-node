@@ -4,6 +4,7 @@ from appsettings import (
     AppSettings,
     BooleanSetting,
     DictSetting,
+    ListSetting,
     NestedDictSetting,
     PositiveIntegerSetting,
     StringSetting,
@@ -54,7 +55,7 @@ class ProxyServiceSettings(AppSettings):
             ),
             "key_source": StringSetting(),
             "key_location": StringSetting(),
-            "cert_file": StringSetting(),
+            "cert_files": ListSetting(item_type=str),
         },
         required=True,
     )

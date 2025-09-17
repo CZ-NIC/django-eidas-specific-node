@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from lxml.etree import XMLSyntaxError
+from xmlsec import Error as XmlsecError
 
 from eidas_node.constants import TOKEN_ID_PREFIX, LevelOfAssurance, NameIdFormat
 from eidas_node.errors import EidasNodeError, ParseError, SecurityError
@@ -209,7 +210,7 @@ class IdentityProviderResponseView(TemplateView):
             self.saml_response = self.get_saml_response(
                 PROXY_SERVICE_SETTINGS.identity_provider.get("key_source"),
                 PROXY_SERVICE_SETTINGS.identity_provider.get("key_location"),
-                PROXY_SERVICE_SETTINGS.identity_provider.get("cert_file"),
+                PROXY_SERVICE_SETTINGS.identity_provider.get("cert_files"),
             )
             LOGGER.debug("SAML Response: %s", self.saml_response)
 
@@ -279,13 +280,13 @@ class IdentityProviderResponseView(TemplateView):
             self.light_response.subject = random_id
 
     def get_saml_response(
-        self, key_source: Optional[str], key_location: Optional[str], cert_file: Optional[str]
+        self, key_source: Optional[str], key_location: Optional[str], cert_files: Optional[list[str]]
     ) -> SAMLResponse:
         """Extract and decrypt a SAML response from POST data.
 
         :param key_source: An optional source ('file' or 'engine') to a key to decrypt the response.
         :param key_location: An optional path to a key to decrypt the response.
-        :param cert_file: An optional path to a certificate to verify the response.
+        :param cert_files: An optional paths to certificates to verify the response.
         :return: A SAML response.
         """
         raw_response = b64decode(self.request.POST.get("SAMLResponse", "").encode("ascii")).decode("utf-8")
@@ -304,12 +305,30 @@ class IdentityProviderResponseView(TemplateView):
             response.in_response_to_id,
         )
 
-        if cert_file:
-            response.verify_response(cert_file)
+        if cert_files:
+            errors = []
+            for cert_file in cert_files:
+                try:
+                    response.verify_response(cert_file)
+                except (SecurityError, XmlsecError) as err:
+                    errors.append(err)
+                else:
+                    break
+            else:
+                raise SecurityError(f"Wrong signature: {errors}")
         if key_source and key_location:
             response.decrypt(key_source, key_location)
-        if cert_file:
-            response.verify_assertion(cert_file)
+        if cert_files:
+            errors = []
+            for cert_file in cert_files:
+                try:
+                    response.verify_assertion(cert_file)
+                except (SecurityError, XmlsecError) as err:
+                    errors.append(err)
+                else:
+                    break
+            else:
+                raise SecurityError(f"Wrong assertion: {errors}")
         return response
 
     def get_light_storage(self, backend: str, options: dict[str, Any]) -> LightStorage:
