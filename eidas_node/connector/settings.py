@@ -5,6 +5,7 @@ from appsettings import (
     BooleanSetting,
     DictSetting,
     IterableSetting,
+    ListSetting,
     NestedDictSetting,
     PositiveIntegerSetting,
     StringSetting,
@@ -76,7 +77,7 @@ class ConnectorSettings(AppSettings):
     service_provider = NestedDictSetting(
         settings={
             "endpoint": StringSetting(required=True, min_length=1),
-            "cert_file": StringSetting(min_length=1),
+            "cert_files": ListSetting(item_type=str),
             "request_issuer": StringSetting(required=True, min_length=1),
             "response_issuer": StringSetting(required=True, min_length=1),
             "response_signature": NestedDictSetting(
