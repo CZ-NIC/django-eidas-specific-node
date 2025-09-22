@@ -104,7 +104,7 @@ CONNECTOR_RESPONSE_TOKEN: dict[str, Any] = {
 
 CONNECTOR_SERVICE_PROVIDER: dict[str, Any] = {
     "ENDPOINT": "/DemoServiceProviderResponse",
-    "CERT_FILE": CERT_FILE,
+    "CERT_FILES": [CERT_FILE],
     "REQUEST_ISSUER": "test-saml-request-issuer",
     "RESPONSE_ISSUER": "test-saml-response-issuer",
     "RESPONSE_SIGNATURE": {
