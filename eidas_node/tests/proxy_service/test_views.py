@@ -23,6 +23,7 @@ from eidas_node.tests.constants import (
     NIA_CERT_FILE,
     SIGNATURE_OPTIONS,
     WRONG_CERT_FILE,
+    WRONG_KEY_LOCATION,
 )
 from eidas_node.tests.test_models import FAILED_LIGHT_RESPONSE_DICT, LIGHT_REQUEST_DICT, LIGHT_RESPONSE_DICT
 from eidas_node.tests.test_storage import IgniteMockMixin
@@ -282,7 +283,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         view.request = self.factory.post(
             self.url, {"SAMLResponse": b64encode(saml_response_xml).decode("ascii"), "RelayState": "relay123"}
         )
-        saml_response = view.get_saml_response(KEY_SOURCE, KEY_LOCATION, None)
+        saml_response = view.get_saml_response(KEY_SOURCE, [KEY_LOCATION], None)
         self.assertEqual(saml_response.relay_state, "relay123")
         self.assertXMLEqual(dump_xml(saml_response.document).decode("utf-8"), decrypted_saml_response_xml)
 
@@ -355,7 +356,30 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         saml_response_encoded = b64encode(dump_xml(tree, pretty_print=False)).decode("ascii")
         view = IdentityProviderResponseView()
         view.request = self.factory.post(self.url, {"SAMLResponse": saml_response_encoded, "RelayState": "relay123"})
-        saml_response = view.get_saml_response(KEY_SOURCE, KEY_LOCATION, [NIA_CERT_FILE])
+        saml_response = view.get_saml_response(KEY_SOURCE, [KEY_LOCATION], [NIA_CERT_FILE])
+        self.assertEqual(saml_response.relay_state, "relay123")
+
+        with cast(TextIO, (DATA_DIR / "nia_test_response_decrypted_verified.xml").open("r")) as f:
+            decrypted_verified_xml = f.read()
+        self.assertXMLEqual(dump_xml(saml_response.document).decode("utf-8"), decrypted_verified_xml)
+
+    def test_get_saml_response_signed_and_encrypted_wrong_key(self):
+        with cast(TextIO, (DATA_DIR / "nia_test_response.xml").open("r")) as f:
+            tree = parse_xml(f.read())
+        remove_extra_xml_whitespace(tree)
+        saml_response_encoded = b64encode(dump_xml(tree, pretty_print=False)).decode("ascii")
+        view = IdentityProviderResponseView()
+        view.request = self.factory.post(self.url, {"SAMLResponse": saml_response_encoded, "RelayState": "relay123"})
+        self.assertRaises(SecurityError, view.get_saml_response, KEY_SOURCE, [WRONG_KEY_LOCATION], [NIA_CERT_FILE])
+
+    def test_get_saml_response_signed_and_encrypted_multi_key(self):
+        with cast(TextIO, (DATA_DIR / "nia_test_response.xml").open("r")) as f:
+            tree = parse_xml(f.read())
+        remove_extra_xml_whitespace(tree)
+        saml_response_encoded = b64encode(dump_xml(tree, pretty_print=False)).decode("ascii")
+        view = IdentityProviderResponseView()
+        view.request = self.factory.post(self.url, {"SAMLResponse": saml_response_encoded, "RelayState": "relay123"})
+        saml_response = view.get_saml_response(KEY_SOURCE, [WRONG_KEY_LOCATION, KEY_LOCATION], [NIA_CERT_FILE])
         self.assertEqual(saml_response.relay_state, "relay123")
 
         with cast(TextIO, (DATA_DIR / "nia_test_response_decrypted_verified.xml").open("r")) as f:
@@ -369,7 +393,7 @@ class TestIdentityProviderResponseView(IgniteMockMixin, SimpleTestCase):
         saml_response_encoded = b64encode(dump_xml(tree, pretty_print=False)).decode("ascii")
         view = IdentityProviderResponseView()
         view.request = self.factory.post(self.url, {"SAMLResponse": saml_response_encoded, "RelayState": "relay123"})
-        saml_response = view.get_saml_response(KEY_SOURCE, KEY_LOCATION, [WRONG_CERT_FILE, NIA_CERT_FILE])
+        saml_response = view.get_saml_response(KEY_SOURCE, [KEY_LOCATION], [WRONG_CERT_FILE, NIA_CERT_FILE])
         self.assertEqual(saml_response.relay_state, "relay123")
 
         with cast(TextIO, (DATA_DIR / "nia_test_response_decrypted_verified.xml").open("r")) as f:
