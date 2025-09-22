@@ -223,7 +223,10 @@ class SAMLRequest:
             "./{}/{}".format(Q_NAMES["saml2p:RequestedAuthnContext"], Q_NAMES["saml2:AuthnContextClassRef"])
         )
         if level_of_assurance is not None:
-            request.level_of_assurance = LevelOfAssurance(level_of_assurance.text)
+            try:
+                request.level_of_assurance = LevelOfAssurance(level_of_assurance.text)
+            except ValueError as err:
+                raise ValidationError({"LevelOfAssurance": "LoA is not valid."}) from err
 
         extensions = root.find("./{}".format(Q_NAMES["saml2p:Extensions"]))
         if extensions is not None:
