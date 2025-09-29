@@ -104,6 +104,14 @@ class TestSAMLRequest(ValidationErrorMixin, SimpleTestCase):
         saml_request = SAMLRequest(parse_xml(data), "CA", "relay123")
         self.assertEqual(saml_request.create_light_request().get_data_as_dict(), LIGHT_REQUEST_DICT)
 
+    def test_create_light_request_success_bad_loa(self):
+        self.maxDiff = None
+        with cast(TextIO, (DATA_DIR / "saml_request_loa.xml").open("r")) as f:
+            data = f.read()
+
+        saml_request = SAMLRequest(parse_xml(data), "CA", "relay123")
+        self.assert_validation_error("LevelOfAssurance", "LoA is not valid.", saml_request.create_light_request)
+
     def test_create_light_request_extra_elements(self):
         self.maxDiff = None
         with cast(TextIO, (DATA_DIR / "saml_request.xml").open("r")) as f:
