@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.12.0 2025-09-30
+-----------------
+
+* Fixed handling of invalid LoA on incoming message
+* Changed `KEY_LOCATION` in ProxyService to a list of paths to support key rotation
+* Changed `CERT_FILE` in ProxyService and Connector to `CERT_FILES` and to be a list of paths.
+
 0.11.0 2025-07-21
 -----------------
 
